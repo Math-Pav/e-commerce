@@ -1,0 +1,49 @@
+# Environnement de développement local. Ne pas utiliser tel quel en production.
+services:
+  # PHP-FPM : exécute le code Symfony
+  php:
+    build: ./docker/php
+    # Les fichiers créés dans le conteneur appartiennent à ton utilisateur Linux,
+    # et non à root (sinon tu ne pourrais plus les modifier depuis ton éditeur).
+    user: "${UID:-1000}:${GID:-1000}"
+    environment:
+      COMPOSER_HOME: /tmp/composer
+    volumes:
+      - ./app:/var/www/html
+    depends_on:
+      - database
+
+  # Nginx : serveur web, transmet les requêtes PHP au service "php"
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./app:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+
+  # MariaDB : la base de données
+  database:
+    image: mariadb:11.4
+    environment:
+      # Identifiants de DÉVELOPPEMENT uniquement
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_DATABASE: ecommerce
+      MARIADB_USER: app
+      MARIADB_PASSWORD: app
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # Adminer : interface web légère pour consulter la base
+  adminer:
+    image: adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      - database
+
+# Volume nommé : les données de la base survivent à l'arrêt des conteneurs
+volumes:
+  db_data:
