@@ -18,4 +18,18 @@ final class ProductController extends AbstractController
             'products' => $productRepository->findActive(),
         ]);
     }
+
+    #[Route('/produits/{slug}', name: 'product_show', methods: ['GET'])]
+    public function show(string $slug, ProductRepository $productRepository): Response
+    {
+        $product = $productRepository->findOneBy(['slug' => $slug, 'isActive' => true]);
+
+        if ($product === null) {
+            throw $this->createNotFoundException('Produit introuvable.');
+        }
+
+        return $this->render('product/show.html.twig', [
+            'product' => $product,
+        ]);
+    }
 }

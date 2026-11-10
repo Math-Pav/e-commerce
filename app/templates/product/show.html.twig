@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block body %}
+    <p><a href="{{ path('product_index') }}">← Retour au catalogue</a></p>
+
+    <h1>{{ product.name }}</h1>
+    <p>Catégorie : {{ product.category.name }}</p>
+
+    <p><strong>{{ product.price|price }}</strong></p>
+
+    {% if product.inStock %}
+        <p>En stock</p>
+    {% else %}
+        <p>Rupture de stock</p>
+    {% endif %}
+
+    {% if product.description %}
+        <p>{{ product.description }}</p>
+    {% endif %}
+{% endblock %}

@@ -8,9 +8,8 @@
     <ul>
         {% for product in products %}
             <li>
-                <strong>{{ product.name }}</strong>
-                ({{ product.category.name }})
-                : {{ (product.price / 100)|number_format(2, ',', ' ') }} €
+                <a href="{{ path('product_show', {slug: product.slug}) }}"><strong>{{ product.name }}</strong></a>
+                ({{ product.category.name }}) : {{ product.price|price }}
                 {% if not product.inStock %}
                     <em>Rupture de stock</em>
                 {% endif %}
