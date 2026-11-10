@@ -46,6 +46,8 @@ Structure Symfony standard, organisée en couches :
 - `src/Entity/` : entités Doctrine (données + règles simples propres à l'entité).
 - `src/Form/` : formulaires Symfony et leur validation.
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
+- `src/Model/` : objets métier non enregistrés en base (ex. `Cart`, `CartLine`).
+- `src/Exception/` : exceptions métier (ex. `InsufficientStockException`).
 
 Principes :
 
