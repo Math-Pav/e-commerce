@@ -141,4 +141,9 @@ class Product
 
         return $this;
     }
+
+    public function isInStock(): bool
+    {
+        return $this->stock > 0;
+    }
 }

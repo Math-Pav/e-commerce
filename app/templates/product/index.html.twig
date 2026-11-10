@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Catalogue{% endblock %}
+
+{% block body %}
+    <h1>Catalogue</h1>
+
+    <ul>
+        {% for product in products %}
+            <li>
+                <strong>{{ product.name }}</strong>
+                ({{ product.category.name }})
+                : {{ (product.price / 100)|number_format(2, ',', ' ') }} €
+                {% if not product.inStock %}
+                    <em>Rupture de stock</em>
+                {% endif %}
+            </li>
+        {% else %}
+            <li>Aucun produit pour le moment.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

@@ -17,4 +17,19 @@ class ProductRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Product::class);
     }
+
+        /**
+     * @return list<Product>
+     */
+    public function findActive(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('c')
+            ->join('p.category', 'c')
+            ->where('p.isActive = :active')
+            ->setParameter('active', true)
+            ->orderBy('p.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
