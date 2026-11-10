@@ -6,8 +6,10 @@ namespace App\DataFixtures;
 
 use App\Entity\Category;
 use App\Entity\Product;
+use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
 /**
@@ -40,13 +42,20 @@ class AppFixtures extends Fixture
         ],
     ];
 
-    // Injection de dépendances : Symfony fournit automatiquement le service "slugger"
-    public function __construct(private readonly SluggerInterface $slugger)
-    {
+    // Mot de passe de tous les comptes de démonstration
+    private const DEMO_PASSWORD = 'password';
+
+    public function __construct(
+        private readonly SluggerInterface $slugger,
+        private readonly UserPasswordHasherInterface $passwordHasher,
+    ) {
     }
 
     public function load(ObjectManager $manager): void
     {
+        $manager->persist($this->createUser('client@example.com', 'Camille', 'Martin'));
+        $manager->persist($this->createUser('admin@example.com', 'Alex', 'Durand', ['ROLE_ADMIN']));
+
         foreach (self::CATALOG as $categoryName => $products) {
             $category = (new Category())
                 ->setName($categoryName)
@@ -68,8 +77,23 @@ class AppFixtures extends Fixture
             }
         }
 
-        // Toutes les requêtes INSERT sont envoyées ici, en une seule fois
         $manager->flush();
+    }
+
+    /**
+     * @param list<string> $roles
+     */
+    private function createUser(string $email, string $firstName, string $lastName, array $roles = []): User
+    {
+        $user = (new User())
+            ->setEmail($email)
+            ->setFirstName($firstName)
+            ->setLastName($lastName)
+            ->setRoles($roles);
+
+        $user->setPassword($this->passwordHasher->hashPassword($user, self::DEMO_PASSWORD));
+
+        return $user;
     }
 
     private function slugify(string $text): string
