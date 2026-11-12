@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use App\Exception\InsufficientStockException;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -145,5 +146,21 @@ class Product
     public function isInStock(): bool
     {
         return $this->stock > 0;
+    }
+
+    /**
+     * @throws InsufficientStockException
+     */
+    public function decreaseStock(int $quantity): void
+    {
+        if ($quantity < 1) {
+            throw new \InvalidArgumentException('La quantité doit être au moins égale à 1.');
+        }
+
+        if ($quantity > $this->stock) {
+            throw new InsufficientStockException($this);
+        }
+
+        $this->stock -= $quantity;
     }
 }

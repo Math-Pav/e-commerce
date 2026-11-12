@@ -211,4 +211,12 @@ class Order
 
         return $this;
     }
+
+    public function recalculateTotal(): void
+    {
+        $this->totalAmount = array_sum(array_map(
+            static fn (OrderItem $item): int => $item->getSubtotal(),
+            $this->items->toArray(),
+        ));
+    }
 }

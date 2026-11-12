@@ -98,4 +98,9 @@ class OrderItem
 
         return $this;
     }
+
+    public function getSubtotal(): int
+    {
+        return $this->unitPrice * $this->quantity;
+    }
 }
