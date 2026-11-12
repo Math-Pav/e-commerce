@@ -48,6 +48,7 @@ Structure Symfony standard, organisée en couches :
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
 - `src/Model/` : objets métier non enregistrés en base (ex. `Cart`, `CartLine`).
 - `src/Exception/` : exceptions métier (ex. `InsufficientStockException`).
+- `src/Payment/` : fournisseurs de paiement, derrière `PaymentProviderInterface` (aujourd'hui : `FakePaymentProvider`).
 
 Principes :
 

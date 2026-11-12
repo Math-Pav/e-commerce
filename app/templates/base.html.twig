@@ -11,6 +11,7 @@
             <a href="{{ path('product_index') }}">Catalogue</a>
             | <a href="{{ path('cart_show') }}">Panier</a>
             {% if app.user %}
+                | <a href="{{ path('order_index') }}">Mes commandes</a>
                 | Connecté en tant que {{ app.user.firstName }}
                 | <a href="{{ path('app_logout') }}">Se déconnecter</a>
             {% else %}

@@ -3,10 +3,23 @@
 {% block title %}Commande {{ order.reference }}{% endblock %}
 
 {% block body %}
+    <p><a href="{{ path('order_index') }}">← Mes commandes</a></p>
+
     <h1>Commande {{ order.reference }}</h1>
 
     <p>Passée le {{ order.createdAt|date('d/m/Y à H:i') }}</p>
     <p>Statut : <strong>{{ order.status.label }}</strong></p>
+
+    {% if order.paidAt %}
+        <p>Payée le {{ order.paidAt|date('d/m/Y à H:i') }}</p>
+    {% endif %}
+
+    {% if order.canBePaid %}
+        <form method="post" action="{{ path('order_pay', {reference: order.reference}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('pay-order') }}">
+            <button type="submit">Payer la commande</button>
+        </form>
+    {% endif %}
 
     <table>
         <thead>

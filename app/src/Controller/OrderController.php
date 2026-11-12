@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Order;
 use App\Entity\User;
 use App\Exception\InsufficientStockException;
+use App\Exception\PaymentFailedException;
 use App\Form\ShippingAddressType;
 use App\Model\ShippingAddress;
 use App\Repository\OrderRepository;
 use App\Service\CartService;
 use App\Service\OrderService;
+use App\Service\PaymentService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -24,6 +28,7 @@ final class OrderController extends AbstractController
     public function __construct(
         private readonly CartService $cartService,
         private readonly OrderService $orderService,
+        private readonly OrderRepository $orderRepository,
     ) {
     }
 
@@ -65,18 +70,52 @@ final class OrderController extends AbstractController
         ]);
     }
 
-    #[Route('/mes-commandes/{reference}', name: 'order_show', methods: ['GET'])]
-    public function show(string $reference, #[CurrentUser] User $user, OrderRepository $orderRepository): Response
+    #[Route('/mes-commandes', name: 'order_index', methods: ['GET'])]
+    public function index(#[CurrentUser] User $user): Response
     {
-        // On cherche la commande ET son propriétaire : impossible d'afficher la commande d'un autre client
-        $order = $orderRepository->findOneBy(['reference' => $reference, 'customer' => $user]);
+        return $this->render('order/index.html.twig', [
+            'orders' => $this->orderRepository->findBy(['customer' => $user], ['createdAt' => 'DESC']),
+        ]);
+    }
+
+    #[Route('/mes-commandes/{reference}', name: 'order_show', methods: ['GET'])]
+    public function show(string $reference, #[CurrentUser] User $user): Response
+    {
+        return $this->render('order/show.html.twig', [
+            'order' => $this->findCustomerOrder($reference, $user),
+        ]);
+    }
+
+    #[Route('/mes-commandes/{reference}/payer', name: 'order_pay', methods: ['POST'])]
+    public function pay(string $reference, #[CurrentUser] User $user, Request $request, PaymentService $paymentService): Response
+    {
+        if (!$this->isCsrfTokenValid('pay-order', $request->getPayload()->getString('_token'))) {
+            throw new AccessDeniedHttpException('Jeton CSRF invalide.');
+        }
+
+        $order = $this->findCustomerOrder($reference, $user);
+
+        try {
+            $paymentService->pay($order);
+            $this->addFlash('success', 'Merci ! Votre paiement a bien été accepté.');
+        } catch (PaymentFailedException|\DomainException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+        }
+
+        return $this->redirectToRoute('order_show', ['reference' => $reference]);
+    }
+
+    /**
+     * Ne renvoie que les commandes du client connecté (protection contre l'IDOR).
+     */
+    private function findCustomerOrder(string $reference, User $user): Order
+    {
+        $order = $this->orderRepository->findOneBy(['reference' => $reference, 'customer' => $user]);
 
         if ($order === null) {
             throw $this->createNotFoundException('Commande introuvable.');
         }
 
-        return $this->render('order/show.html.twig', [
-            'order' => $order,
-        ]);
+        return $order;
     }
 }

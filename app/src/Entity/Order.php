@@ -91,13 +91,6 @@ class Order
         return $this->status;
     }
 
-    public function setStatus(OrderStatus $status): static
-    {
-        $this->status = $status;
-
-        return $this;
-    }
-
     public function getTotalAmount(): ?int
     {
         return $this->totalAmount;
@@ -168,13 +161,6 @@ class Order
         return $this->paidAt;
     }
 
-    public function setPaidAt(?\DateTimeImmutable $paidAt): static
-    {
-        $this->paidAt = $paidAt;
-
-        return $this;
-    }
-
     public function getCustomer(): ?User
     {
         return $this->customer;
@@ -218,5 +204,20 @@ class Order
             static fn (OrderItem $item): int => $item->getSubtotal(),
             $this->items->toArray(),
         ));
+    }
+
+    public function canBePaid(): bool
+    {
+        return $this->status === OrderStatus::Pending;
+    }
+
+    public function markAsPaid(\DateTimeImmutable $paidAt): void
+    {
+        if (!$this->canBePaid()) {
+            throw new \DomainException('Cette commande ne peut plus être payée.');
+        }
+
+        $this->status = OrderStatus::Paid;
+        $this->paidAt = $paidAt;
     }
 }
