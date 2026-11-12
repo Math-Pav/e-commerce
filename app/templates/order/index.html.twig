@@ -3,30 +3,35 @@
 {% block title %}Mes commandes{% endblock %}
 
 {% block body %}
-    <h1>Mes commandes</h1>
+    <h1 class="page-title">Mes commandes</h1>
 
     {% if orders is empty %}
-        <p>Vous n'avez pas encore passé de commande.</p>
+        <div class="empty-state">
+            <p>Vous n'avez pas encore passé de commande.</p>
+            <a href="{{ path('product_index') }}" class="btn btn--primary">Découvrir le catalogue</a>
+        </div>
     {% else %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Référence</th>
-                    <th>Date</th>
-                    <th>Statut</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for order in orders %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
                     <tr>
-                        <td><a href="{{ path('order_show', {reference: order.reference}) }}">{{ order.reference }}</a></td>
-                        <td>{{ order.createdAt|date('d/m/Y') }}</td>
-                        <td>{{ order.status.label }}</td>
-                        <td>{{ order.totalAmount|price }}</td>
+                        <th scope="col">Référence</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Statut</th>
+                        <th scope="col" class="num">Total</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        <tr>
+                            <td><a href="{{ path('order_show', {reference: order.reference}) }}">{{ order.reference }}</a></td>
+                            <td>{{ order.createdAt|date('d/m/Y') }}</td>
+                            <td>{% include 'order/_status_badge.html.twig' with {status: order.status} %}</td>
+                            <td class="num">{{ order.totalAmount|price }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% endif %}
 {% endblock %}

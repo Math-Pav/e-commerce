@@ -38,6 +38,7 @@ final class RegistrationFormType extends AbstractType
                 'mapped' => false,
                 'first_options' => [
                     'label' => 'Mot de passe',
+                    'help' => 'Au moins 8 caractères.',
                     'attr' => ['autocomplete' => 'new-password'],
                 ],
                 'second_options' => [

@@ -28,8 +28,8 @@ final class CartControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/panier');
         $client->followRedirect();
-        self::assertSelectorTextContains('table', 'Mug noir mat');
-        self::assertSelectorTextContains('body', 'Total : 29,80 €');
+        self::assertSelectorTextContains('.cart-lines', 'Mug noir mat');
+        self::assertSelectorTextContains('.summary-total', '29,80 €');
     }
 
     public function testCannotAddMoreThanStock(): void

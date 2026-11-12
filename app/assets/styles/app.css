@@ -337,7 +337,10 @@ svg { flex: none; }
 /* Formulaires : champs écrits à la main (.field) ou générés par Symfony (.form) */
 .form { display: flex; flex-direction: column; gap: 20px; }
 .form div, .field { display: flex; flex-direction: column; gap: 8px; }
-.form div:has(> div) { gap: 20px; }
+.form div:has(> div:not(.help-text)) { gap: 20px; }
+.form .form__inline { flex-direction: row; flex-wrap: wrap; gap: 16px; }
+.form .form__inline > div { flex: 1 1 160px; min-width: 0; }
+.form .help-text { font-size: 13px; color: var(--color-muted); }
 .form label, .field label { font-size: 15px; font-weight: 600; }
 .input, .form input:not([type="hidden"]) {
     width: 100%;

@@ -3,21 +3,59 @@
 {% block title %}Finaliser ma commande{% endblock %}
 
 {% block body %}
-    <h1>Finaliser ma commande</h1>
+    <ol class="steps" aria-label="Étapes de la commande">
+        <li class="steps__item steps__item--done">
+            <span class="steps__number">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
+            </span>
+            Panier
+        </li>
+        <li class="steps__separator" aria-hidden="true"></li>
+        <li class="steps__item" aria-current="step">
+            <span class="steps__number">2</span>
+            Livraison
+        </li>
+        <li class="steps__separator" aria-hidden="true"></li>
+        <li class="steps__item">
+            <span class="steps__number">3</span>
+            Paiement
+        </li>
+    </ol>
 
-    <h2>Récapitulatif</h2>
-    <ul>
-        {% for line in cart.lines %}
-            <li>{{ line.quantity }} × {{ line.product.name }} : {{ line.subtotal|price }}</li>
-        {% endfor %}
-    </ul>
-    <p><strong>Total : {{ cart.total|price }}</strong></p>
+    <h1 class="page-title">Finaliser ma commande</h1>
 
-    <h2>Adresse de livraison</h2>
-    {{ form_start(checkoutForm) }}
-        {{ form_widget(checkoutForm) }}
-        <button type="submit">Valider la commande</button>
-    {{ form_end(checkoutForm) }}
+    <div class="layout-split">
+        <div class="layout-split__main">
+            <h2 class="section-title">Adresse de livraison</h2>
 
-    <p><a href="{{ path('cart_show') }}">← Modifier mon panier</a></p>
+            {{ form_start(checkoutForm, {attr: {class: 'form'}}) }}
+                {{ form_row(checkoutForm.fullName) }}
+                {{ form_row(checkoutForm.address) }}
+                <div class="form__inline">
+                    {{ form_row(checkoutForm.postalCode) }}
+                    {{ form_row(checkoutForm.city) }}
+                </div>
+                <button type="submit" class="btn btn--primary btn--lg btn--block">Valider la commande</button>
+            {{ form_end(checkoutForm) }}
+
+            <a href="{{ path('cart_show') }}" class="back-link">← Modifier mon panier</a>
+        </div>
+
+        <aside class="layout-split__aside panel" aria-label="Récapitulatif">
+            <h2 class="section-title">Récapitulatif</h2>
+            <ul class="summary-list">
+                {% for line in cart.lines %}
+                    <li class="summary-row">
+                        <span class="summary-row__label">{{ line.quantity }} × {{ line.product.name }}</span>
+                        <span>{{ line.subtotal|price }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+            <div class="summary-total">
+                <span class="summary-total__label">Total</span>
+                <span class="summary-total__amount">{{ cart.total|price }}</span>
+            </div>
+            <p class="note">Le paiement se fait à l'étape suivante, une fois la commande validée.</p>
+        </aside>
+    </div>
 {% endblock %}

@@ -43,7 +43,7 @@ final class OrderControllerTest extends WebTestCase
         $client->followRedirect();
         self::assertSelectorTextContains('body', 'En attente de paiement');
         self::assertSelectorTextContains('table', 'Mug noir mat');
-        self::assertSelectorTextContains('body', 'Total : 29,80 €');
+        self::assertSelectorTextContains('tfoot', '29,80 €');
 
         $client->request('GET', '/panier');
         self::assertSelectorTextContains('body', 'Votre panier est vide.');

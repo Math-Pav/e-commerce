@@ -18,21 +18,26 @@ final class ShippingAddressType extends AbstractType
             ->add('fullName', TextType::class, [
                 'label' => 'Nom du destinataire',
                 'empty_data' => '',
+                'attr' => ['autocomplete' => 'name'],
             ])
             ->add('address', TextType::class, [
                 'label' => 'Adresse',
                 'empty_data' => '',
+                'attr' => ['autocomplete' => 'street-address'],
             ])
             ->add('postalCode', TextType::class, [
                 'label' => 'Code postal',
                 'empty_data' => '',
+                'help' => '5 chiffres, livraison en France uniquement.',
+                'attr' => ['autocomplete' => 'postal-code', 'inputmode' => 'numeric'],
             ])
             ->add('city', TextType::class, [
                 'label' => 'Ville',
                 'empty_data' => '',
+                'attr' => ['autocomplete' => 'address-level2'],
             ]);
     }
-
+    
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([

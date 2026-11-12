@@ -3,51 +3,75 @@
 {% block title %}Commande {{ order.reference }}{% endblock %}
 
 {% block body %}
-    <p><a href="{{ path('order_index') }}">← Mes commandes</a></p>
+    <a href="{{ path('order_index') }}" class="back-link">← Mes commandes</a>
 
-    <h1>Commande {{ order.reference }}</h1>
-
-    <p>Passée le {{ order.createdAt|date('d/m/Y à H:i') }}</p>
-    <p>Statut : <strong>{{ order.status.label }}</strong></p>
-
-    {% if order.paidAt %}
-        <p>Payée le {{ order.paidAt|date('d/m/Y à H:i') }}</p>
-    {% endif %}
+    <div class="order-header">
+        <div>
+            <h1 class="page-title">Commande {{ order.reference }}</h1>
+            <p class="order-meta">
+                Passée le {{ order.createdAt|date('d/m/Y à H:i') }}
+                {% if order.paidAt %} · payée le {{ order.paidAt|date('d/m/Y à H:i') }}{% endif %}
+            </p>
+        </div>
+        {% include 'order/_status_badge.html.twig' with {status: order.status} %}
+    </div>
 
     {% if order.canBePaid %}
-        <form method="post" action="{{ path('order_pay', {reference: order.reference}) }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('pay-order') }}">
-            <button type="submit">Payer la commande</button>
-        </form>
+        <div class="callout">
+            <div>
+                <p class="callout__title">Il ne reste plus qu'à régler votre commande</p>
+                <p class="callout__text">Vos articles sont réservés en attendant le paiement.</p>
+            </div>
+            <form method="post" action="{{ path('order_pay', {reference: order.reference}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('pay-order') }}">
+                <button type="submit" class="btn btn--primary btn--lg">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                    Payer la commande · {{ order.totalAmount|price }}
+                </button>
+            </form>
+        </div>
     {% endif %}
 
-    <table>
-        <thead>
-            <tr>
-                <th>Produit</th>
-                <th>Prix unitaire</th>
-                <th>Quantité</th>
-                <th>Sous-total</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in order.items %}
-                <tr>
-                    <td>{{ item.productName }}</td>
-                    <td>{{ item.unitPrice|price }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.subtotal|price }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="layout-split">
+        <section class="layout-split__main" aria-labelledby="items-title">
+            <h2 id="items-title" class="section-title">Articles</h2>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Produit</th>
+                            <th scope="col" class="num">Prix unitaire</th>
+                            <th scope="col" class="num">Quantité</th>
+                            <th scope="col" class="num">Sous-total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items %}
+                            <tr>
+                                <td>{{ item.productName }}</td>
+                                <td class="num">{{ item.unitPrice|price }}</td>
+                                <td class="num">{{ item.quantity }}</td>
+                                <td class="num">{{ item.subtotal|price }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th scope="row" colspan="3" class="num">Total</th>
+                            <td class="num price">{{ order.totalAmount|price }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
 
-    <p><strong>Total : {{ order.totalAmount|price }}</strong></p>
-
-    <h2>Livraison</h2>
-    <p>
-        {{ order.shippingFullName }}<br>
-        {{ order.shippingAddress }}<br>
-        {{ order.shippingPostalCode }} {{ order.shippingCity }}
-    </p>
+        <aside class="layout-split__aside panel" aria-labelledby="shipping-title">
+            <h2 id="shipping-title" class="section-title">Livraison</h2>
+            <address class="address">
+                {{ order.shippingFullName }}<br>
+                {{ order.shippingAddress }}<br>
+                {{ order.shippingPostalCode }} {{ order.shippingCity }}
+            </address>
+        </aside>
+    </div>
 {% endblock %}

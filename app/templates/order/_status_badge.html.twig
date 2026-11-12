@@ -1,0 +1,9 @@
+{# Badge de statut d'une commande : la couleur dépend du statut #}
+{% set variants = {
+    pending: 'warning',
+    paid: 'success',
+    shipped: 'success',
+    delivered: 'success',
+    cancelled: 'danger',
+} %}
+<span class="badge badge--{{ variants[status.value] }}"><span class="visually-hidden">Statut : </span>{{ status.label }}</span>

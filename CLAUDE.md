@@ -19,6 +19,7 @@ Instructions permanentes pour Claude sur ce projet. À lire avant toute interven
 - **PHPUnit** pour les tests
 - **Docker Compose** pour l'environnement local (php, nginx, database, adminer)
 - **Git** pour le versionnement
+- **AssetMapper** pour les ressources front ; CSS écrit à la main, sans framework, dans `assets/styles/app.css`
 
 ## Organisation du dépôt
 
@@ -73,6 +74,7 @@ Principes :
 - Typage strict : `declare(strict_types=1);`, types sur tous les paramètres et retours.
 - Méthodes courtes, noms explicites, pas de code mort ni de commentaires évidents.
 - Messages de commit courts et explicites, au présent (ex. `Ajoute l'entité Product`).
+- CSS : jetons de design en variables CSS (`:root`), classes nommées selon BEM (`.bloc__element--variante`).
 
 ## Sécurité
 

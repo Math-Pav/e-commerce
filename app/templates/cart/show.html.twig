@@ -3,41 +3,52 @@
 {% block title %}Mon panier{% endblock %}
 
 {% block body %}
-    <h1>Mon panier</h1>
+    <h1 class="page-title">Mon panier</h1>
 
     {% if cart.empty %}
-        <p>Votre panier est vide.</p>
-        <p><a href="{{ path('product_index') }}">Découvrir le catalogue</a></p>
+        <div class="empty-state">
+            <p>Votre panier est vide.</p>
+            <a href="{{ path('product_index') }}" class="btn btn--primary">Découvrir le catalogue</a>
+        </div>
     {% else %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Produit</th>
-                    <th>Prix unitaire</th>
-                    <th>Quantité</th>
-                    <th>Sous-total</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for line in cart.lines %}
-                    <tr>
-                        <td><a href="{{ path('product_show', {slug: line.product.slug}) }}">{{ line.product.name }}</a></td>
-                        <td>{{ line.product.price|price }}</td>
-                        <td>{{ line.quantity }}</td>
-                        <td>{{ line.subtotal|price }}</td>
-                        <td>
+        <div class="layout-split">
+            <div class="layout-split__main">
+                <ul class="cart-lines">
+                    {% for line in cart.lines %}
+                        <li class="cart-line">
+                            {% include 'product/_visual.html.twig' with {category: line.product.category} %}
+                            <div class="cart-line__info">
+                                <a href="{{ path('product_show', {slug: line.product.slug}) }}" class="cart-line__name">{{ line.product.name }}</a>
+                                <span class="cart-line__unit">{{ line.product.price|price }} l'unité</span>
+                            </div>
+                            <span class="cart-line__quantity">Quantité : <strong>{{ line.quantity }}</strong></span>
+                            <span class="cart-line__subtotal">{{ line.subtotal|price }}</span>
                             <form method="post" action="{{ path('cart_remove', {id: line.product.id}) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
-                                <button type="submit">Retirer</button>
+                                <button type="submit" class="btn btn--secondary">Retirer<span class="visually-hidden"> {{ line.product.name }} du panier</span></button>
                             </form>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
 
-        <p><strong>Total : {{ cart.total|price }}</strong></p>
-        <p><a href="{{ path('order_checkout') }}">Passer commande</a></p>
+            <aside class="layout-split__aside panel" aria-label="Récapitulatif">
+                <h2 class="section-title">Récapitulatif</h2>
+                <ul class="summary-list">
+                    {% for line in cart.lines %}
+                        <li class="summary-row">
+                            <span class="summary-row__label">{{ line.quantity }} × {{ line.product.name }}</span>
+                            <span>{{ line.subtotal|price }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="summary-total">
+                    <span class="summary-total__label">Total</span>
+                    <span class="summary-total__amount">{{ cart.total|price }}</span>
+                </div>
+                <a href="{{ path('order_checkout') }}" class="btn btn--primary btn--block">Passer commande</a>
+                <a href="{{ path('product_index') }}" class="back-link">Continuer mes achats</a>
+            </aside>
+        </div>
     {% endif %}
 {% endblock %}
