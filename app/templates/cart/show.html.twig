@@ -38,5 +38,6 @@
         </table>
 
         <p><strong>Total : {{ cart.total|price }}</strong></p>
+        <p><a href="{{ path('order_checkout') }}">Passer commande</a></p>
     {% endif %}
 {% endblock %}

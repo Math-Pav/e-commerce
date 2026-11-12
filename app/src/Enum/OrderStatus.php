@@ -14,4 +14,15 @@ enum OrderStatus: string
     case Shipped = 'shipped';
     case Delivered = 'delivered';
     case Cancelled = 'cancelled';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Pending => 'En attente de paiement',
+            self::Paid => 'Payée',
+            self::Shipped => 'Expédiée',
+            self::Delivered => 'Livrée',
+            self::Cancelled => 'Annulée',
+        };
+    }
 }

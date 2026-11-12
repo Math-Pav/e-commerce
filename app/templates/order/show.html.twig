@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Commande {{ order.reference }}{% endblock %}
+
+{% block body %}
+    <h1>Commande {{ order.reference }}</h1>
+
+    <p>Passée le {{ order.createdAt|date('d/m/Y à H:i') }}</p>
+    <p>Statut : <strong>{{ order.status.label }}</strong></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Prix unitaire</th>
+                <th>Quantité</th>
+                <th>Sous-total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items %}
+                <tr>
+                    <td>{{ item.productName }}</td>
+                    <td>{{ item.unitPrice|price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.subtotal|price }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <p><strong>Total : {{ order.totalAmount|price }}</strong></p>
+
+    <h2>Livraison</h2>
+    <p>
+        {{ order.shippingFullName }}<br>
+        {{ order.shippingAddress }}<br>
+        {{ order.shippingPostalCode }} {{ order.shippingCity }}
+    </p>
+{% endblock %}
