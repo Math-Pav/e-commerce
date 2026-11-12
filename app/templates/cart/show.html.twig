@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon panier{% endblock %}
+
+{% block body %}
+    <h1>Mon panier</h1>
+
+    {% if cart.empty %}
+        <p>Votre panier est vide.</p>
+        <p><a href="{{ path('product_index') }}">Découvrir le catalogue</a></p>
+    {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Produit</th>
+                    <th>Prix unitaire</th>
+                    <th>Quantité</th>
+                    <th>Sous-total</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in cart.lines %}
+                    <tr>
+                        <td><a href="{{ path('product_show', {slug: line.product.slug}) }}">{{ line.product.name }}</a></td>
+                        <td>{{ line.product.price|price }}</td>
+                        <td>{{ line.quantity }}</td>
+                        <td>{{ line.subtotal|price }}</td>
+                        <td>
+                            <form method="post" action="{{ path('cart_remove', {id: line.product.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                                <button type="submit">Retirer</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p><strong>Total : {{ cart.total|price }}</strong></p>
+    {% endif %}
+{% endblock %}

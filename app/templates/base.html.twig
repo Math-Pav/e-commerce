@@ -9,6 +9,7 @@
     <body>
         <nav>
             <a href="{{ path('product_index') }}">Catalogue</a>
+            | <a href="{{ path('cart_show') }}">Panier</a>
             {% if app.user %}
                 | Connecté en tant que {{ app.user.firstName }}
                 | <a href="{{ path('app_logout') }}">Se déconnecter</a>
@@ -18,8 +19,10 @@
             {% endif %}
         </nav>
 
-        {% for message in app.flashes('success') %}
-            <p><strong>{{ message }}</strong></p>
+        {% for type, messages in app.flashes(['success', 'error']) %}
+            {% for message in messages %}
+                <p class="flash flash-{{ type }}"><strong>{{ message }}</strong></p>
+            {% endfor %}
         {% endfor %}
 
         {% block body %}{% endblock %}
