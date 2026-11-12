@@ -137,4 +137,12 @@ final class CartServiceTest extends TestCase
 
         return $product;
     }
+
+    public function testItemCountSumsQuantities(): void
+    {
+        $this->cartService->add($this->mug, 2);
+        $this->cartService->add($this->pen, 3);
+
+        self::assertSame(5, $this->cartService->getItemCount());
+    }
 }

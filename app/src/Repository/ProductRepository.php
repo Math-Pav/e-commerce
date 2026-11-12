@@ -8,6 +8,7 @@ use App\Entity\Product;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\LockMode;
+use App\Entity\Category;
 
 /**
  * @extends ServiceEntityRepository<Product>
@@ -19,19 +20,25 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
-        /**
+     /**
      * @return list<Product>
      */
-    public function findActive(): array
+    public function findActive(?Category $category = null): array
     {
-        return $this->createQueryBuilder('p')
+        $queryBuilder = $this->createQueryBuilder('p')
             ->addSelect('c')
             ->join('p.category', 'c')
             ->where('p.isActive = :active')
             ->setParameter('active', true)
-            ->orderBy('p.name', 'ASC')
-            ->getQuery()
-            ->getResult();
+            ->orderBy('p.name', 'ASC');
+
+        if ($category !== null) {
+            $queryBuilder
+                ->andWhere('p.category = :category')
+                ->setParameter('category', $category);
+        }
+
+        return $queryBuilder->getQuery()->getResult();
     }
 
     /**

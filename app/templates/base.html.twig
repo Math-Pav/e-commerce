@@ -2,30 +2,70 @@
 <html lang="fr">
     <head>
         <meta charset="UTF-8">
-        <title>{% block title %}Boutique{% endblock %}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{% block title %}Boutique{% endblock %} · Atelier Papier</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
         {% block stylesheets %}{% endblock %}
-        {% block javascripts %}{% endblock %}
+        {% block javascripts %}
+            {% block importmap %}{{ importmap('app') }}{% endblock %}
+        {% endblock %}
     </head>
     <body>
-        <nav>
-            <a href="{{ path('product_index') }}">Catalogue</a>
-            | <a href="{{ path('cart_show') }}">Panier</a>
-            {% if app.user %}
-                | <a href="{{ path('order_index') }}">Mes commandes</a>
-                | Connecté en tant que {{ app.user.firstName }}
-                | <a href="{{ path('app_logout') }}">Se déconnecter</a>
-            {% else %}
-                | <a href="{{ path('app_login') }}">Se connecter</a>
-                | <a href="{{ path('app_register') }}">Créer un compte</a>
-            {% endif %}
-        </nav>
+        {% set route = app.request.attributes.get('_route') %}
+        {% set cart_count = cart_item_count() %}
 
-        {% for type, messages in app.flashes(['success', 'error']) %}
-            {% for message in messages %}
-                <p class="flash flash-{{ type }}"><strong>{{ message }}</strong></p>
-            {% endfor %}
-        {% endfor %}
+        <div class="site">
+            <header class="site-header">
+                <div class="container site-header__inner">
+                    <a href="{{ path('home') }}" class="logo">
+                        <span class="logo__mark" aria-hidden="true">A</span>
+                        <span class="logo__name">Atelier Papier</span>
+                    </a>
 
-        {% block body %}{% endblock %}
+                    <nav class="site-nav" aria-label="Navigation principale">
+                        <a href="{{ path('product_index') }}" class="site-nav__link" aria-current="{{ route starts with 'product' or route == 'home' ? 'page' : 'false' }}">Catalogue</a>
+                        {% if app.user %}
+                            <a href="{{ path('order_index') }}" class="site-nav__link" aria-current="{{ route starts with 'order' ? 'page' : 'false' }}">Mes commandes</a>
+                            <span class="site-nav__user">
+                                <span class="avatar" aria-hidden="true">{{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}</span>
+                                <span class="visually-hidden">Connecté en tant que </span>{{ app.user.firstName }}
+                            </span>
+                            <a href="{{ path('app_logout') }}" class="site-nav__link">Se déconnecter</a>
+                        {% else %}
+                            <a href="{{ path('app_login') }}" class="site-nav__link" aria-current="{{ route == 'app_login' ? 'page' : 'false' }}">Se connecter</a>
+                            <a href="{{ path('app_register') }}" class="site-nav__link" aria-current="{{ route == 'app_register' ? 'page' : 'false' }}">Créer un compte</a>
+                        {% endif %}
+                        <a href="{{ path('cart_show') }}" class="cart-link" aria-current="{{ route == 'cart_show' ? 'page' : 'false' }}">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+                            <span>Panier</span>
+                            {% if cart_count > 0 %}
+                                <span class="cart-link__count">{{ cart_count }}<span class="visually-hidden"> articles</span></span>
+                            {% endif %}
+                        </a>
+                    </nav>
+                </div>
+            </header>
+
+            <main class="site-main">
+                <div class="container">
+                    {% for type, messages in app.flashes(['success', 'error']) %}
+                        {% for message in messages %}
+                            <div class="flash flash--{{ type }}" role="{{ type == 'error' ? 'alert' : 'status' }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endfor %}
+
+                    {% block body %}{% endblock %}
+                </div>
+            </main>
+
+            <footer class="site-footer">
+                <div class="container site-footer__inner">
+                    <span>© {{ 'now'|date('Y') }} Atelier Papier</span>
+                    <span>Paiement simulé · Livraison en France</span>
+                </div>
+            </footer>
+        </div>
     </body>
 </html>

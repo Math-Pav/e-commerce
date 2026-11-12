@@ -3,19 +3,41 @@
 {% block title %}Catalogue{% endblock %}
 
 {% block body %}
-    <h1>Catalogue</h1>
+    <div class="page-header">
+        <p class="eyebrow">Papeterie et objets du quotidien</p>
+        <h1 class="page-title page-title--xl">Le catalogue</h1>
+        <p class="lead">Mugs, carnets et stylos pour accompagner vos journées de travail.</p>
+    </div>
 
-    <ul>
-        {% for product in products %}
-            <li>
-                <a href="{{ path('product_show', {slug: product.slug}) }}"><strong>{{ product.name }}</strong></a>
-                ({{ product.category.name }}) : {{ product.price|price }}
-                {% if not product.inStock %}
-                    <em>Rupture de stock</em>
-                {% endif %}
-            </li>
-        {% else %}
-            <li>Aucun produit pour le moment.</li>
-        {% endfor %}
-    </ul>
+    <div class="toolbar">
+        <nav class="chips" aria-label="Filtrer par catégorie">
+            <a href="{{ path('product_index') }}" class="chip" aria-current="{{ currentCategory is null ? 'page' : 'false' }}">Tous les produits</a>
+            {% for category in categories %}
+                <a href="{{ path('product_index', {categorie: category.slug}) }}" class="chip" aria-current="{{ currentCategory and currentCategory.id == category.id ? 'page' : 'false' }}">{{ category.name }}</a>
+            {% endfor %}
+        </nav>
+        <p class="toolbar__count">{{ products|length }} produit{{ products|length > 1 ? 's' }}</p>
+    </div>
+
+    {% if products is empty %}
+        <p class="empty-state">Aucun produit pour le moment.</p>
+    {% else %}
+        <ul class="product-grid">
+            {% for product in products %}
+                <li>
+                    <a href="{{ path('product_show', {slug: product.slug}) }}" class="product-card">
+                        <div class="product-card__visual">
+                            {% include 'product/_visual.html.twig' with {category: product.category} %}
+                            {% if not product.inStock %}
+                                <span class="badge badge--danger product-card__badge">Rupture de stock</span>
+                            {% endif %}
+                        </div>
+                        <span class="product-card__category">{{ product.category.name }}</span>
+                        <span class="product-card__name">{{ product.name }}</span>
+                        <span class="product-card__price">{{ product.price|price }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 {% endblock %}

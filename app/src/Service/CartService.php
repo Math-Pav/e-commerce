@@ -56,6 +56,11 @@ final class CartService
         $this->requestStack->getSession()->remove(self::SESSION_KEY);
     }
 
+    public function getItemCount(): int
+    {
+        return array_sum($this->getQuantities());
+    }
+
     public function getCart(): Cart
     {
         $quantities = $this->getQuantities();

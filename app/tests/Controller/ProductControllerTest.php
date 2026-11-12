@@ -16,9 +16,30 @@ final class ProductControllerTest extends WebTestCase
         $client->request('GET', '/produits');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Catalogue');
+        self::assertSelectorTextContains('h1', 'Le catalogue');
         self::assertAnySelectorTextContains('li', 'Mug noir mat');
         self::assertStringNotContainsString('Agenda 2026', (string) $client->getResponse()->getContent());
+    }
+
+    public function testHomePageShowsCatalogue(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Le catalogue');
+    }
+
+    public function testCatalogueCanBeFilteredByCategory(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/produits?categorie=carnets');
+
+        self::assertResponseIsSuccessful();
+        self::assertAnySelectorTextContains('li', 'Carnet A5 ligné');
+        self::assertStringNotContainsString('Mug noir mat', (string) $client->getResponse()->getContent());
     }
 
     public function testProductPageDisplaysProduct(): void
