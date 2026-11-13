@@ -81,7 +81,24 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
+        ],
+        "stan": [
+            "@php bin/console cache:warmup --env=dev --quiet",
+            "phpstan analyse"
+        ],
+        "cs": "php-cs-fixer fix --dry-run --diff",
+        "cs-fix": "php-cs-fixer fix",
+        "check": [
+            "@stan",
+            "@cs",
+            "phpunit"
         ]
+    },
+    "scripts-descriptions": {
+        "stan": "Analyse statique du code avec PHPStan (src/ et tests/)",
+        "cs": "Vérifie le formatage du code sans rien modifier",
+        "cs-fix": "Corrige le formatage du code",
+        "check": "Enchaîne PHPStan, la vérification du formatage et PHPUnit"
     },
     "conflict": {
         "symfony/symfony": "*"
