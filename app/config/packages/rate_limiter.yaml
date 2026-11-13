@@ -1,0 +1,9 @@
+framework:
+    rate_limiter:
+        # API publique du catalogue : 60 requêtes par minute et par adresse IP (docs/adr/0020-api-catalogue.md).
+        # Fenêtre glissante : pas de rafale de 120 requêtes à cheval sur deux minutes, comme avec une fenêtre fixe.
+        # Autowiring : RateLimiterFactoryInterface $apiLimiter
+        api:
+            policy: sliding_window
+            limit: 60
+            interval: '1 minute'
