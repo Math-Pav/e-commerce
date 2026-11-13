@@ -19,7 +19,6 @@ Instructions permanentes pour Claude sur ce projet. À lire avant toute interven
 - **PHPUnit** pour les tests
 - **Docker Compose** pour l'environnement local (php, nginx, database, adminer)
 - **Git** pour le versionnement
-- **AssetMapper** pour les ressources front ; CSS écrit à la main, sans framework, dans `assets/styles/app.css`
 
 ## Organisation du dépôt
 
@@ -41,15 +40,12 @@ Hors périmètre pour l'instant (ne pas implémenter sans demande explicite) : a
 
 Structure Symfony standard, organisée en couches :
 
-- `src/Controller/` : reçoit la requête HTTP, appelle un service, renvoie une réponse. **Aucune logique métier.**
+- `src/Controller/` : reçoit la requête HTTP, appelle un service (ou directement un repository pour une simple lecture), renvoie une réponse. **Aucune logique métier.**
 - `src/Service/` : logique métier (panier, commande, paiement).
 - `src/Repository/` : requêtes en base. Aucune requête Doctrine en dehors des repositories.
 - `src/Entity/` : entités Doctrine (données + règles simples propres à l'entité).
 - `src/Form/` : formulaires Symfony et leur validation.
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
-- `src/Model/` : objets métier non enregistrés en base (ex. `Cart`, `CartLine`).
-- `src/Exception/` : exceptions métier (ex. `InsufficientStockException`).
-- `src/Payment/` : fournisseurs de paiement, derrière `PaymentProviderInterface` (aujourd'hui : `FakePaymentProvider`).
 
 Principes :
 
@@ -74,7 +70,6 @@ Principes :
 - Typage strict : `declare(strict_types=1);`, types sur tous les paramètres et retours.
 - Méthodes courtes, noms explicites, pas de code mort ni de commentaires évidents.
 - Messages de commit courts et explicites, au présent (ex. `Ajoute l'entité Product`).
-- CSS : jetons de design en variables CSS (`:root`), classes nommées selon BEM (`.bloc__element--variante`).
 
 ## Sécurité
 
@@ -109,3 +104,9 @@ Principes :
 - Signaler les erreurs de conception et contester mes choix avec des arguments.
 - Choisir la solution la plus simple qui répond au besoin.
 - Mettre à jour ce fichier et `docs/` quand une décision change.
+
+## Travail avec l'agent autonome
+
+- L'agent `symfony-dev` (`.claude/agents/symfony-dev.md`) peut développer une fonctionnalité seul.
+- Il travaille toujours sur une branche `feature/<nom>`, jamais sur `master`, et ne commite que si tous les tests passent.
+- Il ne fusionne pas et ne pousse pas : je relis la branche (ou la relis avec Claude), je réponds aux questions de compréhension, puis je fusionne moi-même.
