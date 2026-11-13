@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\Product;
 use App\Exception\InsufficientStockException;
+use App\Exception\InvalidPromoCodeException;
 use App\Service\CartService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -65,6 +66,32 @@ final class CartController extends AbstractController
 
         $this->cartService->remove($product);
         $this->addFlash('success', sprintf('« %s » a été retiré du panier.', $product->getName()));
+
+        return $this->redirectToRoute('cart_show');
+    }
+
+    #[Route('/code-promo', name: 'cart_promo_apply', methods: ['POST'])]
+    public function applyPromoCode(Request $request): Response
+    {
+        $this->denyUnlessCsrfTokenValid($request);
+
+        try {
+            $promoCode = $this->cartService->applyPromoCode($request->getPayload()->getString('code'));
+            $this->addFlash('success', sprintf('Le code promo « %s » a été appliqué.', $promoCode->getCode()));
+        } catch (InvalidPromoCodeException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+        }
+
+        return $this->redirectToRoute('cart_show');
+    }
+
+    #[Route('/code-promo/retirer', name: 'cart_promo_remove', methods: ['POST'])]
+    public function removePromoCode(Request $request): Response
+    {
+        $this->denyUnlessCsrfTokenValid($request);
+
+        $this->cartService->removePromoCode();
+        $this->addFlash('success', 'Le code promo a été retiré.');
 
         return $this->redirectToRoute('cart_show');
     }

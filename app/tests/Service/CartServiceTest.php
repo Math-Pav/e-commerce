@@ -7,7 +7,9 @@ namespace App\Tests\Service;
 use App\Entity\Product;
 use App\Exception\InsufficientStockException;
 use App\Repository\ProductRepository;
+use App\Repository\PromoCodeRepository;
 use App\Service\CartService;
+use App\Service\DiscountCalculator;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -44,7 +46,7 @@ final class CartServiceTest extends TestCase
             )),
         );
 
-        $this->cartService = new CartService($requestStack, $repository);
+        $this->cartService = new CartService($requestStack, $repository, $this->createStub(PromoCodeRepository::class), new DiscountCalculator());
     }
 
     public function testNewCartIsEmpty(): void
@@ -167,7 +169,7 @@ final class CartServiceTest extends TestCase
         $requestStack = new RequestStack();
         $requestStack->push($request);
 
-        self::assertSame(0, (new CartService($requestStack, $repository))->getItemCount());
+        self::assertSame(0, (new CartService($requestStack, $repository, $this->createStub(PromoCodeRepository::class), new DiscountCalculator()))->getItemCount());
     }
 
     public function testDeactivatedProductDisappearsFromCart(): void

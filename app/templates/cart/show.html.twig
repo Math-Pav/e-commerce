@@ -42,6 +42,20 @@
                         </li>
                     {% endfor %}
                 </ul>
+                {% include 'cart/_discount.html.twig' %}
+                {% if cart.promoCode %}
+                    <form method="post" action="{{ path('cart_promo_remove') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                        <button type="submit" class="btn btn--secondary btn--block">Retirer le code promo<span class="visually-hidden"> {{ cart.promoCode.code }}</span></button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{{ path('cart_promo_apply') }}" class="field">
+                        <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                        <label for="promo-code">Code promo</label>
+                        <input type="text" id="promo-code" name="code" maxlength="30" autocomplete="off" required class="input">
+                        <button type="submit" class="btn btn--secondary">Appliquer</button>
+                    </form>
+                {% endif %}
                 <div class="summary-total">
                     <span class="summary-total__label">Total</span>
                     <span class="summary-total__amount">{{ cart.total|price }}</span>

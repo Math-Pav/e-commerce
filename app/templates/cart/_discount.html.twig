@@ -1,0 +1,13 @@
+{# Sous-total et remise du code promo, si un code est appliqué. Paramètre : cart #}
+{% if cart.promoCode %}
+    <ul class="summary-list">
+        <li class="summary-row">
+            <span class="summary-row__label">Sous-total</span>
+            <span>{{ cart.subtotal|price }}</span>
+        </li>
+        <li class="summary-row">
+            <span class="summary-row__label">Remise ({{ cart.promoCode.code }})</span>
+            <span>− {{ cart.discount|price }}</span>
+        </li>
+    </ul>
+{% endif %}
