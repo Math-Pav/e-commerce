@@ -1,6 +1,6 @@
 # Modèle de données du MVP
 
-Dernière mise à jour : 2026-11-09
+Dernière mise à jour : 2026-11-13
 
 ## Diagramme
 
@@ -80,11 +80,11 @@ erDiagram
 | id | integer | clé primaire |
 | category_id | integer | clé étrangère → category, obligatoire |
 | name | string(150) | obligatoire |
-| slug | string(170) | obligatoire, unique |
+| slug | string(170) | obligatoire, unique, généré à partir du nom à la création puis figé (ADR 0004) |
 | description | text | facultatif |
 | price | integer | obligatoire, en centimes, ≥ 0 |
 | stock | integer | obligatoire, défaut 0, ≥ 0 |
-| is_active | boolean | obligatoire, défaut `true` |
+| is_active | boolean | obligatoire, défaut `true` ; `false` = masqué du catalogue sans être supprimé |
 | created_at | datetime_immutable | obligatoire |
 
 ### User (`user`)
