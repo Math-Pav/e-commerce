@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes jetons d'accès à l'API{% endblock %}
+
+{% block body %}
+    <div class="page-header">
+        <a href="{{ path('account_index') }}" class="back-link">← Mon compte</a>
+        <h1 class="page-title">Mes jetons d'accès à l'API</h1>
+        <p class="lead">Un jeton permet à une application (par exemple sur votre téléphone) de consulter vos commandes sans votre mot de passe. Il est valable {{ lifetimeDays }} jours ; vous pouvez en avoir {{ maxActiveTokens }} actifs au plus.</p>
+    </div>
+
+    {% if plainToken %}
+        <div class="callout" role="status">
+            <div>
+                <p class="callout__title">Votre nouveau jeton</p>
+                <p class="callout__text">Copiez-le maintenant : il ne sera plus jamais affiché. Ne le partagez avec personne.</p>
+            </div>
+            <div class="form">
+                <label for="new-api-token">Jeton d'accès</label>
+                <input type="text" id="new-api-token" class="input" value="{{ plainToken }}" readonly>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="layout-split">
+        <section class="layout-split__main" aria-labelledby="tokens-title">
+            <h2 id="tokens-title" class="section-title">Mes jetons</h2>
+
+            {% if apiTokens is empty %}
+                <p class="note">Vous n'avez aucun jeton.</p>
+            {% else %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Nom</th>
+                                <th scope="col">Début du jeton</th>
+                                <th scope="col">Créé le</th>
+                                <th scope="col">Dernière utilisation</th>
+                                <th scope="col">Expire le</th>
+                                <th scope="col"><span class="visually-hidden">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for apiToken in apiTokens %}
+                                <tr>
+                                    <td>{{ apiToken.name }}</td>
+                                    <td><code>{{ apiToken.tokenPrefix }}…</code></td>
+                                    <td>{{ apiToken.createdAt|date('d/m/Y') }}</td>
+                                    <td>{{ apiToken.lastUsedAt ? apiToken.lastUsedAt|date('d/m/Y H:i') : 'Jamais' }}</td>
+                                    <td>
+                                        {% if apiToken.expired %}
+                                            <span class="badge badge--danger">Expiré</span>
+                                        {% else %}
+                                            {{ apiToken.expiresAt|date('d/m/Y') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <form method="post" action="{{ path('account_api_token_revoke', {id: apiToken.id}) }}" class="table__actions">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('revoke-api-token') }}">
+                                            <button type="submit" class="btn btn--secondary">Révoquer<span class="visually-hidden"> le jeton « {{ apiToken.name }} »</span></button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="layout-split__aside panel" aria-labelledby="new-token-title">
+            <h2 id="new-token-title" class="section-title">Créer un jeton</h2>
+
+            {{ form_start(form, {attr: {class: 'form'}}) }}
+                {{ form_row(form.name) }}
+                <button type="submit" class="btn btn--primary btn--block">Créer le jeton</button>
+            {{ form_end(form) }}
+        </section>
+    </div>
+{% endblock %}

@@ -45,14 +45,14 @@ class ApiToken
     #[ORM\Column]
     private \DateTimeImmutable $expiresAt;
 
-    public function __construct(User $customer, string $name, string $tokenHash, string $tokenPrefix, \DateTimeImmutable $expiresAt)
+    public function __construct(User $customer, string $name, string $tokenHash, string $tokenPrefix, \DateTimeImmutable $expiresAt, \DateTimeImmutable $createdAt = new \DateTimeImmutable())
     {
         $this->customer = $customer;
         $this->name = $name;
         $this->tokenHash = $tokenHash;
         $this->tokenPrefix = $tokenPrefix;
         $this->expiresAt = $expiresAt;
-        $this->createdAt = new \DateTimeImmutable();
+        $this->createdAt = $createdAt;
     }
 
     public function getId(): ?int
