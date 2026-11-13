@@ -35,7 +35,7 @@ Génération :
 - Les adresses des fiches produit sont stables. Le formulaire d'édition affiche l'adresse pour que l'administrateur sache qu'elle ne change pas.
 - Un produit fortement renommé garde un slug qui ne lui ressemble plus. Si le besoin apparaît, on pourra ajouter l'option 3 sans casser l'existant.
 - La vérification d'unicité se fait avant l'insertion : deux créations simultanées du même nom pourraient obtenir le même slug. La contrainte unique en base empêche alors le doublon (la seconde création échoue). Le risque est négligeable avec un seul administrateur.
-- `symfony/string` est installé comme dépendance d'autres composants Symfony mais n'est pas déclaré dans `composer.json`. Il serait plus sûr de l'ajouter explicitement (`composer require symfony/string`), ce qui demande l'accord du développeur.
+- `symfony/string` (qui fournit le slugger) est déclaré explicitement dans `composer.json` : le code l'utilise directement, il ne doit pas dépendre du fait qu'un autre composant l'installe par transitivité.
 
 ## Produit désactivé
 
