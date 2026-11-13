@@ -10,6 +10,7 @@ use App\Repository\UserRepository;
 use App\Service\AccountService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class AccountServiceTest extends KernelTestCase
 {
@@ -57,6 +58,20 @@ final class AccountServiceTest extends KernelTestCase
         self::assertSame('69002', $saved->getPostalCode());
         self::assertSame('Lyon', $saved->getCity());
         self::assertNull($saved->getPhone());
+    }
+
+    public function testChangePasswordStoresAHash(): void
+    {
+        $user = $this->findCustomer();
+
+        $this->accountService->changePassword($user, 'nouveauMotDePasse1');
+
+        $this->entityManager->clear();
+        $saved = $this->findCustomer();
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        self::assertNotSame('nouveauMotDePasse1', $saved->getPassword());
+        self::assertTrue($hasher->isPasswordValid($saved, 'nouveauMotDePasse1'));
+        self::assertFalse($hasher->isPasswordValid($saved, 'password'));
     }
 
     private function findCustomer(): User

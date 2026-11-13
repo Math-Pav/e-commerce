@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Form\ChangePasswordType;
 use App\Form\ProfileType;
+use App\Model\ChangePasswordData;
 use App\Model\ProfileData;
 use App\Service\AccountService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,8 +38,26 @@ final class AccountController extends AbstractController
             return $this->redirectToRoute('account_index');
         }
 
+        $passwordForm = $this->createForm(ChangePasswordType::class, new ChangePasswordData());
+        $passwordForm->handleRequest($request);
+
+        if ($passwordForm->isSubmitted() && $passwordForm->isValid()) {
+            $this->accountService->changePassword($user, (string) $passwordForm->getData()->newPassword);
+
+            // L'utilisateur reste connecté : le jeton de sa session contient ce même objet $user, qui porte
+            // désormais le nouveau hash, et Symfony le réenregistre en session à la fin de la requête.
+            // Les autres sessions (autre appareil, voleur de cookie) gardent l'ancien hash : Symfony les
+            // déconnecte à leur prochaine requête. On change aussi l'identifiant de cette session : l'ancien
+            // cookie de session ne vaut plus rien (le panier et les messages flash sont conservés).
+            $request->getSession()->migrate(true);
+            $this->addFlash('success', 'Votre mot de passe a bien été modifié.');
+
+            return $this->redirectToRoute('account_index');
+        }
+
         return $this->render('account/index.html.twig', [
             'profileForm' => $profileForm,
+            'passwordForm' => $passwordForm,
         ]);
     }
 }

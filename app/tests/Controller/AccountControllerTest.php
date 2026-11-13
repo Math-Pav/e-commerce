@@ -121,6 +121,132 @@ final class AccountControllerTest extends WebTestCase
         self::assertSame('Camille', $this->findUser('client@example.com')->getFirstName());
     }
 
+    public function testChangePasswordWithWrongCurrentPasswordIsRejected(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $hashBefore = $this->findUser('client@example.com')->getPassword();
+
+        $this->submitPasswordChange($client, 'mauvais-mot-de-passe', 'nouveauMotDePasse1', 'nouveauMotDePasse1');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('body', 'Le mot de passe actuel est incorrect.');
+        self::assertSame($hashBefore, $this->findUser('client@example.com')->getPassword());
+    }
+
+    public function testChangePasswordRequiresMatchingNewPasswords(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+
+        $this->submitPasswordChange($client, 'password', 'nouveauMotDePasse1', 'autreChose123');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('body', 'Les deux mots de passe ne correspondent pas.');
+    }
+
+    public function testChangePasswordRequiresEightCharacters(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+
+        $this->submitPasswordChange($client, 'password', 'court', 'court');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('body', 'Le mot de passe doit contenir au moins 8 caractères.');
+    }
+
+    public function testChangePasswordKeepsUserLoggedInAndAllowsLoginWithNewPassword(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+
+        $this->submitPasswordChange($client, 'password', 'nouveauMotDePasse1', 'nouveauMotDePasse1');
+
+        self::assertResponseRedirects('/mon-compte');
+        $user = $this->findUser('client@example.com');
+        self::assertNotSame('nouveauMotDePasse1', $user->getPassword(), 'Le mot de passe ne doit jamais être stocké en clair.');
+
+        // Toujours connecté : la page protégée s'affiche au lieu de rediriger vers /connexion
+        $client->followRedirect();
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.flash--success', 'Votre mot de passe a bien été modifié.');
+        self::assertSelectorTextContains('nav', 'Connecté en tant que Camille');
+        $client->request('GET', '/mes-commandes');
+        self::assertResponseIsSuccessful();
+
+        // Déconnexion, puis connexion avec le nouveau mot de passe ; l'ancien ne fonctionne plus
+        $client->request('GET', '/deconnexion');
+        self::assertFalse($this->logInWithForm($client, 'password'), "L'ancien mot de passe ne doit plus fonctionner.");
+        self::assertTrue($this->logInWithForm($client, 'nouveauMotDePasse1'));
+    }
+
+    public function testChangePasswordLogsOutOtherSessions(): void
+    {
+        $client = static::createClient();
+        // Premier appareil : une session ouverte avant le changement de mot de passe
+        $this->logIn($client, 'client@example.com');
+        $otherDeviceCookie = $client->getCookieJar()->get('MOCKSESSID');
+        self::assertNotNull($otherDeviceCookie);
+
+        // Second appareil : nouvelle session, depuis laquelle le mot de passe est changé
+        $client->getCookieJar()->clear();
+        $this->logIn($client, 'client@example.com');
+        $this->submitPasswordChange($client, 'password', 'nouveauMotDePasse1', 'nouveauMotDePasse1');
+        $currentCookie = $client->getCookieJar()->get('MOCKSESSID');
+        self::assertNotSame($otherDeviceCookie->getValue(), $currentCookie->getValue());
+
+        // Retour sur le premier appareil : son jeton contient l'ancien hash, il est déconnecté
+        $client->getCookieJar()->clear();
+        $client->getCookieJar()->set($otherDeviceCookie);
+        $client->request('GET', '/mon-compte');
+        self::assertResponseRedirects('/connexion');
+    }
+
+    public function testPasswordFormDoesNotValidateProfileForm(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $this->submitProfile($client, ['profile[city]' => 'Lyon']);
+
+        $this->submitPasswordChange($client, 'mauvais-mot-de-passe', 'nouveauMotDePasse1', 'nouveauMotDePasse1');
+
+        self::assertResponseStatusCodeSame(422);
+        // Le formulaire de profil n'a pas été envoyé : aucune erreur, et il affiche toujours les valeurs enregistrées
+        self::assertSelectorCount(1, '.form ul li');
+        self::assertInputValueSame('profile[firstName]', 'Camille');
+        self::assertInputValueSame('profile[city]', 'Lyon');
+    }
+
+    public function testProfileFormDoesNotValidatePasswordForm(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+
+        // Le formulaire du mot de passe est vide : s'il était validé, il afficherait « Veuillez saisir… »
+        $this->submitProfile($client, ['profile[postalCode]' => 'abc']);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorCount(1, '.form ul li');
+        self::assertSelectorTextNotContains('body', 'Veuillez saisir votre mot de passe actuel.');
+        self::assertInputValueSame('profile[postalCode]', 'abc');
+    }
+
+    public function testFormsHaveDistinctNamesAndCsrfTokens(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+
+        $crawler = $client->request('GET', '/mon-compte');
+
+        self::assertSelectorExists('form[name="profile"]');
+        self::assertSelectorExists('form[name="change_password"]');
+        $profileToken = $crawler->filter('input[name="profile[_token]"]')->attr('value');
+        $passwordToken = $crawler->filter('input[name="change_password[_token]"]')->attr('value');
+        self::assertNotEmpty($profileToken);
+        self::assertNotSame($profileToken, $passwordToken);
+    }
+
     /**
      * @param array<string, string> $values
      */
@@ -128,6 +254,31 @@ final class AccountControllerTest extends WebTestCase
     {
         $client->request('GET', '/mon-compte');
         $client->submitForm('Enregistrer mes informations', $values);
+    }
+
+    private function submitPasswordChange(KernelBrowser $client, string $current, string $new, string $confirmation): void
+    {
+        $client->request('GET', '/mon-compte');
+        $client->submitForm('Changer mon mot de passe', [
+            'change_password[currentPassword]' => $current,
+            'change_password[newPassword][first]' => $new,
+            'change_password[newPassword][second]' => $confirmation,
+        ]);
+    }
+
+    /**
+     * Se connecte avec le formulaire de connexion et indique si la connexion a réussi.
+     */
+    private function logInWithForm(KernelBrowser $client, string $password): bool
+    {
+        $client->request('GET', '/connexion');
+        $client->submitForm('Se connecter', [
+            '_username' => 'client@example.com',
+            '_password' => $password,
+        ]);
+
+        // En cas d'échec, Symfony renvoie vers le formulaire de connexion (adresse absolue : http://localhost/connexion)
+        return !str_ends_with((string) $client->getResponse()->headers->get('Location'), '/connexion');
     }
 
     private function findUser(string $email): User
