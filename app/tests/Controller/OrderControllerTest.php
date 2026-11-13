@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Enum\OrderStatus;
+use App\Repository\OrderRepository;
+use App\Repository\ProductRepository;
 use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -120,6 +124,104 @@ final class OrderControllerTest extends WebTestCase
         $this->logIn($client, 'admin@example.com');
         $client->request('GET', '/mes-commandes');
         self::assertSelectorTextContains('body', "Vous n'avez pas encore passé de commande.");
+    }
+
+    public function testCustomerCancelsPendingOrder(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $orderUrl = $this->placeOrder($client, 'mug-noir-mat', 2); // stock 12 → 10
+        $client->request('GET', $orderUrl);
+
+        $client->submitForm('Annuler la commande');
+
+        self::assertResponseRedirects($orderUrl);
+        $client->followRedirect();
+        self::assertSelectorTextContains('.flash--success', 'a bien été annulée');
+        self::assertSelectorTextContains('body', 'Statut : Annulée');
+        self::assertSelectorNotExists('form[action$="/annuler"]');
+        self::assertSelectorNotExists('form[action$="/payer"]');
+        self::assertSame(12, $this->findProductStock('mug-noir-mat'), 'Le stock doit revenir à sa valeur initiale.');
+    }
+
+    public function testCustomerCannotCancelAnotherCustomerOrder(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $otherCustomerOrderUrl = $this->placeOrder($client, 'mug-noir-mat', 1);
+
+        // Un autre client récupère un jeton CSRF valide sur sa propre commande, puis vise celle de Camille
+        $this->logIn($client, 'admin@example.com');
+        $token = $this->findCancelToken($client, $this->placeOrder($client, 'stylo-a-bille-bleu', 1));
+        $client->request('POST', $otherCustomerOrderUrl . '/annuler', ['_token' => $token]);
+
+        self::assertResponseStatusCodeSame(404);
+        self::assertSame(OrderStatus::Pending, $this->findOrderStatus($otherCustomerOrderUrl));
+    }
+
+    public function testCustomerCannotCancelPaidOrder(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $orderUrl = $this->placeOrder($client, 'mug-noir-mat', 2);
+        // Jeton récupéré avant le paiement : ensuite le bouton d'annulation n'est plus affiché
+        $token = $this->findCancelToken($client, $orderUrl);
+        $client->submitForm('Payer la commande');
+        $client->followRedirect();
+        self::assertSelectorNotExists('form[action$="/annuler"]');
+
+        $client->request('POST', $orderUrl . '/annuler', ['_token' => $token]);
+
+        self::assertResponseRedirects($orderUrl);
+        $client->followRedirect();
+        self::assertSelectorTextContains('.flash--error', 'Seule une commande en attente de paiement peut être annulée.');
+        self::assertSelectorTextContains('body', 'Statut : Payée');
+        self::assertSame(10, $this->findProductStock('mug-noir-mat'), 'Le stock ne doit pas être remis.');
+    }
+
+    public function testCancelWithoutCsrfTokenIsRejected(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $orderUrl = $this->placeOrder($client, 'mug-noir-mat', 1);
+
+        $client->request('POST', $orderUrl . '/annuler');
+
+        self::assertResponseStatusCodeSame(403);
+        self::assertSame(OrderStatus::Pending, $this->findOrderStatus($orderUrl));
+    }
+
+    /**
+     * Passe une commande via le site et renvoie l'URL de sa page (/mes-commandes/CMD-…).
+     */
+    private function placeOrder(KernelBrowser $client, string $slug, int $quantity): string
+    {
+        $this->addToCart($client, $slug, $quantity);
+        $this->submitCheckout($client, '69001');
+
+        return (string) $client->getResponse()->headers->get('Location');
+    }
+
+    private function findCancelToken(KernelBrowser $client, string $orderUrl): string
+    {
+        $crawler = $client->request('GET', $orderUrl);
+
+        return (string) $crawler->filter('form[action$="/annuler"] input[name="_token"]')->attr('value');
+    }
+
+    private function findOrderStatus(string $orderUrl): OrderStatus
+    {
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+        $order = static::getContainer()->get(OrderRepository::class)->findOneBy(['reference' => basename($orderUrl)]);
+
+        return $order->getStatus();
+    }
+
+    private function findProductStock(string $slug): int
+    {
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+
+        return static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => $slug])->getStock();
     }
 
     private function logIn(KernelBrowser $client, string $email): void

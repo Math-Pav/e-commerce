@@ -105,6 +105,25 @@ final class OrderController extends AbstractController
         return $this->redirectToRoute('order_show', ['reference' => $reference]);
     }
 
+    #[Route('/mes-commandes/{reference}/annuler', name: 'order_cancel', methods: ['POST'])]
+    public function cancel(string $reference, #[CurrentUser] User $user, Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('cancel-order', $request->getPayload()->getString('_token'))) {
+            throw new AccessDeniedHttpException('Jeton CSRF invalide.');
+        }
+
+        $order = $this->findCustomerOrder($reference, $user);
+
+        try {
+            $this->orderService->cancel($order);
+            $this->addFlash('success', sprintf('Votre commande %s a bien été annulée.', $reference));
+        } catch (\DomainException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+        }
+
+        return $this->redirectToRoute('order_show', ['reference' => $reference]);
+    }
+
     /**
      * Ne renvoie que les commandes du client connecté (protection contre l'IDOR).
      */
