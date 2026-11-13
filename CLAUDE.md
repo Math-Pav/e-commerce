@@ -35,7 +35,7 @@ Toutes les commandes PHP, Composer et Symfony s'exécutent **dans le conteneur**
 
 ## Périmètre du MVP
 
-Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, inscription/connexion, panier, commande, annulation par le client, paiement **simulé**, historique des commandes, e-mails clients, administration (tableau de bord, produits, commandes, catégories).
+Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, inscription/connexion, espace « Mon compte » (profil, adresse, changement de mot de passe), panier, commande, annulation par le client, paiement **simulé**, historique des commandes, e-mails clients, administration (tableau de bord, produits, commandes, catégories).
 
 Hors périmètre pour l'instant (ne pas implémenter sans demande explicite) : recherche avancée (plein texte, facettes), variantes de produits, codes promo, avis, e-mails pour l'administrateur, envoi asynchrone (Messenger), vrai paiement.
 
