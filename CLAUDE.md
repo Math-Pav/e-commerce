@@ -20,6 +20,7 @@ Instructions permanentes pour Claude sur ce projet. À lire avant toute interven
 - **Symfony Mailer** pour les e-mails clients (envoi synchrone ; **Mailpit** capture les e-mails en développement, `null://null` en test)
 - **Symfony Mime** pour vérifier le type des fichiers envoyés (photos des produits)
 - **PHPUnit** pour les tests
+- **PHPStan** (niveau 8, extensions Symfony et Doctrine) pour l'analyse statique et **PHP-CS-Fixer** (règles `@Symfony`) pour le formatage, en dépendances de développement (voir `docs/adr/0014-analyse-statique-et-formatage.md`)
 - **Docker Compose** pour l'environnement local (php, nginx, database, adminer, mailpit : interface sur http://localhost:8025)
 - **Git** pour le versionnement
 
@@ -69,7 +70,8 @@ Principes :
 
 - Code (classes, méthodes, variables) en **anglais** ; commentaires et documentation en **français**.
 - Interface du site en **français** (locale `fr`) : nos textes sont écrits en français directement dans les templates et le code, sans fichiers de traduction ; les messages par défaut de Symfony (validation, sécurité) sont traduits par `symfony/translation` (voir `docs/adr/0006-locale-francaise.md`).
-- Respect de PSR-12 et des conventions Symfony.
+- Respect de PSR-12 et des conventions Symfony ; le formatage est appliqué par PHP-CS-Fixer (`composer cs-fix`), pas à la main.
+- Fins de ligne **LF** pour tous les fichiers (imposées par `.gitattributes`).
 - Classes en `PascalCase`, méthodes et variables en `camelCase`, tables et colonnes en `snake_case`.
 - Suffixes explicites : `ProductController`, `CartService`, `ProductRepository`, `ProductType` (formulaire).
 - Typage strict : `declare(strict_types=1);`, types sur tous les paramètres et retours.
@@ -98,6 +100,8 @@ Principes :
 - Tests unitaires pour la logique métier des services (panier, commande, calcul des totaux).
 - Tests fonctionnels (WebTestCase) pour les parcours importants (connexion, ajout au panier, commande).
 - Les tests ne dépendent pas d'un vrai service externe (paiement simulé).
+- Avant chaque commit, `docker compose exec php composer check` doit passer : il enchaîne PHPStan (`composer stan`), la vérification du formatage (`composer cs`) et PHPUnit. `composer cs-fix` corrige le formatage.
+- Pas de fichier baseline PHPStan ; un `@phpstan-ignore` n'est accepté qu'avec un commentaire qui explique pourquoi l'erreur est un faux positif.
 
 ## Collaboration avec Claude
 

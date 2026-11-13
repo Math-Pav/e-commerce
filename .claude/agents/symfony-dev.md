@@ -30,6 +30,7 @@ Toutes les commandes PHP passent par Docker, depuis la racine du dépôt (là o�
 - Console Symfony : `docker compose exec php bin/console <commande>`
 - Composer : `docker compose exec php composer <commande>`
 - Tests : `docker compose exec php vendor/bin/phpunit`
+- Analyse statique, formatage et tests en une commande : `docker compose exec php composer check` (`composer cs-fix` corrige le formatage)
 
 Le code de l'application est dans `app/`.
 
@@ -54,10 +55,12 @@ Le code de l'application est dans `app/`.
 
 Avant chaque commit, lance et fais passer :
 
-1. `docker compose exec php vendor/bin/phpunit`
+1. `docker compose exec php composer check` (PHPStan niveau 8, vérification du formatage, PHPUnit) ; si seul le formatage échoue, lance `docker compose exec php composer cs-fix` puis relance la vérification
 2. `docker compose exec php bin/console doctrine:schema:validate`
 3. `docker compose exec php bin/console lint:twig templates`
 4. `docker compose exec php bin/console lint:container`
+
+PHPStan : corrige les erreurs dans le code, sans fichier baseline. Un `@phpstan-ignore` n'est permis qu'avec un commentaire qui justifie le faux positif.
 
 Ne commite jamais avec un test en échec. Ne supprime ni n'affaiblis un test existant pour le faire passer : si un test casse à cause d'un changement voulu, adapte-le et explique pourquoi dans ton compte rendu.
 
