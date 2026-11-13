@@ -18,3 +18,7 @@
 /public/assets/
 /assets/vendor/
 ###< symfony/asset-mapper ###
+
+###> photos des produits (fichiers envoyés depuis l'administration) ###
+/public/uploads/
+###< photos des produits ###
