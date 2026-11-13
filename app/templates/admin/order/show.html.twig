@@ -1,0 +1,116 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Commande {{ order.reference }} · Administration{% endblock %}
+
+{% block admin_content %}
+    <a href="{{ path('admin_order_index') }}" class="back-link">← Retour à la liste des commandes</a>
+
+    <div class="order-header">
+        <div class="page-header">
+            <p class="eyebrow">Administration</p>
+            <h1 class="page-title">Commande {{ order.reference }}</h1>
+        </div>
+        {% include 'order/_status_badge.html.twig' with {status: order.status} %}
+    </div>
+
+    {% set csrf = csrf_token('order-status') %}
+    <div class="callout">
+        {% if order.canBeShipped %}
+            <div>
+                <p class="callout__title">Commande payée, prête à partir</p>
+                <p class="callout__text">Marquez-la comme expédiée une fois le colis remis au transporteur.</p>
+            </div>
+            <form method="post" action="{{ path('admin_order_ship', {reference: order.reference}) }}">
+                <input type="hidden" name="_token" value="{{ csrf }}">
+                <button type="submit" class="btn btn--primary">Marquer comme expédiée</button>
+            </form>
+        {% elseif order.canBeDelivered %}
+            <div>
+                <p class="callout__title">Commande en cours de livraison</p>
+                <p class="callout__text">Marquez-la comme livrée quand le client l'a reçue.</p>
+            </div>
+            <form method="post" action="{{ path('admin_order_deliver', {reference: order.reference}) }}">
+                <input type="hidden" name="_token" value="{{ csrf }}">
+                <button type="submit" class="btn btn--primary">Marquer comme livrée</button>
+            </form>
+        {% elseif order.canBeCancelled %}
+            <div>
+                <p class="callout__title">En attente du paiement du client</p>
+                <p class="callout__text">L'annulation remet les articles en stock. Elle est définitive.</p>
+            </div>
+            <form method="post" action="{{ path('admin_order_cancel', {reference: order.reference}) }}">
+                <input type="hidden" name="_token" value="{{ csrf }}">
+                <button type="submit" class="btn btn--secondary">Annuler la commande</button>
+            </form>
+        {% else %}
+            <p class="callout__text">Aucune action possible : cette commande est {{ order.status.label|lower }}.</p>
+        {% endif %}
+    </div>
+
+    <div class="layout-split">
+        <section class="layout-split__main" aria-labelledby="items-title">
+            <h2 id="items-title" class="section-title">Articles</h2>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Produit</th>
+                            <th scope="col" class="num">Prix unitaire</th>
+                            <th scope="col" class="num">Quantité</th>
+                            <th scope="col" class="num">Sous-total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items %}
+                            <tr>
+                                <td>{{ item.productName }}</td>
+                                <td class="num">{{ item.unitPrice|price }}</td>
+                                <td class="num">{{ item.quantity }}</td>
+                                <td class="num">{{ item.subtotal|price }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th scope="row" colspan="3" class="num">Total</th>
+                            <td class="num price">{{ order.totalAmount|price }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <aside class="layout-split__aside panel" aria-label="Informations de la commande">
+            <h2 class="section-title">Client</h2>
+            <p class="address">
+                {{ order.customer.firstName }} {{ order.customer.lastName }}<br>
+                <a href="mailto:{{ order.customer.email }}">{{ order.customer.email }}</a>
+            </p>
+
+            <h2 class="section-title">Livraison</h2>
+            <address class="address">
+                {{ order.shippingFullName }}<br>
+                {{ order.shippingAddress }}<br>
+                {{ order.shippingPostalCode }} {{ order.shippingCity }}
+            </address>
+
+            <h2 class="section-title">Dates</h2>
+            <ul class="summary-list">
+                {% for label, date in {
+                    'Passée le': order.createdAt,
+                    'Payée le': order.paidAt,
+                    'Expédiée le': order.shippedAt,
+                    'Livrée le': order.deliveredAt,
+                    'Annulée le': order.cancelledAt,
+                } %}
+                    {% if date %}
+                        <li class="summary-row">
+                            <span class="summary-row__label">{{ label }}</span>
+                            <span>{{ date|date('d/m/Y à H:i') }}</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </aside>
+    </div>
+{% endblock %}
