@@ -39,13 +39,13 @@ final class ProfileType extends AbstractType
                 'attr' => ['autocomplete' => 'street-address'],
             ])
             ->add('postalCode', TextType::class, [
-                'label' => 'Code postal',
+                'label' => 'Code postal (facultatif)',
                 'required' => false,
                 'help' => '5 chiffres, livraison en France uniquement.',
                 'attr' => ['autocomplete' => 'postal-code', 'inputmode' => 'numeric'],
             ])
             ->add('city', TextType::class, [
-                'label' => 'Ville',
+                'label' => 'Ville (facultatif)',
                 'required' => false,
                 'attr' => ['autocomplete' => 'address-level2'],
             ]);
