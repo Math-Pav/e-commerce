@@ -3,6 +3,10 @@
 - {{ item.productName }} : {{ item.quantity }} × {{ item.unitPrice|price }} = {{ item.subtotal|price }}
 {% endfor %}
 
+{% if order.discountCode %}
+Sous-total : {{ order.subtotalAmount|price }}
+Remise ({{ order.discountCode }}) : − {{ order.discountAmount|price }}
+{% endif %}
 Total : {{ order.totalAmount|price }}
 
 Adresse de livraison :

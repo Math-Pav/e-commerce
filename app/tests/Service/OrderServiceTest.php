@@ -7,15 +7,20 @@ namespace App\Tests\Service;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\Product;
+use App\Entity\PromoCode;
 use App\Entity\User;
+use App\Enum\DiscountType;
 use App\Enum\OrderStatus;
 use App\Exception\InsufficientStockException;
+use App\Exception\InvalidPromoCodeException;
 use App\Model\Cart;
 use App\Model\CartLine;
 use App\Model\ShippingAddress;
 use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
+use App\Repository\PromoCodeRepository;
 use App\Service\CustomerMailer;
+use App\Service\DiscountCalculator;
 use App\Service\OrderService;
 use Doctrine\DBAL\Driver\AbstractException;
 use Doctrine\DBAL\Exception\ConnectionLost;
@@ -41,6 +46,8 @@ final class OrderServiceTest extends KernelTestCase
             $this->entityManager,
             $container->get(ProductRepository::class),
             $container->get(OrderRepository::class),
+            $container->get(PromoCodeRepository::class),
+            new DiscountCalculator(),
             $container->get(CustomerMailer::class),
             new NullLogger(),
         );
@@ -272,6 +279,8 @@ final class OrderServiceTest extends KernelTestCase
             $failingEntityManager,
             $container->get(ProductRepository::class),
             $container->get(OrderRepository::class),
+            $container->get(PromoCodeRepository::class),
+            new DiscountCalculator(),
             $container->get(CustomerMailer::class),
             $logger,
         );
@@ -282,6 +291,70 @@ final class OrderServiceTest extends KernelTestCase
 
         self::assertNotNull($order->getId(), 'La commande doit être enregistrée malgré l\'échec du profil.');
         self::assertEmailCount(1, message: 'La confirmation de commande doit quand même partir.');
+    }
+
+    public function testPromoCodeUsageIsCountedAndDiscountIsCopied(): void
+    {
+        $promoCode = $this->createPromoCode(maxUsages: null);
+        $cart = new Cart([new CartLine($this->findProduct('mug-noir-mat'), 2)], $promoCode, 298);
+
+        $order = $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
+
+        self::assertSame(1, $promoCode->getUsageCount());
+        self::assertSame('MOINS10', $order->getDiscountCode());
+        // 29,80 € − 10 % = 29,80 € − 2,98 € = 26,82 €
+        self::assertSame(2980, $order->getSubtotalAmount());
+        self::assertSame(298, $order->getDiscountAmount());
+        self::assertSame(2682, $order->getTotalAmount());
+    }
+
+    public function testCancelGivesPromoCodeUsageBack(): void
+    {
+        $promoCode = $this->createPromoCode(maxUsages: null);
+        $cart = new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)], $promoCode, 149);
+        $order = $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
+
+        $this->orderService->cancel($order);
+
+        self::assertSame(0, $promoCode->getUsageCount());
+    }
+
+    public function testOrderIsRefusedWhenPromoCodeMaxUsagesIsReached(): void
+    {
+        $promoCode = $this->createPromoCode(maxUsages: 1);
+        $cart = new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)], $promoCode, 149);
+        $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
+        $orderCountBefore = $this->entityManager->getRepository(Order::class)->count([]);
+
+        try {
+            $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
+            self::fail('Une InvalidPromoCodeException était attendue.');
+        } catch (InvalidPromoCodeException $exception) {
+            self::assertStringContainsString("nombre maximal d'utilisations", $exception->getMessage());
+        }
+
+        // La transaction est annulée : ni commande, ni stock décrémenté, ni utilisation en plus
+        $entityManager = static::getContainer()->get('doctrine')->resetManager();
+        $mug = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        $savedPromoCode = $entityManager->getRepository(PromoCode::class)->findOneBy(['code' => 'MOINS10']);
+        self::assertNotNull($mug);
+        self::assertNotNull($savedPromoCode);
+        self::assertSame(11, $mug->getStock());
+        self::assertSame(1, $savedPromoCode->getUsageCount());
+        self::assertSame($orderCountBefore, $entityManager->getRepository(Order::class)->count([]));
+    }
+
+    private function createPromoCode(?int $maxUsages): PromoCode
+    {
+        $promoCode = (new PromoCode())
+            ->setCode('MOINS10')
+            ->setDiscountType(DiscountType::Percentage)
+            ->setValue(10)
+            ->setMaxUsages($maxUsages);
+        $this->entityManager->persist($promoCode);
+        $this->entityManager->flush();
+
+        return $promoCode;
     }
 
     private function findProduct(string $slug): Product

@@ -15,6 +15,16 @@
             <td align="right" style="padding:8px 0; border-bottom:1px solid #e3e5e8; white-space:nowrap;">{{ item.subtotal|price }}</td>
         </tr>
     {% endfor %}
+    {% if order.discountCode %}
+        <tr>
+            <td colspan="2" align="right" style="padding:12px 0 0;">Sous-total</td>
+            <td align="right" style="padding:12px 0 0; white-space:nowrap;">{{ order.subtotalAmount|price }}</td>
+        </tr>
+        <tr>
+            <td colspan="2" align="right" style="padding:4px 0 0;">Remise ({{ order.discountCode }})</td>
+            <td align="right" style="padding:4px 0 0; white-space:nowrap;">− {{ order.discountAmount|price }}</td>
+        </tr>
+    {% endif %}
     <tr>
         <td colspan="2" align="right" style="padding:12px 0 0; font-weight:bold;">Total</td>
         <td align="right" style="padding:12px 0 0; font-weight:bold; white-space:nowrap;">{{ order.totalAmount|price }}</td>
