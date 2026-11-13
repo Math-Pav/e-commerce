@@ -19,6 +19,7 @@ Instructions permanentes pour Claude sur ce projet. À lire avant toute interven
 - **Symfony Translation** pour traduire en français les messages par défaut de Symfony (site en français uniquement)
 - **Symfony Mailer** pour les e-mails clients (envoi synchrone ; **Mailpit** capture les e-mails en développement, `null://null` en test)
 - **Symfony Mime** pour vérifier le type des fichiers envoyés (photos des produits)
+- **Symfony RateLimiter** pour limiter le nombre de requêtes de l'API (60 par minute et par IP)
 - **dompdf** pour convertir en PDF le template Twig des factures (`docs/adr/0018-factures.md`)
 - **Symfony Cache** : pool `computed.cache` avec étiquettes pour les calculs coûteux, invalidé par un écouteur Doctrine (voir `docs/adr/0019-cache-applicatif.md`)
 - **Symfony Profiler** (développement) pour mesurer requêtes et temps de chaque page
@@ -39,7 +40,7 @@ Toutes les commandes PHP, Composer et Symfony s'exécutent **dans le conteneur**
 
 ## Périmètre du MVP
 
-Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, variantes de produits (couleur, format… : stock et prix facultatif par variante), inscription/connexion, espace « Mon compte » (profil, adresse, changement de mot de passe), panier, codes promo (un par commande, voir `docs/adr/0016-codes-promo.md`), commande, annulation par le client, paiement **simulé**, facture PDF de chaque commande payée (`docs/adr/0018-factures.md`), historique des commandes, e-mails clients, administration (tableau de bord, produits et leurs variantes, commandes, catégories, codes promo).
+Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, variantes de produits (couleur, format… : stock et prix facultatif par variante), inscription/connexion, espace « Mon compte » (profil, adresse, changement de mot de passe), panier, codes promo (un par commande, voir `docs/adr/0016-codes-promo.md`), commande, annulation par le client, paiement **simulé**, facture PDF de chaque commande payée (`docs/adr/0018-factures.md`), historique des commandes, e-mails clients, administration (tableau de bord, produits et leurs variantes, commandes, catégories, codes promo), API REST du catalogue en lecture seule (`/api/v1`, `docs/api.md`, `docs/adr/0020-api-catalogue.md`).
 
 Hors périmètre pour l'instant (ne pas implémenter sans demande explicite) : recherche avancée (plein texte, facettes), avis, e-mails pour l'administrateur, envoi asynchrone (Messenger), vrai paiement, avoirs.
 
@@ -53,6 +54,7 @@ Structure Symfony standard, organisée en couches :
 - `src/Entity/` : entités Doctrine (données + règles simples propres à l'entité).
 - `src/Form/` : formulaires Symfony et leur validation.
 - `src/EventListener/` : écouteurs d'événements (Doctrine, noyau), ex. invalidation du cache.
+- `src/Api/` : API REST du catalogue : lecture des paramètres et objets de sortie (`Output/`) qui fixent le contrat JSON ; on n'y sérialise jamais une entité directement (ADR 0020). Contrôleurs dans `src/Controller/Api/`.
 - `src/Validator/` : contraintes de validation réutilisables (contraintes composées partagées par plusieurs DTO, ex. `PostalCode`).
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
 
