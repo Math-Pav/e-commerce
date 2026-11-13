@@ -46,7 +46,10 @@
             <ul class="summary-list">
                 {% for line in cart.lines %}
                     <li class="summary-row">
-                        <span class="summary-row__label">{{ line.quantity }} × {{ line.product.name }}</span>
+                        <span class="summary-row__label summary-row__label--with-image">
+                            {% include 'product/_image.html.twig' with {product: line.product, thumb: true} %}
+                            {{ line.quantity }} × {{ line.product.name }}
+                        </span>
                         <span>{{ line.subtotal|price }}</span>
                     </li>
                 {% endfor %}

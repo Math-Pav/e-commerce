@@ -1,5 +1,5 @@
 {# Visuel de remplacement d'un produit, en attendant de vraies photos #}
-<div class="product-visual product-visual--{{ category.slug }}{{ large|default(false) ? ' product-visual--lg' }}">
+<div class="product-visual product-visual--{{ category.slug }}{{ large|default(false) ? ' product-visual--lg' }}{{ thumb|default(false) ? ' product-visual--thumb' }}">
     {% if category.slug == 'mugs-et-tasses' %}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h12v9a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M16 9h2a3 3 0 0 1 0 6h-2"/><path d="M8 2v2"/><path d="M12 2v2"/></svg>
     {% elseif category.slug == 'carnets' %}

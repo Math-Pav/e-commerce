@@ -24,6 +24,7 @@ final class ProductService
         private readonly EntityManagerInterface $entityManager,
         private readonly ProductRepository $productRepository,
         private readonly SlugGenerator $slugGenerator,
+        private readonly ProductImageStorage $imageStorage,
     ) {
     }
 
@@ -34,6 +35,7 @@ final class ProductService
     {
         $product = new Product();
         $this->applyData($product, $data);
+        $this->applyImage($product, $data);
         // isSlugTaken(...) : syntaxe « callable de première classe », on passe la méthode sans l'appeler
         $product->setSlug($this->slugGenerator->generateUnique(
             $data->name,
@@ -50,13 +52,22 @@ final class ProductService
 
     /**
      * Le slug n'est pas régénéré : l'adresse de la fiche produit reste stable (voir ADR 0004).
+     * L'ancienne photo est supprimée du disque si elle est remplacée ou retirée.
      *
      * @param ProductData $data données déjà validées par le formulaire
      */
     public function update(Product $product, ProductData $data): void
     {
+        $previousImage = $product->getImageFilename();
+
         $this->applyData($product, $data);
+        $this->applyImage($product, $data);
         $this->entityManager->flush();
+
+        // Suppression après l'enregistrement en base : si flush() échoue, le produit pointe toujours vers un fichier existant
+        if ($previousImage !== null && $previousImage !== $product->getImageFilename()) {
+            $this->imageStorage->remove($previousImage);
+        }
     }
 
     public function activate(Product $product): void
@@ -86,5 +97,17 @@ final class ProductService
             ->setPrice($data->price)
             ->setStock($data->stock)
             ->setDescription($data->description);
+    }
+
+    /**
+     * Une nouvelle photo remplace l'actuelle ; sinon, la case « Retirer » enlève la photo.
+     */
+    private function applyImage(Product $product, ProductData $data): void
+    {
+        if ($data->image !== null) {
+            $product->setImageFilename($this->imageStorage->store($data->image));
+        } elseif ($data->removeImage) {
+            $product->setImageFilename(null);
+        }
     }
 }

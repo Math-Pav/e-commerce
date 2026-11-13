@@ -27,7 +27,7 @@
                 <li>
                     <a href="{{ path('product_show', {slug: product.slug}) }}" class="product-card">
                         <div class="product-card__visual">
-                            {% include 'product/_visual.html.twig' with {category: product.category} %}
+                            {% include 'product/_image.html.twig' with {product: product} %}
                             {% if not product.inStock %}
                                 <span class="badge badge--danger product-card__badge">Rupture de stock</span>
                             {% endif %}

@@ -10,6 +10,8 @@ parameters:
     # Expéditeur de tous les e-mails envoyés aux clients (domaine .test : réservé, jamais réel)
     app.mailer.sender_email: 'boutique@atelier-papier.test'
     app.mailer.sender_name: 'Atelier Papier'
+    # Dossier des photos de produits, servi par Nginx à l'adresse /uploads/products/ (voir ADR 0010)
+    app.product_images_directory: '%kernel.project_dir%/public/uploads/products'
 
 services:
     # default configuration for services in *this* file
@@ -24,3 +26,8 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+when@test:
+    parameters:
+        # Les tests enregistrent leurs photos à part, pour ne jamais toucher à celles du développement
+        app.product_images_directory: '%kernel.project_dir%/var/test/uploads/products'

@@ -6,6 +6,16 @@
         {{ form_row(productForm.stock) }}
     </div>
     {{ form_row(productForm.description) }}
+    {% if product is defined and product.imageFilename %}
+        <figure class="image-preview">
+            {% include 'product/_image.html.twig' with {product: product} %}
+            <figcaption class="help-text">Photo actuelle</figcaption>
+        </figure>
+    {% endif %}
+    {{ form_row(productForm.image) }}
+    {% if productForm.removeImage is defined %}
+        {{ form_row(productForm.removeImage) }}
+    {% endif %}
     <button type="submit" class="btn btn--primary">{{ button_label }}</button>
 {{ form_end(productForm) }}
 

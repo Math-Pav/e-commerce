@@ -38,6 +38,10 @@ class Product
     #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;
 
+    // Nom du fichier de la photo dans public/uploads/products/ (généré aléatoirement) ; null = visuel de remplacement
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $imageFilename = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -124,6 +128,18 @@ class Product
     public function setIsActive(bool $isActive): static
     {
         $this->isActive = $isActive;
+
+        return $this;
+    }
+
+    public function getImageFilename(): ?string
+    {
+        return $this->imageFilename;
+    }
+
+    public function setImageFilename(?string $imageFilename): static
+    {
+        $this->imageFilename = $imageFilename;
 
         return $this;
     }

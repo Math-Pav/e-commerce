@@ -25,6 +25,7 @@ erDiagram
         int price
         int stock
         bool is_active
+        string image_filename
         datetime created_at
     }
     USER {
@@ -88,6 +89,7 @@ erDiagram
 | price | integer | obligatoire, en centimes, ≥ 0 |
 | stock | integer | obligatoire, défaut 0, ≥ 0 |
 | is_active | boolean | obligatoire, défaut `true` ; `false` = masqué du catalogue sans être supprimé |
+| image_filename | string(255) | facultatif ; nom du fichier de la photo dans `public/uploads/products/`, généré aléatoirement (ADR 0010) ; vide = visuel de remplacement |
 | created_at | datetime_immutable | obligatoire |
 
 ### User (`user`)
@@ -165,4 +167,5 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 - **Adresse dans `user`** : suffisant pour le MVP. Une entité `Address` séparée sera envisagée si l'on veut plusieurs adresses par client.
 - **Une catégorie ne peut être supprimée que si elle ne contient aucun produit** (même désactivé) : `product.category_id` est obligatoire.
 - **Pas d'entité `Cart`** : le panier est stocké en session pour le MVP.
+- **Photo des produits : seul le nom du fichier est en base** : l'image elle-même est un fichier sur disque (`public/uploads/products/`), servi directement par Nginx.
 - **Codes postaux et téléphones en `string`** : ce ne sont pas des nombres (zéros initiaux, aucun calcul).

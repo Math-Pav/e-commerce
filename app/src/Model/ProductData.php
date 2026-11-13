@@ -6,6 +6,7 @@ namespace App\Model;
 
 use App\Entity\Category;
 use App\Entity\Product;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -31,6 +32,22 @@ final class ProductData
 
     #[Assert\Length(max: 5000)]
     public ?string $description = null;
+
+    // Nouvelle photo envoyée (facultative). Vide à la modification : un champ fichier ne se pré-remplit pas.
+    // « 2M » = 2 000 000 octets. Le type est déduit du contenu du fichier (symfony/mime), pas de son extension :
+    // un script renommé en .png est refusé. Pas de SVG : il peut contenir du JavaScript.
+    #[Assert\Image(
+        maxSize: '2M',
+        mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+        maxSizeMessage: 'La photo ne doit pas dépasser 2 Mo.',
+        mimeTypesMessage: 'La photo doit être une image JPEG, PNG ou WebP.',
+        uploadIniSizeErrorMessage: 'La photo ne doit pas dépasser 2 Mo.',
+        uploadErrorMessage: 'La photo n\'a pas pu être envoyée. Veuillez réessayer.',
+    )]
+    public ?UploadedFile $image = null;
+
+    // Case « Retirer la photo actuelle » (ignorée si une nouvelle photo est envoyée : elle remplace l'actuelle)
+    public bool $removeImage = false;
 
     /**
      * Pré-remplit le formulaire de modification avec les valeurs actuelles du produit.

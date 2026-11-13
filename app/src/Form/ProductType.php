@@ -9,6 +9,8 @@ use App\Model\ProductData;
 use App\Repository\CategoryRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\FileType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
@@ -63,13 +65,33 @@ final class ProductType extends AbstractType
                 'label' => 'Description',
                 'required' => false,
                 'attr' => ['rows' => 5],
+            ])
+            ->add('image', FileType::class, [
+                'label' => 'Photo',
+                'required' => false,
+                // « accept » ne fait que filtrer le sélecteur de fichiers : la vraie vérification est côté serveur
+                'attr' => ['accept' => 'image/jpeg,image/png,image/webp'],
+                'help' => $options['allow_image_removal']
+                    ? 'JPEG, PNG ou WebP, 2 Mo maximum. Une nouvelle photo remplace la photo actuelle.'
+                    : 'JPEG, PNG ou WebP, 2 Mo maximum. Facultative.',
             ]);
+
+        // La case n'a de sens que si le produit a déjà une photo
+        if ($options['allow_image_removal']) {
+            $builder->add('removeImage', CheckboxType::class, [
+                'label' => 'Retirer la photo actuelle',
+                'required' => false,
+            ]);
+        }
     }
 
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
             'data_class' => ProductData::class,
+            // Vrai seulement à la modification d'un produit qui a déjà une photo : affiche la case « Retirer la photo »
+            'allow_image_removal' => false,
         ]);
+        $resolver->setAllowedTypes('allow_image_removal', 'bool');
     }
 }
