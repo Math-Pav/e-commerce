@@ -1,0 +1,11 @@
+Merci pour votre commande !
+
+Bonjour {{ order.customer.firstName }},
+
+Nous avons bien enregistré votre commande {{ order.reference }} du {{ order.createdAt|date('d/m/Y à H:i') }}. Vos articles sont réservés : il ne reste plus qu'à la régler depuis votre espace client.
+
+{% include 'emails/_order_summary.txt.twig' with {order: order} only %}
+
+Voir et payer ma commande : {{ url('order_show', {reference: order.reference}) }}
+
+{% include 'emails/_footer.txt.twig' %}

@@ -20,6 +20,7 @@ final class OrderService
         private readonly EntityManagerInterface $entityManager,
         private readonly ProductRepository $productRepository,
         private readonly OrderRepository $orderRepository,
+        private readonly CustomerMailer $customerMailer,
     ) {
     }
 
@@ -34,7 +35,7 @@ final class OrderService
             throw new \DomainException('Impossible de passer commande avec un panier vide.');
         }
 
-        return $this->entityManager->wrapInTransaction(function () use ($customer, $cart, $address): Order {
+        $order = $this->entityManager->wrapInTransaction(function () use ($customer, $cart, $address): Order {
             $order = (new Order())
                 ->setCustomer($customer)
                 ->setReference($this->generateReference())
@@ -64,6 +65,11 @@ final class OrderService
 
             return $order;
         });
+
+        // Après la transaction : si elle avait échoué, aucun e-mail n'annoncerait une commande inexistante
+        $this->customerMailer->sendOrderConfirmation($order);
+
+        return $order;
     }
 
     /**
@@ -102,6 +108,8 @@ final class OrderService
                 $product->increaseStock((int) $item->getQuantity());
             }
         });
+
+        $this->customerMailer->sendOrderCancellation($order);
     }
 
     /**

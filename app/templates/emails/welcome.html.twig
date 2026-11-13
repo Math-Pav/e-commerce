@@ -1,0 +1,8 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block content %}
+    <h1 style="margin:0 0 16px; font-size:24px;">Bienvenue {{ user.firstName }} !</h1>
+    <p style="margin:0 0 12px;">Votre compte Atelier Papier a bien été créé avec l'adresse {{ user.email }}.</p>
+    <p style="margin:0;">Vous pouvez dès maintenant parcourir notre catalogue de mugs, carnets et stylos, et suivre vos commandes depuis votre espace.</p>
+    {% include 'emails/_button.html.twig' with {url: url('product_index'), label: 'Découvrir le catalogue'} only %}
+{% endblock %}

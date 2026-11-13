@@ -1,0 +1,11 @@
+{# Récapitulatif d'une commande en texte brut. Paramètre : order #}
+{% for item in order.items %}
+- {{ item.productName }} : {{ item.quantity }} × {{ item.unitPrice|price }} = {{ item.subtotal|price }}
+{% endfor %}
+
+Total : {{ order.totalAmount|price }}
+
+Adresse de livraison :
+{{ order.shippingFullName }}
+{{ order.shippingAddress }}
+{{ order.shippingPostalCode }} {{ order.shippingCity }}

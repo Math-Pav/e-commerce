@@ -14,6 +14,7 @@ use App\Model\CartLine;
 use App\Model\ShippingAddress;
 use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
+use App\Service\CustomerMailer;
 use App\Service\OrderService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -34,6 +35,7 @@ final class OrderServiceTest extends KernelTestCase
             $this->entityManager,
             $container->get(ProductRepository::class),
             $container->get(OrderRepository::class),
+            $container->get(CustomerMailer::class),
         );
     }
 
@@ -53,6 +55,7 @@ final class OrderServiceTest extends KernelTestCase
         self::assertSame(3430, $order->getTotalAmount());
         self::assertSame(10, $mug->getStock());
         self::assertSame(197, $pen->getStock());
+        self::assertEmailCount(1, message: 'La commande doit être confirmée par e-mail.');
     }
 
     public function testOrderKeepsPriceAndNameAtTimeOfPurchase(): void
@@ -93,6 +96,7 @@ final class OrderServiceTest extends KernelTestCase
 
         self::assertSame(12, $mug->getStock(), 'Le stock du premier produit doit être intact.');
         self::assertSame($orderCountBefore, $entityManager->getRepository(Order::class)->count([]), 'Aucune commande ne doit être créée.');
+        self::assertEmailCount(0, message: "Aucun e-mail ne doit annoncer une commande qui n'existe pas.");
     }
 
     public function testCannotOrderEmptyCart(): void
@@ -168,6 +172,8 @@ final class OrderServiceTest extends KernelTestCase
 
         self::assertSame(OrderStatus::Paid, $savedOrder->getStatus());
         self::assertNull($savedOrder->getCancelledAt());
+        // Un seul e-mail : la confirmation de commande. L'annulation refusée n'en envoie aucun.
+        self::assertEmailCount(1);
         self::assertSame(10, $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat'])->getStock(), 'Le stock ne doit pas être remis.');
     }
 

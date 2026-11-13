@@ -13,6 +13,7 @@ final class RegistrationService
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly EntityManagerInterface $entityManager,
+        private readonly CustomerMailer $customerMailer,
     ) {
     }
 
@@ -22,5 +23,8 @@ final class RegistrationService
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+
+        // Après le flush : on n'annonce un compte qu'une fois réellement enregistré
+        $this->customerMailer->sendWelcome($user);
     }
 }

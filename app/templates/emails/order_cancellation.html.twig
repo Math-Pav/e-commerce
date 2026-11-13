@@ -1,0 +1,13 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block content %}
+    <h1 style="margin:0 0 16px; font-size:24px;">Commande annulée</h1>
+    <p style="margin:0 0 12px;">Bonjour {{ order.customer.firstName }},</p>
+    <p style="margin:0 0 12px;">
+        Votre commande <strong>{{ order.reference }}</strong> d'un montant de
+        <strong>{{ order.totalAmount|price }}</strong> a été annulée le {{ order.cancelledAt|date('d/m/Y à H:i') }}.
+    </p>
+    <p style="margin:0;">Elle n'avait pas été payée : aucun montant ne vous a été débité.</p>
+
+    {% include 'emails/_button.html.twig' with {url: url('order_show', {reference: order.reference}), label: 'Voir la commande'} only %}
+{% endblock %}

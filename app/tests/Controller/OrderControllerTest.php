@@ -53,6 +53,50 @@ final class OrderControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Votre panier est vide.');
     }
 
+    public function testPlaceOrderSendsConfirmationEmail(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+
+        $orderUrl = $this->placeOrder($client, 'mug-noir-mat', 2);
+        $reference = basename($orderUrl);
+
+        // Vérification avant toute nouvelle requête : chaque requête vide la liste des e-mails collectés
+        self::assertEmailCount(1);
+        $message = self::getMailerMessage();
+        self::assertEmailAddressContains($message, 'To', 'client@example.com');
+        self::assertEmailSubjectContains($message, 'Confirmation de votre commande ' . $reference);
+        self::assertEmailHtmlBodyContains($message, $reference);
+        self::assertEmailHtmlBodyContains($message, 'Mug noir mat');
+        self::assertEmailHtmlBodyContains($message, '29,80 €');
+        self::assertEmailHtmlBodyContains($message, '12 rue des Lilas');
+        self::assertEmailHtmlBodyContains($message, '69001 Lyon');
+        self::assertEmailHtmlBodyContains($message, 'href="http://localhost' . $orderUrl . '"');
+        self::assertEmailTextBodyContains($message, $reference);
+        self::assertEmailTextBodyContains($message, 'Total : 29,80 €');
+        self::assertEmailTextBodyContains($message, '12 rue des Lilas');
+    }
+
+    public function testOrderEmailContainsOnlyThisOrder(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $firstReference = basename($this->placeOrder($client, 'mug-noir-mat', 2));
+
+        $secondReference = basename($this->placeOrder($client, 'stylo-a-bille-bleu', 3));
+
+        self::assertEmailCount(1);
+        $message = self::getMailerMessage();
+        self::assertEmailSubjectContains($message, $secondReference);
+        self::assertEmailHtmlBodyContains($message, 'Stylo à bille bleu');
+        self::assertEmailHtmlBodyContains($message, '4,50 €');
+        self::assertEmailHtmlBodyNotContains($message, $firstReference);
+        self::assertEmailHtmlBodyNotContains($message, 'Mug noir mat');
+        self::assertEmailHtmlBodyNotContains($message, '29,80 €');
+        self::assertEmailTextBodyNotContains($message, $firstReference);
+        self::assertEmailTextBodyNotContains($message, 'Mug noir mat');
+    }
+
     public function testInvalidPostalCodeShowsError(): void
     {
         $client = static::createClient();
@@ -63,6 +107,7 @@ final class OrderControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('body', 'Le code postal doit contenir 5 chiffres.');
+        self::assertEmailCount(0);
     }
 
     public function testCustomerCannotSeeAnotherCustomerOrder(): void
@@ -95,6 +140,24 @@ final class OrderControllerTest extends WebTestCase
         self::assertSelectorNotExists('form[action$="/payer"]');
     }
 
+    public function testPayOrderSendsPaymentConfirmationEmail(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $orderUrl = $this->placeOrder($client, 'mug-noir-mat', 2);
+        $reference = basename($orderUrl);
+        $client->request('GET', $orderUrl);
+
+        $client->submitForm('Payer la commande');
+
+        self::assertEmailCount(1, message: 'Seul le paiement doit envoyer un e-mail pendant cette requête.');
+        $message = self::getMailerMessage();
+        self::assertEmailAddressContains($message, 'To', 'client@example.com');
+        self::assertEmailSubjectContains($message, 'Paiement reçu pour votre commande ' . $reference);
+        self::assertEmailHtmlBodyContains($message, '29,80 €');
+        self::assertEmailTextBodyContains($message, 'paiement de 29,80 € pour la commande ' . $reference);
+    }
+
     public function testDeclinedPaymentKeepsOrderPending(): void
     {
         $client = static::createClient();
@@ -106,6 +169,7 @@ final class OrderControllerTest extends WebTestCase
 
         $client->submitForm('Payer la commande');
 
+        self::assertEmailCount(0, message: 'Un paiement refusé ne doit pas être confirmé par e-mail.');
         $client->followRedirect();
         self::assertSelectorTextContains('body', 'Le paiement a été refusé');
         self::assertSelectorTextContains('body', 'Statut : En attente de paiement');
@@ -136,6 +200,12 @@ final class OrderControllerTest extends WebTestCase
         $client->submitForm('Annuler la commande');
 
         self::assertResponseRedirects($orderUrl);
+        self::assertEmailCount(1);
+        $message = self::getMailerMessage();
+        self::assertEmailAddressContains($message, 'To', 'client@example.com');
+        self::assertEmailSubjectContains($message, 'Annulation de votre commande ' . basename($orderUrl));
+        self::assertEmailHtmlBodyContains($message, '29,80 €');
+        self::assertEmailTextBodyContains($message, basename($orderUrl));
         $client->followRedirect();
         self::assertSelectorTextContains('.flash--success', 'a bien été annulée');
         self::assertSelectorTextContains('body', 'Statut : Annulée');
@@ -156,6 +226,7 @@ final class OrderControllerTest extends WebTestCase
         $client->request('POST', $otherCustomerOrderUrl . '/annuler', ['_token' => $token]);
 
         self::assertResponseStatusCodeSame(404);
+        self::assertEmailCount(0);
         self::assertSame(OrderStatus::Pending, $this->findOrderStatus($otherCustomerOrderUrl));
     }
 

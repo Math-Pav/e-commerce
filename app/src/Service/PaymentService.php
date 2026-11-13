@@ -14,6 +14,7 @@ final class PaymentService
     public function __construct(
         private readonly PaymentProviderInterface $paymentProvider,
         private readonly EntityManagerInterface $entityManager,
+        private readonly CustomerMailer $customerMailer,
     ) {
     }
 
@@ -35,5 +36,7 @@ final class PaymentService
 
         $order->markAsPaid(new \DateTimeImmutable());
         $this->entityManager->flush();
+
+        $this->customerMailer->sendPaymentConfirmation($order);
     }
 }

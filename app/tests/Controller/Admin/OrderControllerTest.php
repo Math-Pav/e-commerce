@@ -135,6 +135,13 @@ final class OrderControllerTest extends WebTestCase
         $client->submitForm('Annuler la commande');
 
         self::assertResponseRedirects('/admin/commandes/' . $reference);
+        // Le client est prévenu, pas l'administrateur qui a annulé
+        self::assertEmailCount(1);
+        $message = self::getMailerMessage();
+        self::assertEmailAddressContains($message, 'To', 'client@example.com');
+        self::assertEmailAddressNotContains($message, 'To', 'admin@example.com');
+        self::assertEmailSubjectContains($message, 'Annulation de votre commande ' . $reference);
+        self::assertEmailTextBodyContains($message, '29,80 €');
         $client->followRedirect();
         self::assertSelectorTextContains('.flash--success', 'annulée');
         self::assertSelectorTextContains('.order-header', 'Statut : Annulée');

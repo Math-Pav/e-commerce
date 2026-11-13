@@ -1,0 +1,9 @@
+Bienvenue {{ user.firstName }} !
+
+Votre compte Atelier Papier a bien été créé avec l'adresse {{ user.email }}.
+
+Vous pouvez dès maintenant parcourir notre catalogue de mugs, carnets et stylos, et suivre vos commandes depuis votre espace.
+
+Découvrir le catalogue : {{ url('product_index') }}
+
+{% include 'emails/_footer.txt.twig' %}

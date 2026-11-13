@@ -1,0 +1,15 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block content %}
+    <h1 style="margin:0 0 16px; font-size:24px;">Paiement reçu</h1>
+    <p style="margin:0 0 12px;">Bonjour {{ order.customer.firstName }},</p>
+    <p style="margin:0;">
+        Nous avons bien reçu votre paiement de <strong>{{ order.totalAmount|price }}</strong>
+        pour la commande <strong>{{ order.reference }}</strong>, le {{ order.paidAt|date('d/m/Y à H:i') }}.
+        Nous préparons maintenant votre colis.
+    </p>
+
+    {% include 'emails/_order_summary.html.twig' with {order: order} only %}
+
+    {% include 'emails/_button.html.twig' with {url: url('order_show', {reference: order.reference}), label: 'Suivre ma commande'} only %}
+{% endblock %}

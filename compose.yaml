@@ -44,6 +44,14 @@ services:
     depends_on:
       - database
 
+  # Mailpit : faux serveur SMTP qui capture les e-mails envoyés par l'application.
+  # Aucun e-mail ne part chez un vrai destinataire ; on les lit dans l'interface web.
+  # Le port SMTP (1025) n'est joignable que depuis les autres conteneurs (MAILER_DSN=smtp://mailpit:1025).
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+
 # Volume nommé : les données de la base survivent à l'arrêt des conteneurs
 volumes:
   db_data:

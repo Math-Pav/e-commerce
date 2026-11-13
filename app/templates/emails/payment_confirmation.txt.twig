@@ -1,0 +1,11 @@
+Paiement reçu
+
+Bonjour {{ order.customer.firstName }},
+
+Nous avons bien reçu votre paiement de {{ order.totalAmount|price }} pour la commande {{ order.reference }}, le {{ order.paidAt|date('d/m/Y à H:i') }}. Nous préparons maintenant votre colis.
+
+{% include 'emails/_order_summary.txt.twig' with {order: order} only %}
+
+Suivre ma commande : {{ url('order_show', {reference: order.reference}) }}
+
+{% include 'emails/_footer.txt.twig' %}
