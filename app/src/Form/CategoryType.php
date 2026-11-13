@@ -13,6 +13,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 /**
  * Formulaire d'administration d'une catégorie, lié au DTO CategoryData.
  * Le slug n'y figure pas : il est généré par CategoryService.
+ *
+ * @extends AbstractType<CategoryData>
  */
 final class CategoryType extends AbstractType
 {

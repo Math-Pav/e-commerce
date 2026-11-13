@@ -178,7 +178,7 @@ final class CategoryControllerTest extends WebTestCase
         $client->request('POST', sprintf('/admin/categories/%d/supprimer', $id), ['_token' => 'invalide']);
 
         self::assertResponseStatusCodeSame(403);
-        self::assertNotNull($this->findCategory('categorie-vide'));
+        self::assertSame($id, $this->findCategory('categorie-vide')->getId());
     }
 
     public function testPublicFiltersOnlyShowCategoriesWithActiveProducts(): void

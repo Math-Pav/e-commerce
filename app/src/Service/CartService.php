@@ -86,7 +86,7 @@ final class CartService
             $products,
         );
 
-        return new Cart(array_values($lines));
+        return new Cart($lines);
     }
 
     /**

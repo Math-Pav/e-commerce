@@ -12,6 +12,8 @@ use App\Tests\Util\TestFiles;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Field\ChoiceFormField;
+use Symfony\Component\DomCrawler\Field\FileFormField;
 
 final class ProductControllerTest extends WebTestCase
 {
@@ -391,7 +393,9 @@ final class ProductControllerTest extends WebTestCase
         $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
         self::assertSelectorExists(sprintf('figure img[src="/uploads/products/%s"]', $image));
         $form = $crawler->selectButton('Enregistrer les modifications')->form();
-        $form['product[removeImage]']->tick();
+        $removeImageField = $form['product[removeImage]'];
+        self::assertInstanceOf(ChoiceFormField::class, $removeImageField);
+        $removeImageField->tick();
         $client->submit($form);
 
         self::assertResponseRedirects('/admin/produits');
@@ -418,7 +422,9 @@ final class ProductControllerTest extends WebTestCase
     {
         $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
         $form = $crawler->selectButton('Enregistrer les modifications')->form();
-        $form['product[image]']->upload($imagePath);
+        $imageField = $form['product[image]'];
+        self::assertInstanceOf(FileFormField::class, $imageField);
+        $imageField->upload($imagePath);
         $client->submit($form);
     }
 
@@ -447,7 +453,9 @@ final class ProductControllerTest extends WebTestCase
             'product[description]' => 'Un mug de test.',
         ]);
         if ($imagePath !== null) {
-            $form['product[image]']->upload($imagePath);
+            $imageField = $form['product[image]'];
+            self::assertInstanceOf(FileFormField::class, $imageField);
+            $imageField->upload($imagePath);
         }
         $client->submit($form);
     }

@@ -21,6 +21,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 /**
  * Formulaire d'administration d'un produit, lié au DTO ProductData (et non à l'entité).
  * Le slug n'y figure pas : il est généré par ProductService.
+ *
+ * @extends AbstractType<ProductData>
  */
 final class ProductType extends AbstractType
 {
