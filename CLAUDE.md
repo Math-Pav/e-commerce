@@ -16,8 +16,11 @@ Instructions permanentes pour Claude sur ce projet. À lire avant toute interven
 - **Doctrine ORM** + **Doctrine Migrations** pour la base de données
 - **MariaDB 11.4**
 - **Twig** pour le rendu des pages côté serveur (pas de SPA pour le moment)
+- **Symfony Translation** pour traduire en français les messages par défaut de Symfony (site en français uniquement)
+- **Symfony Mailer** pour les e-mails clients (envoi synchrone ; **Mailpit** capture les e-mails en développement, `null://null` en test)
+- **Symfony Mime** pour vérifier le type des fichiers envoyés (photos des produits)
 - **PHPUnit** pour les tests
-- **Docker Compose** pour l'environnement local (php, nginx, database, adminer)
+- **Docker Compose** pour l'environnement local (php, nginx, database, adminer, mailpit : interface sur http://localhost:8025)
 - **Git** pour le versionnement
 
 ## Organisation du dépôt
@@ -32,9 +35,9 @@ Toutes les commandes PHP, Composer et Symfony s'exécutent **dans le conteneur**
 
 ## Périmètre du MVP
 
-Inclus : catégories, catalogue, fiche produit, inscription/connexion, panier, commande, paiement **simulé**, historique des commandes.
+Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, inscription/connexion, panier, commande, annulation par le client, paiement **simulé**, historique des commandes, e-mails clients, administration (tableau de bord, produits, commandes, catégories).
 
-Hors périmètre pour l'instant (ne pas implémenter sans demande explicite) : administration, recherche avancée, variantes de produits, codes promo, avis, e-mails, vrai paiement.
+Hors périmètre pour l'instant (ne pas implémenter sans demande explicite) : recherche avancée (plein texte, facettes), variantes de produits, codes promo, avis, e-mails pour l'administrateur, envoi asynchrone (Messenger), vrai paiement.
 
 ## Architecture
 
@@ -64,6 +67,7 @@ Principes :
 ## Conventions
 
 - Code (classes, méthodes, variables) en **anglais** ; commentaires et documentation en **français**.
+- Interface du site en **français** (locale `fr`) : nos textes sont écrits en français directement dans les templates et le code, sans fichiers de traduction ; les messages par défaut de Symfony (validation, sécurité) sont traduits par `symfony/translation` (voir `docs/adr/0006-locale-francaise.md`).
 - Respect de PSR-12 et des conventions Symfony.
 - Classes en `PascalCase`, méthodes et variables en `camelCase`, tables et colonnes en `snake_case`.
 - Suffixes explicites : `ProductController`, `CartService`, `ProductRepository`, `ProductType` (formulaire).
@@ -79,6 +83,7 @@ Principes :
 - Accès contrôlés par rôles (`ROLE_USER`, `ROLE_ADMIN`) et vérification qu'un utilisateur n'accède qu'à ses propres commandes.
 - Aucune requête SQL construite par concaténation : uniquement Doctrine ou requêtes paramétrées.
 - Aucun secret dans le dépôt : utiliser `.env.local` (ignoré par Git).
+- Fichiers envoyés : type vérifié d'après le contenu (JPEG, PNG, WebP ; jamais de SVG), nom aléatoire, liste blanche d'extensions, stockage dans `public/uploads/` (ignoré par Git). Voir `docs/adr/0010-photos-des-produits.md`.
 
 ## Dépendances
 
