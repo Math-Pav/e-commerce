@@ -7,6 +7,7 @@ namespace App\Tests\Entity;
 use App\Entity\Product;
 use App\Exception\InsufficientStockException;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 final class ProductTest extends TestCase
 {
@@ -45,5 +46,24 @@ final class ProductTest extends TestCase
         $this->expectException(\InvalidArgumentException::class);
 
         (new Product())->setStock(5)->decreaseStock(0);
+    }
+
+    #[DataProvider('lowStockProvider')]
+    public function testIsLowStock(int $stock, bool $expected): void
+    {
+        $product = (new Product())->setStock($stock);
+
+        self::assertSame($expected, $product->isLowStock());
+    }
+
+    /**
+     * @return iterable<string, array{int, bool}>
+     */
+    public static function lowStockProvider(): iterable
+    {
+        yield 'rupture : pas un stock faible' => [0, false];
+        yield 'un seul exemplaire' => [1, true];
+        yield 'au seuil' => [Product::LOW_STOCK_THRESHOLD, true];
+        yield 'juste au-dessus du seuil' => [Product::LOW_STOCK_THRESHOLD + 1, false];
     }
 }

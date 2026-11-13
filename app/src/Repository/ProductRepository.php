@@ -42,6 +42,21 @@ class ProductRepository extends ServiceEntityRepository
     }
 
     /**
+     * Tous les produits, actifs ou non, avec leur catégorie (pour l'administration).
+     *
+     * @return list<Product>
+     */
+    public function findAllWithCategory(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('c')
+            ->join('p.category', 'c')
+            ->orderBy('p.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Verrouille la ligne du produit jusqu'à la fin de la transaction et relit ses données à jour.
      * Doit être appelée à l'intérieur d'une transaction.
      */

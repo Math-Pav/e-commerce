@@ -12,6 +12,8 @@ use App\Exception\InsufficientStockException;
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
 {
+    public const LOW_STOCK_THRESHOLD = 5;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -146,6 +148,14 @@ class Product
     public function isInStock(): bool
     {
         return $this->stock > 0;
+    }
+
+    /**
+     * Stock faible : encore disponible, mais à réapprovisionner bientôt.
+     */
+    public function isLowStock(): bool
+    {
+        return $this->stock > 0 && $this->stock <= self::LOW_STOCK_THRESHOLD;
     }
 
     /**

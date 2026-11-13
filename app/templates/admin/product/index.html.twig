@@ -1,0 +1,52 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Produits · Administration{% endblock %}
+
+{% block admin_content %}
+    <div class="page-toolbar">
+        <div class="page-header">
+            <p class="eyebrow">Administration</p>
+            <h1 class="page-title">Produits</h1>
+        </div>
+        <p class="toolbar__count">{{ products|length }} produit{{ products|length > 1 ? 's' }}</p>
+    </div>
+
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">Produit</th>
+                    <th scope="col">Catégorie</th>
+                    <th scope="col" class="num">Prix</th>
+                    <th scope="col" class="num">Stock</th>
+                    <th scope="col">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                    <tr>
+                        <td><strong>{{ product.name }}</strong></td>
+                        <td>{{ product.category.name }}</td>
+                        <td class="num">{{ product.price|price }}</td>
+                        <td class="num">
+                            {% if not product.inStock %}
+                                <span class="stock stock--out">Rupture</span>
+                            {% elseif product.lowStock %}
+                                <span class="stock stock--low">{{ product.stock }} · faible</span>
+                            {% else %}
+                                {{ product.stock }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if product.active %}
+                                <span class="badge badge--success">En ligne</span>
+                            {% else %}
+                                <span class="badge badge--neutral">Désactivé</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
