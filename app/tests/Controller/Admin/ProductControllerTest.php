@@ -118,7 +118,9 @@ final class ProductControllerTest extends WebTestCase
 
         $product = $this->findProduct('mug-ete-a-rayures');
         self::assertSame(1290, $product->getPrice(), 'Le prix saisi en euros doit être stocké en centimes.');
-        self::assertSame(7, $product->getStock());
+        // Le stock initial va à la variante par défaut (ADR 0017)
+        self::assertSame(7, $product->getTotalStock());
+        self::assertCount(1, $product->getVariants());
         self::assertTrue($product->isActive());
 
         $client->request('GET', '/produits/mug-ete-a-rayures');
@@ -158,6 +160,8 @@ final class ProductControllerTest extends WebTestCase
         $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
         self::assertResponseIsSuccessful();
         self::assertInputValueSame('product[price]', '14.90');
+        // Le stock se gère dans les variantes, pas dans le formulaire du produit
+        self::assertSelectorNotExists('[name="product[stock]"]');
 
         $client->submit($crawler->selectButton('Enregistrer les modifications')->form([
             'product[name]' => 'Mug noir mat XL',

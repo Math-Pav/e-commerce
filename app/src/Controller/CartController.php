@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Product;
+use App\Entity\ProductVariant;
 use App\Exception\InsufficientStockException;
 use App\Exception\InvalidPromoCodeException;
+use App\Repository\ProductVariantRepository;
 use App\Service\CartService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,11 +35,13 @@ final class CartController extends AbstractController
     }
 
     #[Route('/ajouter/{id}', name: 'cart_add', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function add(Product $product, Request $request): Response
+    public function add(Product $product, Request $request, ProductVariantRepository $variantRepository): Response
     {
         $this->denyUnlessCsrfTokenValid($request);
 
-        if (!$product->isActive()) {
+        // La variante choisie doit appartenir au produit de l'URL et être en vente
+        $variant = $variantRepository->find($request->getPayload()->getInt('variant'));
+        if (null === $variant || $variant->getProduct() !== $product || !$variant->isAvailable()) {
             throw $this->createNotFoundException('Produit introuvable.');
         }
 
@@ -47,25 +51,25 @@ final class CartController extends AbstractController
         }
 
         try {
-            $this->cartService->add($product, $quantity);
+            $this->cartService->add($variant, $quantity);
         } catch (InsufficientStockException $exception) {
             $this->addFlash('error', $exception->getMessage());
 
             return $this->redirectToRoute('product_show', ['slug' => $product->getSlug()]);
         }
 
-        $this->addFlash('success', sprintf('« %s » a été ajouté au panier.', $product->getName()));
+        $this->addFlash('success', sprintf('« %s » a été ajouté au panier.', $variant->getName()));
 
         return $this->redirectToRoute('cart_show');
     }
 
     #[Route('/retirer/{id}', name: 'cart_remove', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function remove(Product $product, Request $request): Response
+    public function remove(ProductVariant $variant, Request $request): Response
     {
         $this->denyUnlessCsrfTokenValid($request);
 
-        $this->cartService->remove($product);
-        $this->addFlash('success', sprintf('« %s » a été retiré du panier.', $product->getName()));
+        $this->cartService->remove($variant);
+        $this->addFlash('success', sprintf('« %s » a été retiré du panier.', $variant->getName()));
 
         return $this->redirectToRoute('cart_show');
     }

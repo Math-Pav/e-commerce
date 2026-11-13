@@ -62,7 +62,7 @@
                                         {% if item.product %}
                                             {% include 'product/_image.html.twig' with {product: item.product, thumb: true} %}
                                         {% endif %}
-                                        {{ item.productName }}
+                                        {{ item.displayName }}
                                     </span>
                                 </td>
                                 <td class="num">{{ item.unitPrice|price }}</td>

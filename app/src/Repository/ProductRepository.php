@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Category;
 use App\Entity\Product;
+use App\Entity\ProductVariant;
 use App\Enum\CatalogSort;
 use App\Model\CatalogQuery;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -75,33 +76,39 @@ class ProductRepository extends ServiceEntityRepository
     }
 
     /**
-     * Tous les produits, actifs ou non, avec leur catégorie (pour l'administration).
+     * Charge en une seule requête les variantes de ces produits (déjà chargés), au lieu d'une requête
+     * par produit au premier appel de getVariants() (problème N+1). Doctrine remplit alors leurs collections.
+     *
+     * @param list<Product> $products
+     */
+    public function loadVariants(array $products): void
+    {
+        if ([] === $products) {
+            return;
+        }
+
+        $this->createQueryBuilder('p')
+            ->addSelect('v')
+            ->leftJoin('p.variants', 'v')
+            ->where('p IN (:products)')
+            ->setParameter('products', $products)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Tous les produits, actifs ou non, avec leur catégorie et leurs variantes (pour l'administration).
      *
      * @return list<Product>
      */
     public function findAllWithCategory(): array
     {
         return $this->createQueryBuilder('p')
-            ->addSelect('c')
+            ->addSelect('c', 'v')
             ->join('p.category', 'c')
+            ->leftJoin('p.variants', 'v')
             ->orderBy('p.name', 'ASC')
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * Produits en rupture ou en stock faible (voir Product::isInStock() et Product::isLowStock()),
-     * actifs ou non, les plus urgents en premier.
-     *
-     * @return list<Product>
-     */
-    public function findOutOfStockOrLowStock(): array
-    {
-        return $this->createQueryBuilder('p')
-            ->where('p.stock <= :threshold')
-            ->setParameter('threshold', Product::LOW_STOCK_THRESHOLD)
-            ->orderBy('p.stock', 'ASC')
-            ->addOrderBy('p.name', 'ASC')
+            ->addOrderBy('v.id', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -115,13 +122,24 @@ class ProductRepository extends ServiceEntityRepository
      * La correspondance à appliquer selon le tri choisi. Les champs viennent de ce code,
      * jamais de l'URL. L'identifiant départage les ex aequo : sans lui, deux produits de même prix
      * pourraient changer d'ordre d'une requête à l'autre et apparaître sur deux pages.
+     *
+     * Le prix trié est celui affiché (« à partir de ») : le plus petit prix des variantes actives,
+     * le prix d'une variante étant le sien ou, à défaut, celui du produit (ADR 0017).
+     * HIDDEN : la valeur sert au tri mais n'est pas renvoyée avec les produits.
      */
     private function applySort(QueryBuilder $queryBuilder, CatalogSort $sort): void
     {
+        if (in_array($sort, [CatalogSort::PriceAsc, CatalogSort::PriceDesc], true)) {
+            $queryBuilder->addSelect(sprintf(
+                '(SELECT MIN(COALESCE(sv.price, p.price)) FROM %s sv WHERE sv.product = p AND sv.isActive = true) AS HIDDEN fromPrice',
+                ProductVariant::class,
+            ));
+        }
+
         [$field, $direction] = match ($sort) {
             CatalogSort::Name => ['p.name', 'ASC'],
-            CatalogSort::PriceAsc => ['p.price', 'ASC'],
-            CatalogSort::PriceDesc => ['p.price', 'DESC'],
+            CatalogSort::PriceAsc => ['fromPrice', 'ASC'],
+            CatalogSort::PriceDesc => ['fromPrice', 'DESC'],
             CatalogSort::Newest => ['p.createdAt', 'DESC'],
         };
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Product;
+use App\Entity\ProductVariant;
 use App\Model\ProductData;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,12 +30,19 @@ final class ProductService
     }
 
     /**
+     * Crée le produit et sa variante par défaut, qui reçoit le stock initial (ADR 0017).
+     *
      * @param ProductData $data données déjà validées par le formulaire
      */
     public function create(ProductData $data): Product
     {
         $product = new Product();
         $this->applyData($product, $data);
+        $product->addVariant(
+            (new ProductVariant())
+                ->setSku($this->generateSku())
+                ->setStock($data->stock),
+        );
         $this->applyImage($product, $data);
         // isSlugTaken(...) : syntaxe « callable de première classe », on passe la méthode sans l'appeler
         $product->setSlug($this->slugGenerator->generateUnique(
@@ -95,8 +103,17 @@ final class ProductService
             ->setName($data->name)
             ->setCategory($data->category)
             ->setPrice($data->price)
-            ->setStock($data->stock)
             ->setDescription($data->description);
+    }
+
+    /**
+     * Référence de la variante par défaut, modifiable ensuite dans « Variantes ».
+     * Aléatoire comme la référence d'une commande : l'identifiant du produit n'existe pas encore.
+     */
+    private function generateSku(): string
+    {
+        // Exemple : PRD-4F9A2C1B
+        return sprintf('PRD-%s', strtoupper(bin2hex(random_bytes(4))));
     }
 
     /**

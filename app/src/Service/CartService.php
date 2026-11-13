@@ -4,30 +4,33 @@ declare(strict_types=1);
 
 namespace App\Service;
 
-use App\Entity\Product;
+use App\Entity\ProductVariant;
 use App\Entity\PromoCode;
 use App\Exception\InsufficientStockException;
 use App\Exception\InvalidPromoCodeException;
 use App\Model\Cart;
 use App\Model\CartLine;
-use App\Repository\ProductRepository;
+use App\Repository\ProductVariantRepository;
 use App\Repository\PromoCodeRepository;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 
 /**
- * Panier stocké en session sous la forme [identifiant produit => quantité],
+ * Panier stocké en session sous la forme [identifiant de variante => quantité] (ADR 0017),
  * avec à part le code promo appliqué (son texte seulement, revérifié à chaque lecture du panier).
  */
 final class CartService
 {
-    private const SESSION_KEY = 'cart';
+    private const SESSION_KEY = 'cart_variants';
+
+    // Ancien panier [identifiant produit => quantité], d'avant les variantes : vidé à la première lecture
+    private const LEGACY_SESSION_KEY = 'cart';
 
     private const PROMO_CODE_SESSION_KEY = 'cart_promo_code';
 
     public function __construct(
         private readonly RequestStack $requestStack,
-        private readonly ProductRepository $productRepository,
+        private readonly ProductVariantRepository $variantRepository,
         private readonly PromoCodeRepository $promoCodeRepository,
         private readonly DiscountCalculator $discountCalculator,
     ) {
@@ -36,27 +39,27 @@ final class CartService
     /**
      * @throws InsufficientStockException
      */
-    public function add(Product $product, int $quantity = 1): void
+    public function add(ProductVariant $variant, int $quantity = 1): void
     {
         if ($quantity < 1) {
             throw new \InvalidArgumentException('La quantité doit être au moins égale à 1.');
         }
 
         $quantities = $this->getQuantities();
-        $newQuantity = ($quantities[$this->productId($product)] ?? 0) + $quantity;
+        $newQuantity = ($quantities[$this->variantId($variant)] ?? 0) + $quantity;
 
-        if ($newQuantity > $product->getStock()) {
-            throw new InsufficientStockException($product);
+        if ($newQuantity > $variant->getStock()) {
+            throw new InsufficientStockException($variant);
         }
 
-        $quantities[$this->productId($product)] = $newQuantity;
+        $quantities[$this->variantId($variant)] = $newQuantity;
         $this->saveQuantities($quantities);
     }
 
-    public function remove(Product $product): void
+    public function remove(ProductVariant $variant): void
     {
         $quantities = $this->getQuantities();
-        unset($quantities[$this->productId($product)]);
+        unset($quantities[$this->variantId($variant)]);
         $this->saveQuantities($quantities);
     }
 
@@ -93,7 +96,8 @@ final class CartService
     }
 
     /**
-     * Calculé à partir du panier relu en base : un produit désactivé entre-temps n'est plus compté.
+     * Calculé à partir du panier relu en base : une variante devenue indisponible n'est plus comptée.
+     * Affiché sur chaque page : il ne modifie pas le panier et n'affiche aucun message (c'est le rôle de getCart()).
      */
     public function getItemCount(): int
     {
@@ -105,11 +109,15 @@ final class CartService
 
     /**
      * Le panier relu en base, avec la remise du code promo s'il est toujours applicable.
-     * Un code devenu inapplicable (désactivé, expiré, minimum plus atteint…) est retiré avec un message.
+     * Réconciliation : un ancien panier, une variante devenue indisponible ou un code devenu inapplicable
+     * (désactivé, expiré, minimum plus atteint…) sont retirés avec un message.
      */
     public function getCart(): Cart
     {
+        $this->discardLegacyCart();
         $lines = $this->loadLines();
+        $this->removeUnavailableVariants($lines);
+
         $code = $this->requestStack->getSession()->get(self::PROMO_CODE_SESSION_KEY);
 
         if (!is_string($code) || [] === $lines) {
@@ -145,16 +153,55 @@ final class CartService
             return [];
         }
 
-        // Une seule requête pour tous les produits ; les produits désactivés entre-temps sont ignorés
-        $products = $this->productRepository->findBy([
-            'id' => array_keys($quantities),
-            'isActive' => true,
-        ]);
+        // Une seule requête pour toutes les variantes ; celles devenues indisponibles sont ignorées
+        $variants = $this->variantRepository->findAvailableByIds(array_keys($quantities));
 
         return array_map(
-            fn (Product $product): CartLine => new CartLine($product, $quantities[$this->productId($product)]),
-            $products,
+            fn (ProductVariant $variant): CartLine => new CartLine($variant, $quantities[$this->variantId($variant)]),
+            $variants,
         );
+    }
+
+    /**
+     * Retire de la session les variantes absentes des lignes relues (supprimées, désactivées, produit désactivé).
+     *
+     * @param list<CartLine> $lines
+     */
+    private function removeUnavailableVariants(array $lines): void
+    {
+        $quantities = $this->getQuantities();
+        $available = array_map(fn (CartLine $line): int => $this->variantId($line->variant), $lines);
+        $unavailable = array_diff(array_keys($quantities), $available);
+
+        if ([] === $unavailable) {
+            return;
+        }
+
+        foreach ($unavailable as $variantId) {
+            unset($quantities[$variantId]);
+        }
+        $this->saveQuantities($quantities);
+        $this->addFlash('error', 1 === count($unavailable)
+            ? 'Un article de votre panier n\'est plus disponible : il a été retiré.'
+            : sprintf('%d articles de votre panier ne sont plus disponibles : ils ont été retirés.', count($unavailable)));
+    }
+
+    /**
+     * Un panier enregistré avant les variantes contient des identifiants de produits : on ne peut pas
+     * les lire comme des identifiants de variantes (ce seraient d'autres articles). Il est vidé une fois.
+     */
+    private function discardLegacyCart(): void
+    {
+        $session = $this->requestStack->getSession();
+
+        if (!$session->has(self::LEGACY_SESSION_KEY)) {
+            return;
+        }
+
+        $legacyCart = $session->remove(self::LEGACY_SESSION_KEY);
+        if (is_array($legacyCart) && [] !== $legacyCart) {
+            $this->addFlash('error', 'Notre catalogue a évolué : votre panier a été vidé. Merci d\'ajouter à nouveau vos articles.');
+        }
     }
 
     private function addFlash(string $type, string $message): void
@@ -167,11 +214,11 @@ final class CartService
     }
 
     /**
-     * L'identifiant sert de clé dans la session : seul un produit déjà enregistré en a un.
+     * L'identifiant sert de clé dans la session : seule une variante déjà enregistrée en a un.
      */
-    private function productId(Product $product): int
+    private function variantId(ProductVariant $variant): int
     {
-        return $product->getId() ?? throw new \LogicException('Seul un produit enregistré peut être mis dans le panier.');
+        return $variant->getId() ?? throw new \LogicException('Seule une variante enregistrée peut être mise dans le panier.');
     }
 
     /**

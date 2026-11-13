@@ -6,6 +6,7 @@ namespace App\Tests\Repository;
 
 use App\Entity\Category;
 use App\Entity\Product;
+use App\Entity\ProductVariant;
 use App\Enum\CatalogSort;
 use App\Model\CatalogQuery;
 use App\Repository\ProductRepository;
@@ -109,6 +110,18 @@ final class ProductRepositoryCatalogTest extends KernelTestCase
         yield 'nouveautés' => [CatalogSort::Newest, ['Cerise', 'Banane', 'Ananas']];
     }
 
+    public function testPriceSortUsesLowestActiveVariantPrice(): void
+    {
+        // Prix de base 500, mais une variante à 50 : c'est le prix « à partir de » affiché, donc trié
+        $this->createProduct('Banane', price: 300);
+        $this->createProduct('Ananas', price: 500, variantPrices: [null, 50]);
+        $cherry = $this->createProduct('Cerise', price: 100, variantPrices: [null, 20]);
+        // Une variante désactivée ne compte pas
+        $cherry->getVariants()[1]?->setIsActive(false);
+
+        self::assertSame(['Ananas', 'Cerise', 'Banane'], $this->names(new CatalogQuery(sort: CatalogSort::PriceAsc)));
+    }
+
     public function testProductsWithSamePriceKeepAStableOrder(): void
     {
         $first = $this->createProduct('Premier', price: 500);
@@ -146,12 +159,16 @@ final class ProductRepositoryCatalogTest extends KernelTestCase
         self::assertCount(0, $products);
     }
 
+    /**
+     * @param list<?int> $variantPrices prix propre de chaque variante (null = prix du produit)
+     */
     private function createProduct(
         string $name,
         int $price = 1000,
         ?string $description = null,
         bool $active = true,
         ?string $createdAt = null,
+        array $variantPrices = [null],
     ): Product {
         $product = (new Product())
             ->setName($name)
@@ -160,6 +177,13 @@ final class ProductRepositoryCatalogTest extends KernelTestCase
             ->setDescription($description)
             ->setIsActive($active)
             ->setCategory($this->category);
+
+        // Tout produit a au moins une variante (ADR 0017) : ici, sa variante par défaut
+        foreach ($variantPrices as $variantPrice) {
+            $product->addVariant(
+                (new ProductVariant())->setSku('TEST-'.bin2hex(random_bytes(6)))->setPrice($variantPrice)->setStock(1),
+            );
+        }
 
         if (null !== $createdAt) {
             // createdAt n'a pas de setter (fixée à la création) : on la force pour le test du tri « nouveautés »

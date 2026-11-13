@@ -60,6 +60,7 @@ final class ProductController extends AbstractController
         $data = ProductData::fromProduct($product);
         $form = $this->createForm(ProductType::class, $data, [
             'allow_image_removal' => null !== $product->getImageFilename(),
+            'include_stock' => false,
         ]);
         $form->handleRequest($request);
 

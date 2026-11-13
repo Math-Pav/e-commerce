@@ -33,12 +33,11 @@
                         <td>{{ product.category.name }}</td>
                         <td class="num">{{ product.price|price }}</td>
                         <td class="num">
+                            {# Stock total des variantes actives ; le détail par variante est dans « Variantes » #}
                             {% if not product.inStock %}
                                 <span class="stock stock--out">Rupture</span>
-                            {% elseif product.lowStock %}
-                                <span class="stock stock--low">{{ product.stock }} · faible</span>
                             {% else %}
-                                {{ product.stock }}
+                                {{ product.totalStock }}
                             {% endif %}
                         </td>
                         <td>
@@ -51,6 +50,7 @@
                         <td>
                             <div class="table__actions">
                                 <a href="{{ path('admin_product_edit', {id: product.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ product.name }}</span></a>
+                                <a href="{{ path('admin_product_variant_index', {id: product.id}) }}" class="btn btn--secondary">Variantes ({{ product.variants|length }})<span class="visually-hidden"> de {{ product.name }}</span></a>
                                 {% set status_action = product.active ? 'deactivate' : 'activate' %}
                                 <form method="post" action="{{ path('admin_product_' ~ status_action, {id: product.id}) }}">
                                     <input type="hidden" name="_token" value="{{ csrf_token('product-status') }}">

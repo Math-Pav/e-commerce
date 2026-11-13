@@ -10,7 +10,7 @@ use App\Model\Cart;
 use App\Model\CartLine;
 use App\Model\ShippingAddress;
 use App\Repository\OrderRepository;
-use App\Repository\ProductRepository;
+use App\Repository\ProductVariantRepository;
 use App\Repository\UserRepository;
 use App\Service\OrderService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -147,9 +147,9 @@ final class OrderControllerTest extends WebTestCase
         self::assertSelectorTextContains('.flash--success', 'annulée');
         self::assertSelectorTextContains('.order-header', 'Statut : Annulée');
         static::getContainer()->get(EntityManagerInterface::class)->clear();
-        $product = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat']);
-        self::assertNotNull($product);
-        self::assertSame(12, $product->getStock());
+        $variant = static::getContainer()->get(ProductVariantRepository::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
+        self::assertNotNull($variant);
+        self::assertSame(12, $variant->getStock());
     }
 
     public function testActionWithoutValidCsrfTokenIsRejected(): void
@@ -187,13 +187,13 @@ final class OrderControllerTest extends WebTestCase
         $address->city = 'Lyon';
 
         $customer = $container->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
-        $product = $container->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        $variant = $container->get(ProductVariantRepository::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
         self::assertNotNull($customer);
-        self::assertNotNull($product);
+        self::assertNotNull($variant);
 
         $order = $container->get(OrderService::class)->placeOrder(
             $customer,
-            new Cart([new CartLine($product, 2)]),
+            new Cart([new CartLine($variant, 2)]),
             $address,
         );
 

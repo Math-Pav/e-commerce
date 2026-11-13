@@ -15,9 +15,14 @@ class OrderItem
     #[ORM\Column]
     private ?int $id = null;
 
-    // Copie du nom et du prix au moment de l'achat : l'historique ne change pas si le produit change
+    // Copie du nom, du libellé de la variante et du prix au moment de l'achat :
+    // l'historique ne change pas si le produit ou la variante changent
     #[ORM\Column(length: 150)]
     private ?string $productName = null;
+
+    // null pour la variante par défaut d'un produit sans déclinaison
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $variantLabel = null;
 
     #[ORM\Column]
     private ?int $unitPrice = null;
@@ -34,6 +39,11 @@ class OrderItem
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Product $product = null;
 
+    // Variante achetée : sert à remettre le stock à l'annulation. NULL si la variante est supprimée.
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?ProductVariant $variant = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -47,6 +57,28 @@ class OrderItem
     public function setProductName(string $productName): static
     {
         $this->productName = $productName;
+
+        return $this;
+    }
+
+    /**
+     * Nom affiché dans la commande et les e-mails : « Mug émaillé – Bleu », d'après les copies.
+     */
+    public function getDisplayName(): string
+    {
+        return null === $this->variantLabel
+            ? (string) $this->productName
+            : sprintf('%s – %s', $this->productName, $this->variantLabel);
+    }
+
+    public function getVariantLabel(): ?string
+    {
+        return $this->variantLabel;
+    }
+
+    public function setVariantLabel(?string $variantLabel): static
+    {
+        $this->variantLabel = $variantLabel;
 
         return $this;
     }
@@ -95,6 +127,18 @@ class OrderItem
     public function setProduct(?Product $product): static
     {
         $this->product = $product;
+
+        return $this;
+    }
+
+    public function getVariant(): ?ProductVariant
+    {
+        return $this->variant;
+    }
+
+    public function setVariant(?ProductVariant $variant): static
+    {
+        $this->variant = $variant;
 
         return $this;
     }

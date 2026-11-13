@@ -36,8 +36,13 @@ final class ProductController extends AbstractController
             return $this->redirectToRoute('product_index', $catalog->withPage($pagination->lastPage)->toRouteParameters());
         }
 
+        // Le Paginator relance sa requête à chaque parcours : on lit la page une seule fois.
+        // Prix « à partir de » et rupture de stock dépendent des variantes : une requête pour toute la page.
+        $pageProducts = iterator_to_array($products, false);
+        $productRepository->loadVariants($pageProducts);
+
         return $this->render('product/index.html.twig', [
-            'products' => $products,
+            'products' => $pageProducts,
             'pagination' => $pagination,
             'catalog' => $catalog,
             'sorts' => CatalogSort::cases(),

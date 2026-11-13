@@ -8,7 +8,7 @@
     {% for item in order.items %}
         <tr>
             <td style="padding:8px 0; border-bottom:1px solid #e3e5e8;">
-                {{ item.productName }}<br>
+                {{ item.displayName }}<br>
                 <span style="color:#5b6370; font-size:13px;">{{ item.unitPrice|price }} l'unité</span>
             </td>
             <td align="right" style="padding:8px 0; border-bottom:1px solid #e3e5e8;">{{ item.quantity }}</td>

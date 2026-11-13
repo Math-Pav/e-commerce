@@ -121,7 +121,7 @@
 
         <section class="layout-split__aside dashboard-section" aria-labelledby="low-stock-title">
             <h2 id="low-stock-title" class="section-title">Stock à surveiller</h2>
-            {% if lowStockProducts is empty %}
+            {% if lowStockVariants is empty %}
                 <p class="empty-state">Aucun produit en rupture ou en stock faible.</p>
             {% else %}
                 <div class="table-wrapper">
@@ -134,24 +134,24 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for product in lowStockProducts %}
+                            {% for variant in lowStockVariants %}
                                 <tr>
                                     <td>
-                                        {{ product.name }}
-                                        {% if not product.active %}
+                                        {{ variant.name }}
+                                        {% if not variant.available %}
                                             <span class="badge badge--neutral">Désactivé</span>
                                         {% endif %}
                                     </td>
                                     <td class="num">
-                                        {% if not product.inStock %}
+                                        {% if not variant.inStock %}
                                             <span class="stock stock--out">Rupture</span>
                                         {% else %}
-                                            <span class="stock stock--low">{{ product.stock }} · faible</span>
+                                            <span class="stock stock--low">{{ variant.stock }} · faible</span>
                                         {% endif %}
                                     </td>
                                     <td>
                                         <div class="table__actions">
-                                            <a href="{{ path('admin_product_edit', {id: product.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ product.name }}</span></a>
+                                            <a href="{{ path('admin_product_variant_edit', {id: variant.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ variant.name }}</span></a>
                                         </div>
                                     </td>
                                 </tr>

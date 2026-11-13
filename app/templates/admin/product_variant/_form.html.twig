@@ -1,0 +1,12 @@
+{{ form_start(variantForm, {attr: {class: 'form'}}) }}
+    {{ form_row(variantForm.label) }}
+    {{ form_row(variantForm.sku) }}
+    <div class="form__inline">
+        {{ form_row(variantForm.price) }}
+        {{ form_row(variantForm.stock) }}
+    </div>
+    {{ form_row(variantForm.isActive) }}
+    <button type="submit" class="btn btn--primary">{{ button_label }}</button>
+{{ form_end(variantForm) }}
+
+<a href="{{ path('admin_product_variant_index', {id: product.id}) }}" class="back-link">← Retour aux variantes de {{ product.name }}</a>

@@ -51,9 +51,9 @@ final class CategoryControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('nav a[href="/admin/categories"][aria-current="page"]');
-        // Carnets : 3 produits actifs + l'agenda désactivé = 4
+        // Carnets : 4 produits actifs (dont le carnet pointillé et ses variantes) + l'agenda désactivé = 5
         $carnetsRow = $crawler->filter('tbody tr')->reduce(static fn ($row): bool => str_contains($row->text(), 'Carnets'));
-        self::assertSame('4', trim($carnetsRow->filter('td.num')->text()));
+        self::assertSame('5', trim($carnetsRow->filter('td.num')->text()));
     }
 
     public function testAdminCreatesCategory(): void
@@ -165,7 +165,7 @@ final class CategoryControllerTest extends WebTestCase
 
         self::assertResponseRedirects('/admin/categories');
         $client->followRedirect();
-        self::assertSelectorTextContains('.flash--error', 'Impossible de supprimer la catégorie « Carnets » : elle contient encore 4 produits.');
+        self::assertSelectorTextContains('.flash--error', 'Impossible de supprimer la catégorie « Carnets » : elle contient encore 5 produits.');
         self::assertSame('Carnets', $this->findCategory('carnets')->getName());
     }
 

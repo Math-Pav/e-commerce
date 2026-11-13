@@ -18,14 +18,14 @@
                         <li class="cart-line">
                             {% include 'product/_image.html.twig' with {product: line.product} %}
                             <div class="cart-line__info">
-                                <a href="{{ path('product_show', {slug: line.product.slug}) }}" class="cart-line__name">{{ line.product.name }}</a>
-                                <span class="cart-line__unit">{{ line.product.price|price }} l'unité</span>
+                                <a href="{{ path('product_show', {slug: line.product.slug}) }}" class="cart-line__name">{{ line.variant.name }}</a>
+                                <span class="cart-line__unit">{{ line.unitPrice|price }} l'unité</span>
                             </div>
                             <span class="cart-line__quantity">Quantité : <strong>{{ line.quantity }}</strong></span>
                             <span class="cart-line__subtotal">{{ line.subtotal|price }}</span>
-                            <form method="post" action="{{ path('cart_remove', {id: line.product.id}) }}">
+                            <form method="post" action="{{ path('cart_remove', {id: line.variant.id}) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
-                                <button type="submit" class="btn btn--secondary">Retirer<span class="visually-hidden"> {{ line.product.name }} du panier</span></button>
+                                <button type="submit" class="btn btn--secondary">Retirer<span class="visually-hidden"> {{ line.variant.name }} du panier</span></button>
                             </form>
                         </li>
                     {% endfor %}
@@ -37,7 +37,7 @@
                 <ul class="summary-list">
                     {% for line in cart.lines %}
                         <li class="summary-row">
-                            <span class="summary-row__label">{{ line.quantity }} × {{ line.product.name }}</span>
+                            <span class="summary-row__label">{{ line.quantity }} × {{ line.variant.name }}</span>
                             <span>{{ line.subtotal|price }}</span>
                         </li>
                     {% endfor %}

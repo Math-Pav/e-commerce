@@ -13,7 +13,7 @@ use App\Exception\InvalidPromoCodeException;
 use App\Model\Cart;
 use App\Model\ShippingAddress;
 use App\Repository\OrderRepository;
-use App\Repository\ProductRepository;
+use App\Repository\ProductVariantRepository;
 use App\Repository\PromoCodeRepository;
 use Doctrine\DBAL\Exception as DBALException;
 use Doctrine\ORM\EntityManagerInterface;
@@ -23,7 +23,7 @@ final class OrderService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly ProductRepository $productRepository,
+        private readonly ProductVariantRepository $variantRepository,
         private readonly OrderRepository $orderRepository,
         private readonly PromoCodeRepository $promoCodeRepository,
         private readonly DiscountCalculator $discountCalculator,
@@ -56,17 +56,21 @@ final class OrderService
                 ->setShippingCity($address->city);
 
             foreach ($cart->lines as $line) {
-                $product = $line->product;
+                $variant = $line->variant;
 
-                $this->productRepository->lockForUpdate($product);
-                $product->decreaseStock($line->quantity);
+                // Le verrou relit aussi la variante : stock et prix sont ceux de la base, à jour
+                $this->variantRepository->lockForUpdate($variant);
+                $variant->decreaseStock($line->quantity);
+                $product = $line->getProduct();
 
-                // Copie du nom et du prix : la commande ne changera pas si le produit change ensuite
+                // Copie du nom, du libellé et du prix : la commande ne changera pas si le produit ou la variante changent
                 $order->addItem(
                     (new OrderItem())
                         ->setProduct($product)
+                        ->setVariant($variant)
                         ->setProductName($product->getName() ?? throw new \LogicException('Produit sans nom.'))
-                        ->setUnitPrice($product->getPrice() ?? throw new \LogicException('Produit sans prix.'))
+                        ->setVariantLabel($variant->getLabel())
+                        ->setUnitPrice($variant->getEffectivePrice())
                         ->setQuantity($line->quantity),
                 );
             }
@@ -93,7 +97,7 @@ final class OrderService
     }
 
     /**
-     * Annule une commande en attente de paiement et remet en stock les produits commandés,
+     * Annule une commande en attente de paiement et remet en stock les variantes commandées,
      * en une seule transaction : tout réussit, ou rien ne change.
      *
      * Ne dépend ni de la requête ni de l'utilisateur connecté : elle peut être appelée par
@@ -116,16 +120,16 @@ final class OrderService
             $order->cancel(new \DateTimeImmutable());
 
             foreach ($order->getItems() as $item) {
-                $product = $item->getProduct();
+                $variant = $item->getVariant();
 
-                // Produit supprimé du catalogue depuis la commande : rien à remettre en stock
-                if (null === $product) {
+                // Variante (ou produit) supprimée depuis la commande : rien à remettre en stock
+                if (null === $variant) {
                     continue;
                 }
 
                 // Même verrou que placeOrder() : aucune autre commande ne modifie ce stock en même temps
-                $this->productRepository->lockForUpdate($product);
-                $product->increaseStock((int) $item->getQuantity());
+                $this->variantRepository->lockForUpdate($variant);
+                $variant->increaseStock((int) $item->getQuantity());
             }
 
             // L'utilisation du code est rendue, sous le même verrou que lors de la commande

@@ -7,6 +7,8 @@ Dernière mise à jour : 2026-11-13
 ```mermaid
 erDiagram
     CATEGORY ||--o{ PRODUCT : contient
+    PRODUCT ||--|{ PRODUCT_VARIANT : "décliné en"
+    PRODUCT_VARIANT |o--o{ ORDER_ITEM : "référencée par"
     USER ||--o{ ORDERS : passe
     ORDERS ||--|{ ORDER_ITEM : contient
     PRODUCT |o--o{ ORDER_ITEM : "référencé par"
@@ -24,10 +26,18 @@ erDiagram
         string slug UK
         text description
         int price
-        int stock
         bool is_active
         string image_filename
         datetime created_at
+    }
+    PRODUCT_VARIANT {
+        int id PK
+        int product_id FK
+        string label
+        string sku UK
+        int price
+        int stock
+        bool is_active
     }
     USER {
         int id PK
@@ -78,7 +88,9 @@ erDiagram
         int id PK
         int order_id FK
         int product_id FK
+        int variant_id FK
         string product_name
+        string variant_label
         int unit_price
         int quantity
     }
@@ -103,19 +115,35 @@ erDiagram
 | name | string(150) | obligatoire |
 | slug | string(170) | obligatoire, unique, généré à partir du nom à la création puis figé (ADR 0004) |
 | description | text | facultatif |
-| price | integer | obligatoire, en centimes, ≥ 0 |
-| stock | integer | obligatoire, défaut 0, ≥ 0 |
+| price | integer | obligatoire, en centimes, ≥ 0 ; prix de base, utilisé par les variantes sans prix propre |
 | is_active | boolean | obligatoire, défaut `true` ; `false` = masqué du catalogue sans être supprimé |
 | image_filename | string(255) | facultatif ; nom du fichier de la photo dans `public/uploads/products/`, généré aléatoirement (ADR 0010) ; vide = visuel de remplacement |
 | created_at | datetime_immutable | obligatoire |
 
-Index du catalogue (ADR 0011), un par tri proposé, pour lire les produits actifs directement dans l'ordre demandé :
+Le stock est porté par les variantes (ADR 0017) : tout produit en a au moins une.
+
+Index du catalogue (ADR 0011), pour lire les produits actifs directement dans l'ordre demandé :
 
 | Index | Colonnes | Sert à |
 |---|---|---|
 | idx_product_active_name | is_active, name | tri par nom (tri par défaut) |
-| idx_product_active_price | is_active, price | tris par prix croissant et décroissant |
 | idx_product_active_created_at | is_active, created_at | tri par nouveautés |
+
+Les tris par prix utilisent le plus petit prix des variantes actives (sous-requête) : ils n'ont pas d'index (ADR 0017).
+
+### ProductVariant (`product_variant`)
+
+Déclinaison d'un produit (couleur, format…). Un produit sans déclinaison a une seule variante « par défaut », sans libellé, invisible pour le client (ADR 0017).
+
+| Colonne | Type | Contraintes |
+|---|---|---|
+| id | integer | clé primaire |
+| product_id | integer | clé étrangère → product, obligatoire (`CASCADE` si le produit est supprimé) |
+| label | string(100) | facultatif (vide = variante par défaut) ; obligatoire et unique dans le produit dès qu'il a plusieurs variantes (vérifié par le formulaire) |
+| sku | string(64) | obligatoire, unique (référence de l'article) |
+| price | integer | facultatif, en centimes, ≥ 0 ; vide = prix du produit |
+| stock | integer | obligatoire, défaut 0, ≥ 0 |
+| is_active | boolean | obligatoire, défaut `true` ; `false` = plus proposée aux clients |
 
 La recherche (`LIKE '%…%'` sur `name` et `description`) ne peut pas utiliser d'index : voir ADR 0011.
 
@@ -192,7 +220,9 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 | id | integer | clé primaire |
 | order_id | integer | clé étrangère → orders, obligatoire |
 | product_id | integer | clé étrangère → product, **facultatif** (`SET NULL` si le produit est supprimé) |
+| variant_id | integer | clé étrangère → product_variant, **facultatif** (`SET NULL`) ; sert à remettre le stock à l'annulation |
 | product_name | string(150) | obligatoire, copie au moment de l'achat |
+| variant_label | string(100) | facultatif, copie du libellé de la variante (vide pour une variante par défaut) |
 | unit_price | integer | obligatoire, en centimes, copie au moment de l'achat |
 | quantity | integer | obligatoire, ≥ 1 |
 
@@ -201,6 +231,8 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 | Relation | Question 1 | Question 2 | Type | Clé étrangère |
 |---|---|---|---|---|
 | Category ↔ Product | Une catégorie a combien de produits ? Plusieurs | Un produit a combien de catégories ? Une | un-à-plusieurs | `product.category_id` |
+| Product ↔ ProductVariant | Un produit a combien de variantes ? Au moins une | Une variante appartient à combien de produits ? Un | un-à-plusieurs | `product_variant.product_id` |
+| ProductVariant ↔ OrderItem | Une variante apparaît dans combien de lignes ? Plusieurs | Une ligne concerne combien de variantes ? Une (ou aucune si elle a été supprimée) | un-à-plusieurs | `order_item.variant_id` |
 | User ↔ Order | Un utilisateur a combien de commandes ? Plusieurs | Une commande a combien d'utilisateurs ? Un | un-à-plusieurs | `orders.customer_id` |
 | Order ↔ OrderItem | Une commande a combien de lignes ? Plusieurs (au moins une) | Une ligne appartient à combien de commandes ? Une | un-à-plusieurs | `order_item.order_id` |
 | PromoCode ↔ Order | Un code est utilisé par combien de commandes ? Plusieurs | Une commande utilise combien de codes ? Zéro ou un | un-à-plusieurs | `orders.promo_code_id` |
@@ -209,11 +241,12 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 ## Décisions
 
 - **Prix en centimes (`integer`)** : évite les erreurs d'arrondi des nombres à virgule.
-- **Copies dans `orders` et `order_item`** (adresse, nom du produit, prix) : une commande est un document historique, elle ne doit pas changer si le produit, son prix ou l'adresse du client changent ensuite.
+- **Stock sur les variantes** (ADR 0017) : un seul chemin dans le code (panier, commande, annulation), y compris pour un produit sans déclinaison, grâce à sa variante par défaut.
+- **Copies dans `orders` et `order_item`** (adresse, nom du produit, libellé de la variante, prix) : une commande est un document historique, elle ne doit pas changer si le produit, son prix ou l'adresse du client changent ensuite.
 - **`total_amount` stocké** plutôt que recalculé : il fige le montant réellement facturé.
 - **Remise copiée dans `orders`** (code, montant) : modifier ou désactiver un code ne change pas les commandes passées (ADR 0016).
 - **Adresse dans `user`** : une seule adresse par client, qui préremplit l'adresse de livraison (ADR 0013). Suffisant pour le MVP. Une entité `Address` séparée sera envisagée si l'on veut plusieurs adresses par client.
 - **Une catégorie ne peut être supprimée que si elle ne contient aucun produit** (même désactivé) : `product.category_id` est obligatoire.
-- **Pas d'entité `Cart`** : le panier est stocké en session pour le MVP.
+- **Pas d'entité `Cart`** : le panier est stocké en session pour le MVP, sous la forme [identifiant de variante => quantité].
 - **Photo des produits : seul le nom du fichier est en base** : l'image elle-même est un fichier sur disque (`public/uploads/products/`), servi directement par Nginx.
 - **Codes postaux et téléphones en `string`** : ce ne sont pas des nombres (zéros initiaux, aucun calcul).

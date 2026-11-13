@@ -6,6 +6,7 @@ namespace App\Tests\Service;
 
 use App\Entity\Category;
 use App\Entity\Product;
+use App\Entity\ProductVariant;
 use App\Model\ProductData;
 use App\Repository\ProductRepository;
 use App\Service\ProductImageStorage;
@@ -72,7 +73,14 @@ final class ProductServiceTest extends TestCase
         self::assertSame('Mug noir', $product->getName());
         self::assertSame($data->category, $product->getCategory());
         self::assertSame(990, $product->getPrice());
-        self::assertSame(12, $product->getStock());
+        // Le stock initial va à la variante par défaut, sans libellé, avec une référence générée
+        self::assertCount(1, $product->getVariants());
+        $variant = $product->getVariants()->first();
+        self::assertInstanceOf(ProductVariant::class, $variant);
+        self::assertNull($variant->getLabel());
+        self::assertNull($variant->getPrice());
+        self::assertSame(12, $variant->getStock());
+        self::assertMatchesRegularExpression('/^PRD-[0-9A-F]{8}$/', (string) $variant->getSku());
         self::assertSame('Un mug.', $product->getDescription());
         self::assertTrue($product->isActive());
     }

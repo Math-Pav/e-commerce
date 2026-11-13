@@ -3,7 +3,9 @@
     {{ form_row(productForm.category) }}
     <div class="form__inline">
         {{ form_row(productForm.price) }}
-        {{ form_row(productForm.stock) }}
+        {% if productForm.stock is defined %}
+            {{ form_row(productForm.stock) }}
+        {% endif %}
     </div>
     {{ form_row(productForm.description) }}
     {% if product is defined and product.imageFilename %}
