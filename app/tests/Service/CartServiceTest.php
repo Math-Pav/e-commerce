@@ -182,4 +182,4 @@ final class CartServiceTest extends TestCase
         self::assertSame($this->pen, $lines[0]->product);
         self::assertSame(3, $this->cartService->getItemCount());
     }
-}
+}
