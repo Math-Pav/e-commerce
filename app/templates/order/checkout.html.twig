@@ -35,6 +35,11 @@
                     {{ form_row(checkoutForm.postalCode) }}
                     {{ form_row(checkoutForm.city) }}
                 </div>
+                {# Case avant son libellé, comme l'usage le veut ; le <label for> garde le libellé cliquable #}
+                <div>
+                    {{ form_widget(checkoutForm.saveToProfile) }}
+                    {{ form_label(checkoutForm.saveToProfile) }}
+                </div>
                 <button type="submit" class="btn btn--primary btn--lg btn--block">Valider la commande</button>
             {{ form_end(checkoutForm) }}
 

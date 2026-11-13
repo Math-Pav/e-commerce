@@ -12,7 +12,9 @@ use App\Model\Cart;
 use App\Model\ShippingAddress;
 use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
+use Doctrine\DBAL\Exception as DBALException;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 final class OrderService
 {
@@ -21,11 +23,13 @@ final class OrderService
         private readonly ProductRepository $productRepository,
         private readonly OrderRepository $orderRepository,
         private readonly CustomerMailer $customerMailer,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
     /**
      * Crée la commande et décrémente le stock, en une seule transaction : tout réussit, ou rien ne change.
+     * Si le client l'a demandé, l'adresse de livraison est ensuite enregistrée dans son profil.
      *
      * @throws InsufficientStockException
      */
@@ -65,6 +69,10 @@ final class OrderService
 
             return $order;
         });
+
+        if ($address->saveToProfile) {
+            $this->saveAddressToProfile($customer, $address);
+        }
 
         // Après la transaction : si elle avait échoué, aucun e-mail n'annoncerait une commande inexistante
         $this->customerMailer->sendOrderConfirmation($order);
@@ -128,6 +136,34 @@ final class OrderService
     {
         $order->markAsDelivered(new \DateTimeImmutable());
         $this->entityManager->flush();
+    }
+
+    /**
+     * Appelée APRÈS la transaction de la commande, volontairement :
+     * - une commande qui échoue ne modifie pas le profil ;
+     * - la commande est déjà enregistrée : si le profil ne peut pas l'être, on journalise l'erreur
+     *   au lieu de la propager. Sinon le client verrait une erreur alors que sa commande existe,
+     *   son panier ne serait pas vidé, et il risquerait de commander une seconde fois.
+     *
+     * Pas de validation ici : l'adresse de livraison a déjà été validée, avec des règles
+     * au moins aussi strictes que celles du profil (mêmes contraintes, plus NotBlank).
+     */
+    private function saveAddressToProfile(User $customer, ShippingAddress $address): void
+    {
+        $customer
+            ->setAddress($address->address)
+            ->setPostalCode($address->postalCode)
+            ->setCity($address->city);
+
+        try {
+            $this->entityManager->flush();
+        } catch (DBALException $exception) {
+            // Seules les erreurs de base de données sont absorbées ; un bug de programmation reste visible
+            $this->logger->error("L'adresse de livraison n'a pas pu être enregistrée dans le profil du client.", [
+                'customer_id' => $customer->getId(),
+                'exception' => $exception,
+            ]);
+        }
     }
 
     private function generateReference(): string

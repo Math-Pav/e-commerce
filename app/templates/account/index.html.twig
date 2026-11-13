@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon compte{% endblock %}
+
+{% block body %}
+    <div class="page-header">
+        <h1 class="page-title">Mon compte</h1>
+        <p class="lead">Connecté avec l'adresse e-mail <strong class="account-email">{{ app.user.email }}</strong>.</p>
+    </div>
+
+    <div class="layout-split">
+        <section class="layout-split__main" aria-labelledby="profile-title">
+            <h2 id="profile-title" class="section-title">Mes informations</h2>
+
+            {{ form_start(profileForm, {attr: {class: 'form'}}) }}
+                <div class="form__inline">
+                    {{ form_row(profileForm.firstName) }}
+                    {{ form_row(profileForm.lastName) }}
+                </div>
+                {{ form_row(profileForm.phone) }}
+                {{ form_row(profileForm.address) }}
+                <div class="form__inline">
+                    {{ form_row(profileForm.postalCode) }}
+                    {{ form_row(profileForm.city) }}
+                </div>
+                <button type="submit" class="btn btn--primary">Enregistrer mes informations</button>
+            {{ form_end(profileForm) }}
+        </section>
+
+        <section class="layout-split__aside panel" aria-labelledby="password-title">
+            <h2 id="password-title" class="section-title">Changer mon mot de passe</h2>
+
+            {{ form_start(passwordForm, {attr: {class: 'form'}}) }}
+                {{ form_row(passwordForm.currentPassword) }}
+                {{ form_row(passwordForm.newPassword) }}
+                <button type="submit" class="btn btn--secondary btn--block">Changer mon mot de passe</button>
+            {{ form_end(passwordForm) }}
+        </section>
+    </div>
+{% endblock %}

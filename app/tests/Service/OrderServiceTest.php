@@ -16,7 +16,12 @@ use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
 use App\Service\CustomerMailer;
 use App\Service\OrderService;
+use Doctrine\DBAL\Driver\AbstractException;
+use Doctrine\DBAL\Exception\ConnectionLost;
+use Doctrine\ORM\Decorator\EntityManagerDecorator;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class OrderServiceTest extends KernelTestCase
@@ -36,6 +41,7 @@ final class OrderServiceTest extends KernelTestCase
             $container->get(ProductRepository::class),
             $container->get(OrderRepository::class),
             $container->get(CustomerMailer::class),
+            new NullLogger(),
         );
     }
 
@@ -191,6 +197,77 @@ final class OrderServiceTest extends KernelTestCase
 
         $this->orderService->deliver($order);
         self::assertSame(OrderStatus::Delivered, $order->getStatus());
+    }
+
+    public function testPlaceOrderDoesNotTouchProfileByDefault(): void
+    {
+        $customer = $this->findCustomer();
+
+        $this->orderService->placeOrder($customer, new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)]), $this->createAddress());
+
+        $this->entityManager->clear();
+        self::assertNull($this->findCustomer()->getAddress());
+    }
+
+    public function testPlaceOrderSavesAddressToProfileWhenAsked(): void
+    {
+        $customer = $this->findCustomer();
+        $address = $this->createAddress();
+        $address->saveToProfile = true;
+
+        $this->orderService->placeOrder($customer, new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)]), $address);
+
+        $this->entityManager->clear();
+        $saved = $this->findCustomer();
+        self::assertSame('12 rue des Lilas', $saved->getAddress());
+        self::assertSame('69001', $saved->getPostalCode());
+        self::assertSame('Lyon', $saved->getCity());
+        self::assertSame('Camille', $saved->getFirstName(), 'Le nom du destinataire ne remplace pas le nom du client.');
+    }
+
+    public function testFailedOrderDoesNotSaveAddressToProfile(): void
+    {
+        $address = $this->createAddress();
+        $address->saveToProfile = true;
+        $cart = new Cart([new CartLine($this->findProduct('mug-isotherme'), 1)]); // stock à 0
+
+        try {
+            $this->orderService->placeOrder($this->findCustomer(), $cart, $address);
+            self::fail('Une InsufficientStockException était attendue.');
+        } catch (InsufficientStockException) {
+        }
+
+        $entityManager = static::getContainer()->get('doctrine')->resetManager();
+        self::assertNull($entityManager->getRepository(User::class)->findOneBy(['email' => 'client@example.com'])->getAddress());
+    }
+
+    public function testProfileSaveFailureDoesNotFailTheOrder(): void
+    {
+        // EntityManager dont seul le flush() appelé par OrderService échoue ; la transaction de la commande,
+        // elle, utilise le flush() de l'EntityManager réel et réussit.
+        $failingEntityManager = new class ($this->entityManager) extends EntityManagerDecorator {
+            public function flush(): void
+            {
+                throw new ConnectionLost(new class ('Connexion à la base perdue.') extends AbstractException {}, null);
+            }
+        };
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('error');
+        $container = static::getContainer();
+        $orderService = new OrderService(
+            $failingEntityManager,
+            $container->get(ProductRepository::class),
+            $container->get(OrderRepository::class),
+            $container->get(CustomerMailer::class),
+            $logger,
+        );
+        $address = $this->createAddress();
+        $address->saveToProfile = true;
+
+        $order = $orderService->placeOrder($this->findCustomer(), new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)]), $address);
+
+        self::assertNotNull($order->getId(), 'La commande doit être enregistrée malgré l\'échec du profil.');
+        self::assertEmailCount(1, message: 'La confirmation de commande doit quand même partir.');
     }
 
     private function findProduct(string $slug): Product

@@ -48,6 +48,7 @@ Structure Symfony standard, organisée en couches :
 - `src/Repository/` : requêtes en base. Aucune requête Doctrine en dehors des repositories.
 - `src/Entity/` : entités Doctrine (données + règles simples propres à l'entité).
 - `src/Form/` : formulaires Symfony et leur validation.
+- `src/Validator/` : contraintes de validation réutilisables (contraintes composées partagées par plusieurs DTO, ex. `PostalCode`).
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
 
 Principes :

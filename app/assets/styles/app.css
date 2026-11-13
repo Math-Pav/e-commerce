@@ -517,3 +517,7 @@ svg { flex: none; }
 .pagination__link:hover { color: var(--color-text); border-color: var(--color-text); }
 .pagination__link[aria-current="page"] { background: var(--color-text); border-color: var(--color-text); color: #fff; }
 .pagination__ellipsis { color: var(--color-muted); }
+
+/* Espace « Mon compte » --------------------------------------------------- */
+/* Une adresse e-mail longue n'a pas d'espace où couper la ligne : sans cette règle, elle ferait défiler la page sur mobile */
+.account-email { overflow-wrap: anywhere; }

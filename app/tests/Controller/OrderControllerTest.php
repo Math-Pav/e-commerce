@@ -97,6 +97,85 @@ final class OrderControllerTest extends WebTestCase
         self::assertEmailTextBodyNotContains($message, 'Mug noir mat');
     }
 
+    public function testCheckoutIsPrefilledWithProfileAddress(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $this->saveProfileAddress($client, '3 place Bellecour', '69002', 'Lyon');
+        $this->addToCart($client, 'mug-noir-mat', 1);
+
+        $client->request('GET', '/commande');
+
+        self::assertInputValueSame('shipping_address[fullName]', 'Camille Martin');
+        self::assertInputValueSame('shipping_address[address]', '3 place Bellecour');
+        self::assertInputValueSame('shipping_address[postalCode]', '69002');
+        self::assertInputValueSame('shipping_address[city]', 'Lyon');
+        self::assertCheckboxNotChecked('shipping_address[saveToProfile]');
+    }
+
+    public function testCheckoutWithoutProfileAddressHasEmptyFields(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $this->addToCart($client, 'mug-noir-mat', 1);
+
+        $client->request('GET', '/commande');
+
+        self::assertInputValueSame('shipping_address[fullName]', 'Camille Martin');
+        self::assertInputValueSame('shipping_address[address]', '');
+    }
+
+    public function testSaveAddressCheckboxUpdatesProfile(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $this->saveProfileAddress($client, '3 place Bellecour', '69002', 'Lyon');
+        $this->addToCart($client, 'mug-noir-mat', 1);
+
+        $this->submitCheckout($client, '69001', saveToProfile: true);
+
+        self::assertResponseRedirects();
+        $client->request('GET', '/mon-compte');
+        self::assertInputValueSame('profile[address]', '12 rue des Lilas');
+        self::assertInputValueSame('profile[postalCode]', '69001');
+        self::assertInputValueSame('profile[city]', 'Lyon');
+    }
+
+    public function testUncheckedSaveAddressKeepsProfileAndEmailUsesOrderAddress(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $this->saveProfileAddress($client, '3 place Bellecour', '69002', 'Lyon');
+        $this->addToCart($client, 'mug-noir-mat', 1);
+
+        $this->submitCheckout($client, '69001');
+
+        // L'e-mail reprend l'adresse copiée dans la commande, pas celle du profil
+        self::assertEmailCount(1);
+        $message = self::getMailerMessage();
+        self::assertEmailHtmlBodyContains($message, '12 rue des Lilas');
+        self::assertEmailHtmlBodyNotContains($message, 'Bellecour');
+        self::assertEmailTextBodyContains($message, '69001 Lyon');
+        self::assertEmailTextBodyNotContains($message, 'Bellecour');
+
+        $client->request('GET', '/mon-compte');
+        self::assertInputValueSame('profile[address]', '3 place Bellecour');
+    }
+
+    public function testInvalidCheckoutDoesNotSaveAddressToProfile(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $this->addToCart($client, 'mug-noir-mat', 1);
+
+        $this->submitCheckout($client, 'abc', saveToProfile: true);
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertCheckboxChecked('shipping_address[saveToProfile]');
+        $client->request('GET', '/mon-compte');
+        self::assertInputValueSame('profile[address]', '');
+    }
+
     public function testInvalidPostalCodeShowsError(): void
     {
         $client = static::createClient();
@@ -307,13 +386,24 @@ final class OrderControllerTest extends WebTestCase
         $client->submitForm('Ajouter au panier', ['quantity' => $quantity]);
     }
 
-    private function submitCheckout(KernelBrowser $client, string $postalCode): void
+    private function submitCheckout(KernelBrowser $client, string $postalCode, bool $saveToProfile = false): void
     {
         $client->request('GET', '/commande');
         $client->submitForm('Valider la commande', [
             'shipping_address[address]' => '12 rue des Lilas',
             'shipping_address[postalCode]' => $postalCode,
             'shipping_address[city]' => 'Lyon',
+            'shipping_address[saveToProfile]' => $saveToProfile,
+        ]);
+    }
+
+    private function saveProfileAddress(KernelBrowser $client, string $address, string $postalCode, string $city): void
+    {
+        $client->request('GET', '/mon-compte');
+        $client->submitForm('Enregistrer mes informations', [
+            'profile[address]' => $address,
+            'profile[postalCode]' => $postalCode,
+            'profile[city]' => $city,
         ]);
     }
 }

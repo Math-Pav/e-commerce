@@ -31,10 +31,11 @@
                             {% if is_granted('ROLE_ADMIN') %}
                                 <a href="{{ path('admin_dashboard') }}" class="site-nav__link" aria-current="{{ route starts with 'admin' ? 'page' : 'false' }}">Administration</a>
                             {% endif %}
-                            <span class="site-nav__user">
+                            {# Le prénom ouvre l'espace « Mon compte » ; le texte caché rend la destination explicite aux lecteurs d'écran #}
+                            <a href="{{ path('account_index') }}" class="site-nav__link site-nav__user" aria-current="{{ route starts with 'account' ? 'page' : 'false' }}">
                                 <span class="avatar" aria-hidden="true">{{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}</span>
-                                <span class="visually-hidden">Connecté en tant que </span>{{ app.user.firstName }}
-                            </span>
+                                <span><span class="visually-hidden">Connecté en tant que </span>{{ app.user.firstName }}<span class="visually-hidden"> : mon compte</span></span>
+                            </a>
                             <a href="{{ path('app_logout') }}" class="site-nav__link">Se déconnecter</a>
                         {% else %}
                             <a href="{{ path('app_login') }}" class="site-nav__link" aria-current="{{ route == 'app_login' ? 'page' : 'false' }}">Se connecter</a>
