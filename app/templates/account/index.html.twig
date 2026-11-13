@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon compte{% endblock %}
+
+{% block body %}
+    <div class="page-header">
+        <h1 class="page-title">Mon compte</h1>
+        <p class="lead">Connecté avec l'adresse e-mail <strong class="account-email">{{ app.user.email }}</strong>.</p>
+    </div>
+
+    <div class="layout-split">
+        <section class="layout-split__main" aria-labelledby="profile-title">
+            <h2 id="profile-title" class="section-title">Mes informations</h2>
+
+            {{ form_start(profileForm, {attr: {class: 'form'}}) }}
+                <div class="form__inline">
+                    {{ form_row(profileForm.firstName) }}
+                    {{ form_row(profileForm.lastName) }}
+                </div>
+                {{ form_row(profileForm.phone) }}
+                {{ form_row(profileForm.address) }}
+                <div class="form__inline">
+                    {{ form_row(profileForm.postalCode) }}
+                    {{ form_row(profileForm.city) }}
+                </div>
+                <button type="submit" class="btn btn--primary">Enregistrer mes informations</button>
+            {{ form_end(profileForm) }}
+        </section>
+    </div>
+{% endblock %}
