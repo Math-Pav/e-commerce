@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\Order;
+use App\Entity\OrderItem;
 use App\Entity\Product;
 use App\Entity\User;
 use App\Enum\OrderStatus;
@@ -77,6 +78,7 @@ final class OrderServiceTest extends KernelTestCase
         $this->entityManager->flush();
 
         $item = $order->getItems()->first();
+        self::assertInstanceOf(OrderItem::class, $item);
         self::assertSame(1490, $item->getUnitPrice());
         self::assertSame('Mug noir mat', $item->getProductName());
         self::assertSame(1490, $order->getTotalAmount());

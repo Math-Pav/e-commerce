@@ -27,6 +27,8 @@ class OrderItemRepository extends ServiceEntityRepository
      */
     public function findBestSellingProducts(int $limit): array
     {
+        // Sans INDEX BY, Doctrine renvoie les lignes sous forme de liste (clés 0, 1, 2...)
+        /** @var list<array{id: mixed, name: mixed, quantitySold: mixed}> $rows */
         $rows = $this->createQueryBuilder('i')
             ->select('p.id AS id', 'p.name AS name', 'SUM(i.quantity) AS quantitySold')
             ->join('i.order', 'o')

@@ -58,8 +58,8 @@ final class OrderService
                 $order->addItem(
                     (new OrderItem())
                         ->setProduct($product)
-                        ->setProductName($product->getName())
-                        ->setUnitPrice($product->getPrice())
+                        ->setProductName($product->getName() ?? throw new \LogicException('Produit sans nom.'))
+                        ->setUnitPrice($product->getPrice() ?? throw new \LogicException('Produit sans prix.'))
                         ->setQuantity($line->quantity),
                 );
             }

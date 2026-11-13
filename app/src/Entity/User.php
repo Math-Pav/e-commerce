@@ -90,7 +90,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        // Symfony exige un identifiant non vide (contrat de UserInterface)
+        if ($this->email === null || $this->email === '') {
+            throw new \LogicException('Un utilisateur sans e-mail ne peut pas être identifié.');
+        }
+
+        return $this->email;
     }
 
     /**
