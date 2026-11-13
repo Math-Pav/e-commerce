@@ -66,4 +66,35 @@ final class ProductTest extends TestCase
         yield 'au seuil' => [Product::LOW_STOCK_THRESHOLD, true];
         yield 'juste au-dessus du seuil' => [Product::LOW_STOCK_THRESHOLD + 1, false];
     }
+
+    public function testIncreaseStock(): void
+    {
+        $product = (new Product())->setStock(2);
+
+        $product->increaseStock(3);
+
+        self::assertSame(5, $product->getStock());
+    }
+
+    #[DataProvider('invalidQuantities')]
+    public function testCannotIncreaseStockWithInvalidQuantity(int $quantity): void
+    {
+        $product = (new Product())->setStock(2);
+
+        try {
+            $product->increaseStock($quantity);
+            self::fail('Une InvalidArgumentException était attendue.');
+        } catch (\InvalidArgumentException) {
+            self::assertSame(2, $product->getStock());
+        }
+    }
+
+    /**
+     * @return iterable<string, array{int}>
+     */
+    public static function invalidQuantities(): iterable
+    {
+        yield 'zéro' => [0];
+        yield 'négative' => [-1];
+    }
 }

@@ -173,4 +173,16 @@ class Product
 
         $this->stock -= $quantity;
     }
+
+    /**
+     * Remet en stock une quantité (par exemple à l'annulation d'une commande).
+     */
+    public function increaseStock(int $quantity): void
+    {
+        if ($quantity < 1) {
+            throw new \InvalidArgumentException('La quantité doit être au moins égale à 1.');
+        }
+
+        $this->stock += $quantity;
+    }
 }
