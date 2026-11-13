@@ -442,6 +442,7 @@ svg { flex: none; }
     .cart-link { margin-left: 0; }
     .auth-card { padding: 24px; }
 }
+
 /* Administration : formulaire produit et actions du tableau --------------- */
 .admin-form { max-width: 640px; display: flex; flex-direction: column; gap: 24px; }
 .form select, .form textarea {
