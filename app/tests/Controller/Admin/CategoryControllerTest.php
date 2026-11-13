@@ -187,7 +187,9 @@ final class CategoryControllerTest extends WebTestCase
         $this->createCategory('Catégorie vide', 'categorie-vide');
         // Catégorie qui ne contient qu'un produit désactivé : elle ne doit pas apparaître non plus
         $agendas = $this->createCategory('Agendas', 'agendas');
-        static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'agenda-2026'])->setCategory($agendas);
+        $agenda = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'agenda-2026']);
+        self::assertNotNull($agenda);
+        $agenda->setCategory($agendas);
         static::getContainer()->get(EntityManagerInterface::class)->flush();
 
         $client->request('GET', '/produits');
@@ -229,6 +231,7 @@ final class CategoryControllerTest extends WebTestCase
     private function logIn(KernelBrowser $client, string $email): void
     {
         $user = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
+        self::assertNotNull($user);
         $client->loginUser($user);
     }
 }

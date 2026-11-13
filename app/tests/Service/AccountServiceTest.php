@@ -76,6 +76,9 @@ final class AccountServiceTest extends KernelTestCase
 
     private function findCustomer(): User
     {
-        return static::getContainer()->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        $customer = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        self::assertNotNull($customer);
+
+        return $customer;
     }
 }

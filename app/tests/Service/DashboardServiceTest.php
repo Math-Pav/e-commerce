@@ -159,6 +159,7 @@ final class DashboardServiceTest extends KernelTestCase
 
         foreach ($quantities as $slug => $quantity) {
             $product = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => $slug]);
+            self::assertNotNull($product);
             $order->addItem((new OrderItem())
                 ->setProduct($product)
                 ->setProductName((string) $product->getName())
@@ -201,6 +202,9 @@ final class DashboardServiceTest extends KernelTestCase
 
     private function findCustomer(): User
     {
-        return static::getContainer()->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        $customer = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        self::assertNotNull($customer);
+
+        return $customer;
     }
 }

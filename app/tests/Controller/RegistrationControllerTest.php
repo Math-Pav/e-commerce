@@ -38,6 +38,7 @@ final class RegistrationControllerTest extends WebTestCase
         // Vérification avant followRedirect() : chaque nouvelle requête vide la liste des e-mails collectés
         self::assertEmailCount(1);
         $message = self::getMailerMessage();
+        self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', $email);
         self::assertEmailAddressContains($message, 'From', 'boutique@atelier-papier.test');
         self::assertEmailSubjectContains($message, 'Bienvenue chez Atelier Papier');

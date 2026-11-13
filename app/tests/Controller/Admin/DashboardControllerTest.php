@@ -88,7 +88,9 @@ final class DashboardControllerTest extends WebTestCase
         self::assertSelectorTextContains($lowStock, 'Stylo plume');
         self::assertSelectorTextNotContains($lowStock, 'Mug blanc classique');
 
-        $mugId = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'mug-isotherme'])->getId();
+        $mug = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'mug-isotherme']);
+        self::assertNotNull($mug);
+        $mugId = $mug->getId();
         self::assertSelectorExists(sprintf('%s a[href="/admin/produits/%d/modifier"]', $lowStock, $mugId));
     }
 
@@ -101,9 +103,14 @@ final class DashboardControllerTest extends WebTestCase
         $address->postalCode = '69001';
         $address->city = 'Lyon';
 
+        $customer = $container->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        $product = $container->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        self::assertNotNull($customer);
+        self::assertNotNull($product);
+
         $order = $container->get(OrderService::class)->placeOrder(
-            $container->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']),
-            new Cart([new CartLine($container->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat']), $quantity)]),
+            $customer,
+            new Cart([new CartLine($product, $quantity)]),
             $address,
         );
 
@@ -124,6 +131,7 @@ final class DashboardControllerTest extends WebTestCase
     private function logIn(KernelBrowser $client, string $email): void
     {
         $user = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
+        self::assertNotNull($user);
         $client->loginUser($user);
     }
 }

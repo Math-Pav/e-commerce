@@ -28,8 +28,8 @@ final class AddressConstraintsTest extends KernelTestCase
         $violations = $this->validator->validate($this->createShippingAddress('6900A'));
 
         self::assertCount(1, $violations);
-        self::assertSame('postalCode', $violations[0]->getPropertyPath());
-        self::assertSame('Le code postal doit contenir 5 chiffres.', $violations[0]->getMessage());
+        self::assertSame('postalCode', $violations->get(0)->getPropertyPath());
+        self::assertSame('Le code postal doit contenir 5 chiffres.', $violations->get(0)->getMessage());
     }
 
     public function testEmptyPostalCodeShowsOnlyTheNotBlankMessage(): void
@@ -37,7 +37,7 @@ final class AddressConstraintsTest extends KernelTestCase
         $violations = $this->validator->validate($this->createShippingAddress(''));
 
         self::assertCount(1, $violations);
-        self::assertSame('Veuillez saisir le code postal.', $violations[0]->getMessage());
+        self::assertSame('Veuillez saisir le code postal.', $violations->get(0)->getMessage());
     }
 
     public function testShippingAddressRejectsTooLongCity(): void
@@ -48,7 +48,7 @@ final class AddressConstraintsTest extends KernelTestCase
         $violations = $this->validator->validate($address);
 
         self::assertCount(1, $violations);
-        self::assertSame('city', $violations[0]->getPropertyPath());
+        self::assertSame('city', $violations->get(0)->getPropertyPath());
     }
 
     private function createShippingAddress(string $postalCode): ShippingAddress

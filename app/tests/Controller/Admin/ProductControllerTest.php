@@ -368,6 +368,7 @@ final class ProductControllerTest extends WebTestCase
         $client = static::createClient();
         $this->logIn($client, 'admin@example.com');
         $id = $this->findProduct('mug-noir-mat')->getId();
+        self::assertNotNull($id);
 
         $this->submitEditForm($client, $id, $this->files->png());
         $firstImage = (string) $this->findProduct('mug-noir-mat')->getImageFilename();
@@ -387,6 +388,7 @@ final class ProductControllerTest extends WebTestCase
         $client = static::createClient();
         $this->logIn($client, 'admin@example.com');
         $id = $this->findProduct('mug-noir-mat')->getId();
+        self::assertNotNull($id);
         $this->submitEditForm($client, $id, $this->files->png());
         $image = (string) $this->findProduct('mug-noir-mat')->getImageFilename();
 
@@ -441,6 +443,7 @@ final class ProductControllerTest extends WebTestCase
     private function submitCreationForm(KernelBrowser $client, string $name, string $price, ?string $imagePath = null): void
     {
         $category = static::getContainer()->get(CategoryRepository::class)->findOneBy(['slug' => 'mugs-et-tasses']);
+        self::assertNotNull($category);
 
         $crawler = $client->request('GET', '/admin/produits/nouveau');
         self::assertResponseIsSuccessful();
@@ -475,6 +478,7 @@ final class ProductControllerTest extends WebTestCase
     private function logIn(KernelBrowser $client, string $email): void
     {
         $user = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
+        self::assertNotNull($user);
         $client->loginUser($user);
     }
 }

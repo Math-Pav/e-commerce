@@ -101,6 +101,7 @@ final class OrderServiceTest extends KernelTestCase
         // Après l'échec, on relit la base avec un EntityManager neuf
         $entityManager = static::getContainer()->get('doctrine')->resetManager();
         $mug = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        self::assertNotNull($mug);
 
         self::assertSame(12, $mug->getStock(), 'Le stock du premier produit doit être intact.');
         self::assertSame($orderCountBefore, $entityManager->getRepository(Order::class)->count([]), 'Aucune commande ne doit être créée.');
@@ -129,11 +130,16 @@ final class OrderServiceTest extends KernelTestCase
         // On relit la base avec un EntityManager neuf : le changement doit être enregistré, pas seulement en mémoire
         $entityManager = static::getContainer()->get('doctrine')->resetManager();
         $savedOrder = $entityManager->getRepository(Order::class)->find($order->getId());
+        $savedMug = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        $savedPen = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'stylo-a-bille-bleu']);
+        self::assertNotNull($savedOrder);
+        self::assertNotNull($savedMug);
+        self::assertNotNull($savedPen);
 
         self::assertSame(OrderStatus::Cancelled, $savedOrder->getStatus());
         self::assertNotNull($savedOrder->getCancelledAt());
-        self::assertSame(12, $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat'])->getStock());
-        self::assertSame(200, $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'stylo-a-bille-bleu'])->getStock());
+        self::assertSame(12, $savedMug->getStock());
+        self::assertSame(200, $savedPen->getStock());
     }
 
     public function testCancelIgnoresItemsWhoseProductWasDeleted(): void
@@ -153,6 +159,7 @@ final class OrderServiceTest extends KernelTestCase
         $this->entityManager->clear();
 
         $order = $this->entityManager->getRepository(Order::class)->find($orderId);
+        self::assertNotNull($order);
         $this->orderService->cancel($order);
 
         self::assertSame(OrderStatus::Cancelled, $order->getStatus());
@@ -177,12 +184,15 @@ final class OrderServiceTest extends KernelTestCase
 
         $entityManager = static::getContainer()->get('doctrine')->resetManager();
         $savedOrder = $entityManager->getRepository(Order::class)->find($order->getId());
+        $savedMug = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        self::assertNotNull($savedOrder);
+        self::assertNotNull($savedMug);
 
         self::assertSame(OrderStatus::Paid, $savedOrder->getStatus());
         self::assertNull($savedOrder->getCancelledAt());
         // Un seul e-mail : la confirmation de commande. L'annulation refusée n'en envoie aucun.
         self::assertEmailCount(1);
-        self::assertSame(10, $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat'])->getStock(), 'Le stock ne doit pas être remis.');
+        self::assertSame(10, $savedMug->getStock(), 'Le stock ne doit pas être remis.');
     }
 
     public function testShipThenDeliverPaidOrder(): void
@@ -240,7 +250,9 @@ final class OrderServiceTest extends KernelTestCase
         }
 
         $entityManager = static::getContainer()->get('doctrine')->resetManager();
-        self::assertNull($entityManager->getRepository(User::class)->findOneBy(['email' => 'client@example.com'])->getAddress());
+        $savedCustomer = $entityManager->getRepository(User::class)->findOneBy(['email' => 'client@example.com']);
+        self::assertNotNull($savedCustomer);
+        self::assertNull($savedCustomer->getAddress());
     }
 
     public function testProfileSaveFailureDoesNotFailTheOrder(): void
@@ -274,12 +286,18 @@ final class OrderServiceTest extends KernelTestCase
 
     private function findProduct(string $slug): Product
     {
-        return $this->entityManager->getRepository(Product::class)->findOneBy(['slug' => $slug]);
+        $product = $this->entityManager->getRepository(Product::class)->findOneBy(['slug' => $slug]);
+        self::assertNotNull($product);
+
+        return $product;
     }
 
     private function findCustomer(): User
     {
-        return $this->entityManager->getRepository(User::class)->findOneBy(['email' => 'client@example.com']);
+        $customer = $this->entityManager->getRepository(User::class)->findOneBy(['email' => 'client@example.com']);
+        self::assertNotNull($customer);
+
+        return $customer;
     }
 
     private function createAddress(): ShippingAddress

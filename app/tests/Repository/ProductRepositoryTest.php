@@ -42,6 +42,8 @@ final class ProductRepositoryTest extends KernelTestCase
 
     private function setStock(ProductRepository $productRepository, string $slug, int $stock): void
     {
-        $productRepository->findOneBy(['slug' => $slug])->setStock($stock);
+        $product = $productRepository->findOneBy(['slug' => $slug]);
+        self::assertNotNull($product);
+        $product->setStock($stock);
     }
 }

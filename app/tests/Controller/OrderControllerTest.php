@@ -64,6 +64,7 @@ final class OrderControllerTest extends WebTestCase
         // Vérification avant toute nouvelle requête : chaque requête vide la liste des e-mails collectés
         self::assertEmailCount(1);
         $message = self::getMailerMessage();
+        self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', 'client@example.com');
         self::assertEmailSubjectContains($message, 'Confirmation de votre commande ' . $reference);
         self::assertEmailHtmlBodyContains($message, $reference);
@@ -87,6 +88,7 @@ final class OrderControllerTest extends WebTestCase
 
         self::assertEmailCount(1);
         $message = self::getMailerMessage();
+        self::assertNotNull($message);
         self::assertEmailSubjectContains($message, $secondReference);
         self::assertEmailHtmlBodyContains($message, 'Stylo à bille bleu');
         self::assertEmailHtmlBodyContains($message, '4,50 €');
@@ -153,6 +155,7 @@ final class OrderControllerTest extends WebTestCase
         // L'e-mail reprend l'adresse copiée dans la commande, pas celle du profil
         self::assertEmailCount(1);
         $message = self::getMailerMessage();
+        self::assertNotNull($message);
         self::assertEmailHtmlBodyContains($message, '12 rue des Lilas');
         self::assertEmailHtmlBodyNotContains($message, 'Bellecour');
         self::assertEmailTextBodyContains($message, '69001 Lyon');
@@ -231,6 +234,7 @@ final class OrderControllerTest extends WebTestCase
 
         self::assertEmailCount(1, message: 'Seul le paiement doit envoyer un e-mail pendant cette requête.');
         $message = self::getMailerMessage();
+        self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', 'client@example.com');
         self::assertEmailSubjectContains($message, 'Paiement reçu pour votre commande ' . $reference);
         self::assertEmailHtmlBodyContains($message, '29,80 €');
@@ -281,6 +285,7 @@ final class OrderControllerTest extends WebTestCase
         self::assertResponseRedirects($orderUrl);
         self::assertEmailCount(1);
         $message = self::getMailerMessage();
+        self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', 'client@example.com');
         self::assertEmailSubjectContains($message, 'Annulation de votre commande ' . basename($orderUrl));
         self::assertEmailHtmlBodyContains($message, '29,80 €');
@@ -363,6 +368,7 @@ final class OrderControllerTest extends WebTestCase
     {
         static::getContainer()->get(EntityManagerInterface::class)->clear();
         $order = static::getContainer()->get(OrderRepository::class)->findOneBy(['reference' => basename($orderUrl)]);
+        self::assertNotNull($order);
 
         return $order->getStatus();
     }
@@ -370,13 +376,16 @@ final class OrderControllerTest extends WebTestCase
     private function findProductStock(string $slug): int
     {
         static::getContainer()->get(EntityManagerInterface::class)->clear();
+        $product = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => $slug]);
+        self::assertNotNull($product);
 
-        return static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => $slug])->getStock();
+        return $product->getStock();
     }
 
     private function logIn(KernelBrowser $client, string $email): void
     {
         $user = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
+        self::assertNotNull($user);
         $client->loginUser($user);
     }
 

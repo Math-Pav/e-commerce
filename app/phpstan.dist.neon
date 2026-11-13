@@ -1,7 +1,7 @@
 # Analyse statique (voir docs/adr/0014-analyse-statique-et-formatage.md).
 # Lancer avec : composer stan
 parameters:
-    level: 7
+    level: 8
     paths:
         - src/
         - tests/

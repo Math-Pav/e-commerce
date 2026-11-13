@@ -138,6 +138,7 @@ final class OrderControllerTest extends WebTestCase
         // Le client est prévenu, pas l'administrateur qui a annulé
         self::assertEmailCount(1);
         $message = self::getMailerMessage();
+        self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', 'client@example.com');
         self::assertEmailAddressNotContains($message, 'To', 'admin@example.com');
         self::assertEmailSubjectContains($message, 'Annulation de votre commande ' . $reference);
@@ -146,7 +147,9 @@ final class OrderControllerTest extends WebTestCase
         self::assertSelectorTextContains('.flash--success', 'annulée');
         self::assertSelectorTextContains('.order-header', 'Statut : Annulée');
         static::getContainer()->get(EntityManagerInterface::class)->clear();
-        self::assertSame(12, static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat'])->getStock());
+        $product = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        self::assertNotNull($product);
+        self::assertSame(12, $product->getStock());
     }
 
     public function testActionWithoutValidCsrfTokenIsRejected(): void
@@ -183,9 +186,14 @@ final class OrderControllerTest extends WebTestCase
         $address->postalCode = '69001';
         $address->city = 'Lyon';
 
+        $customer = $container->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        $product = $container->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        self::assertNotNull($customer);
+        self::assertNotNull($product);
+
         $order = $container->get(OrderService::class)->placeOrder(
-            $container->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']),
-            new Cart([new CartLine($container->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat']), 2)]),
+            $customer,
+            new Cart([new CartLine($product, 2)]),
             $address,
         );
 
@@ -209,6 +217,7 @@ final class OrderControllerTest extends WebTestCase
     private function logIn(KernelBrowser $client, string $email): void
     {
         $user = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
+        self::assertNotNull($user);
         $client->loginUser($user);
     }
 }
