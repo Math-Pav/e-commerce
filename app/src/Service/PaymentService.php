@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Invoice;
 use App\Entity\Order;
 use App\Exception\PaymentFailedException;
 use App\Payment\PaymentProviderInterface;
+use App\Repository\OrderRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class PaymentService
@@ -15,11 +17,16 @@ final class PaymentService
         private readonly PaymentProviderInterface $paymentProvider,
         private readonly EntityManagerInterface $entityManager,
         private readonly CustomerMailer $customerMailer,
+        private readonly OrderRepository $orderRepository,
+        private readonly InvoiceService $invoiceService,
     ) {
     }
 
     /**
+     * Débite la commande, puis la marque comme payée et émet sa facture dans une même transaction.
+     *
      * @throws PaymentFailedException
+     * @throws \DomainException       si la commande ne peut pas (ou plus) être payée
      */
     public function pay(Order $order): void
     {
@@ -34,9 +41,19 @@ final class PaymentService
             throw new PaymentFailedException((string) $result->errorMessage);
         }
 
-        $order->markAsPaid(new \DateTimeImmutable());
-        $this->entityManager->flush();
+        // Paiement et facture dans une même transaction : une commande payée a toujours sa facture,
+        // et un numéro de facture n'est jamais consommé sans facture enregistrée (pas de trou).
+        $invoice = $this->entityManager->wrapInTransaction(function () use ($order): Invoice {
+            // Verrou sur la commande : deux paiements simultanés ne la facturent pas deux fois.
+            // La relecture peut révéler une commande payée entre-temps : markAsPaid() lève alors l'exception.
+            $this->orderRepository->lockForUpdate($order);
+            $paidAt = new \DateTimeImmutable();
+            $order->markAsPaid($paidAt);
 
-        $this->customerMailer->sendPaymentConfirmation($order);
+            return $this->invoiceService->issue($order, $paidAt);
+        });
+
+        // Après la transaction : aucun e-mail n'annonce un paiement qui n'aurait pas été enregistré
+        $this->customerMailer->sendPaymentConfirmation($order, $invoice);
     }
 }

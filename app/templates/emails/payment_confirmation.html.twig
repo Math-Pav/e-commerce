@@ -8,6 +8,7 @@
         pour la commande <strong>{{ order.reference }}</strong>, le {{ order.paidAt|date('d/m/Y à H:i') }}.
         Nous préparons maintenant votre colis.
     </p>
+    <p style="margin:12px 0 0;">Votre facture <strong>{{ invoice.number }}</strong> est jointe à cet e-mail.</p>
 
     {% include 'emails/_order_summary.html.twig' with {order: order} only %}
 
