@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Admin;
 
+use App\Entity\Product;
+use App\Repository\CategoryRepository;
+use App\Repository\ProductRepository;
 use App\Repository\UserRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -51,6 +55,204 @@ final class ProductControllerTest extends WebTestCase
         self::assertSelectorTextContains('table', 'Agenda 2026');
         self::assertSelectorTextContains('table', 'Désactivé');
         self::assertSelectorTextContains('table', 'Rupture');
+    }
+
+    public function testAnonymousCannotOpenCreationForm(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/admin/produits/nouveau');
+
+        self::assertResponseRedirects('/connexion');
+    }
+
+    public function testCustomerCannotCreateEditOrDeactivate(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+
+        $client->request('GET', '/admin/produits/nouveau');
+        self::assertResponseStatusCodeSame(403);
+
+        $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
+        self::assertResponseStatusCodeSame(403);
+
+        $client->request('POST', sprintf('/admin/produits/%d/desactiver', $id));
+        self::assertResponseStatusCodeSame(403);
+        self::assertTrue($this->findProduct('mug-noir-mat')->isActive());
+    }
+
+    public function testAdminCreatesProduct(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $this->submitCreationForm($client, 'Mug « Été » à rayures', '12.90');
+
+        self::assertResponseRedirects('/admin/produits');
+        $client->followRedirect();
+        self::assertSelectorTextContains('.flash--success', 'Mug « Été » à rayures');
+
+        $product = $this->findProduct('mug-ete-a-rayures');
+        self::assertSame(1290, $product->getPrice(), 'Le prix saisi en euros doit être stocké en centimes.');
+        self::assertSame(7, $product->getStock());
+        self::assertTrue($product->isActive());
+
+        $client->request('GET', '/produits/mug-ete-a-rayures');
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testCreatingProductWithExistingNameGivesUniqueSlug(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $this->submitCreationForm($client, 'Mug noir mat', '9.90');
+
+        self::assertResponseRedirects('/admin/produits');
+        self::assertSame(990, $this->findProduct('mug-noir-mat-2')->getPrice());
+        self::assertSame(1490, $this->findProduct('mug-noir-mat')->getPrice());
+    }
+
+    public function testInvalidCreationShowsErrors(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $this->submitCreationForm($client, '', '-5');
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('form', 'Veuillez saisir le nom du produit.');
+        self::assertSelectorTextContains('form', 'Le prix ne peut pas être négatif.');
+    }
+
+    public function testAdminEditsProductAndSlugStaysTheSame(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+
+        $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
+        self::assertResponseIsSuccessful();
+        self::assertInputValueSame('product[price]', '14.90');
+
+        $client->submit($crawler->selectButton('Enregistrer les modifications')->form([
+            'product[name]' => 'Mug noir mat XL',
+            'product[price]' => '16.50',
+        ]));
+
+        self::assertResponseRedirects('/admin/produits');
+        $product = $this->findProduct('mug-noir-mat');
+        self::assertSame('Mug noir mat XL', $product->getName());
+        self::assertSame(1650, $product->getPrice());
+
+        $client->request('GET', '/produits/mug-noir-mat');
+        self::assertSelectorTextContains('h1', 'Mug noir mat XL');
+    }
+
+    public function testEditWithEmptyPriceShowsError(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+
+        $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
+        $client->submit($crawler->selectButton('Enregistrer les modifications')->form([
+            'product[price]' => '',
+        ]));
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('form', 'Veuillez saisir le prix.');
+    }
+
+    public function testDeactivatedProductDisappearsFromPublicSite(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $crawler = $client->request('GET', '/admin/produits');
+        $client->submit($crawler->selectButton('Désactiver Mug noir mat')->form());
+
+        self::assertResponseRedirects('/admin/produits');
+        self::assertFalse($this->findProduct('mug-noir-mat')->isActive());
+
+        // Toujours visible dans l'administration…
+        $client->followRedirect();
+        self::assertSelectorTextContains('table', 'Mug noir mat');
+
+        // … mais plus dans le catalogue ni sur sa fiche
+        $client->request('GET', '/produits');
+        self::assertStringNotContainsString('Mug noir mat', (string) $client->getResponse()->getContent());
+
+        $client->request('GET', '/produits/mug-noir-mat');
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testActivatedProductAppearsOnPublicSite(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $crawler = $client->request('GET', '/admin/produits');
+        $client->submit($crawler->selectButton('Activer Agenda 2026')->form());
+
+        self::assertResponseRedirects('/admin/produits');
+        self::assertTrue($this->findProduct('agenda-2026')->isActive());
+
+        $client->request('GET', '/produits/agenda-2026');
+        self::assertResponseIsSuccessful();
+    }
+
+    public function testDeactivationWithoutCsrfTokenIsRejected(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+
+        $client->request('POST', sprintf('/admin/produits/%d/desactiver', $id), ['_token' => 'invalide']);
+
+        self::assertResponseStatusCodeSame(403);
+        self::assertTrue($this->findProduct('mug-noir-mat')->isActive());
+    }
+
+    public function testDeactivationRequiresPost(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+
+        $client->request('GET', sprintf('/admin/produits/%d/desactiver', $id));
+
+        self::assertResponseStatusCodeSame(405);
+    }
+
+    private function submitCreationForm(KernelBrowser $client, string $name, string $price): void
+    {
+        $category = static::getContainer()->get(CategoryRepository::class)->findOneBy(['slug' => 'mugs-et-tasses']);
+
+        $crawler = $client->request('GET', '/admin/produits/nouveau');
+        self::assertResponseIsSuccessful();
+
+        $client->submit($crawler->selectButton('Créer le produit')->form([
+            'product[name]' => $name,
+            'product[category]' => (string) $category->getId(),
+            'product[price]' => $price,
+            'product[stock]' => '7',
+            'product[description]' => 'Un mug de test.',
+        ]));
+    }
+
+    /**
+     * Relit le produit en base (et non depuis la mémoire de Doctrine) pour vérifier ce qui a vraiment été enregistré.
+     */
+    private function findProduct(string $slug): Product
+    {
+        static::getContainer()->get(EntityManagerInterface::class)->clear();
+        $product = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => $slug]);
+        self::assertNotNull($product, sprintf('Produit « %s » introuvable.', $slug));
+
+        return $product;
     }
 
     private function logIn(KernelBrowser $client, string $email): void

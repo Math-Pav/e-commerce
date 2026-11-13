@@ -8,7 +8,10 @@
             <p class="eyebrow">Administration</p>
             <h1 class="page-title">Produits</h1>
         </div>
-        <p class="toolbar__count">{{ products|length }} produit{{ products|length > 1 ? 's' }}</p>
+        <div class="toolbar">
+            <p class="toolbar__count">{{ products|length }} produit{{ products|length > 1 ? 's' }}</p>
+            <a href="{{ path('admin_product_new') }}" class="btn btn--primary">Nouveau produit</a>
+        </div>
     </div>
 
     <div class="table-wrapper">
@@ -20,6 +23,7 @@
                     <th scope="col" class="num">Prix</th>
                     <th scope="col" class="num">Stock</th>
                     <th scope="col">Statut</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -43,6 +47,16 @@
                             {% else %}
                                 <span class="badge badge--neutral">Désactivé</span>
                             {% endif %}
+                        </td>
+                        <td>
+                            <div class="table__actions">
+                                <a href="{{ path('admin_product_edit', {id: product.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ product.name }}</span></a>
+                                {% set status_action = product.active ? 'deactivate' : 'activate' %}
+                                <form method="post" action="{{ path('admin_product_' ~ status_action, {id: product.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('product-status') }}">
+                                    <button type="submit" class="btn btn--secondary">{{ product.active ? 'Désactiver' : 'Activer' }}<span class="visually-hidden"> {{ product.name }}</span></button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 {% endfor %}

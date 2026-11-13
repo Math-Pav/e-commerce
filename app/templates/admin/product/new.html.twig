@@ -1,0 +1,15 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Nouveau produit · Administration{% endblock %}
+
+{% block admin_content %}
+    <div class="admin-form">
+        <div class="page-header">
+            <p class="eyebrow">Administration</p>
+            <h1 class="page-title">Nouveau produit</h1>
+            <p class="lead">L'adresse de la fiche produit sera créée automatiquement à partir du nom.</p>
+        </div>
+
+        {% include 'admin/product/_form.html.twig' with {button_label: 'Créer le produit'} %}
+    </div>
+{% endblock %}

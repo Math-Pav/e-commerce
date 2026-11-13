@@ -1,0 +1,12 @@
+{{ form_start(productForm, {attr: {class: 'form'}}) }}
+    {{ form_row(productForm.name) }}
+    {{ form_row(productForm.category) }}
+    <div class="form__inline">
+        {{ form_row(productForm.price) }}
+        {{ form_row(productForm.stock) }}
+    </div>
+    {{ form_row(productForm.description) }}
+    <button type="submit" class="btn btn--primary">{{ button_label }}</button>
+{{ form_end(productForm) }}
+
+<a href="{{ path('admin_product_index') }}" class="back-link">← Retour à la liste des produits</a>
