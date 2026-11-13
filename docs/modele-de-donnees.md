@@ -87,6 +87,16 @@ erDiagram
 | is_active | boolean | obligatoire, défaut `true` ; `false` = masqué du catalogue sans être supprimé |
 | created_at | datetime_immutable | obligatoire |
 
+Index du catalogue (ADR 0011), un par tri proposé, pour lire les produits actifs directement dans l'ordre demandé :
+
+| Index | Colonnes | Sert à |
+|---|---|---|
+| idx_product_active_name | is_active, name | tri par nom (tri par défaut) |
+| idx_product_active_price | is_active, price | tris par prix croissant et décroissant |
+| idx_product_active_created_at | is_active, created_at | tri par nouveautés |
+
+La recherche (`LIKE '%…%'` sur `name` et `description`) ne peut pas utiliser d'index : voir ADR 0011.
+
 ### User (`user`)
 
 | Colonne | Type | Contraintes |
