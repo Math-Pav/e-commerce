@@ -1,0 +1,15 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Nouvelle variante de {{ product.name }} · Administration{% endblock %}
+
+{% block admin_content %}
+    <div class="admin-form">
+        <div class="page-header">
+            <p class="eyebrow">Administration · {{ product.name }}</p>
+            <h1 class="page-title">Nouvelle variante</h1>
+            <p class="lead">Prix du produit : {{ product.price|price }}.</p>
+        </div>
+
+        {% include 'admin/product_variant/_form.html.twig' with {button_label: 'Ajouter la variante'} %}
+    </div>
+{% endblock %}

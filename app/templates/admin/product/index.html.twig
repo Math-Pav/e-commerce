@@ -50,6 +50,7 @@
                         <td>
                             <div class="table__actions">
                                 <a href="{{ path('admin_product_edit', {id: product.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ product.name }}</span></a>
+                                <a href="{{ path('admin_product_variant_index', {id: product.id}) }}" class="btn btn--secondary">Variantes ({{ product.variants|length }})<span class="visually-hidden"> de {{ product.name }}</span></a>
                                 {% set status_action = product.active ? 'deactivate' : 'activate' %}
                                 <form method="post" action="{{ path('admin_product_' ~ status_action, {id: product.id}) }}">
                                     <input type="hidden" name="_token" value="{{ csrf_token('product-status') }}">

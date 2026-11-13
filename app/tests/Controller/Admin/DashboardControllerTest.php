@@ -7,7 +7,6 @@ namespace App\Tests\Controller\Admin;
 use App\Model\Cart;
 use App\Model\CartLine;
 use App\Model\ShippingAddress;
-use App\Repository\ProductRepository;
 use App\Repository\ProductVariantRepository;
 use App\Repository\UserRepository;
 use App\Service\OrderService;
@@ -92,10 +91,10 @@ final class DashboardControllerTest extends WebTestCase
         self::assertSelectorTextContains($lowStock, 'Mug émaillé – Rouge');
         self::assertSelectorTextNotContains($lowStock, 'Mug émaillé – Bleu');
 
-        $mug = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'mug-isotherme']);
+        // Le lien mène à la variante à réapprovisionner
+        $mug = static::getContainer()->get(ProductVariantRepository::class)->findOneBy(['sku' => 'MUG-ISOTHERME']);
         self::assertNotNull($mug);
-        $mugId = $mug->getId();
-        self::assertSelectorExists(sprintf('%s a[href="/admin/produits/%d/modifier"]', $lowStock, $mugId));
+        self::assertSelectorExists(sprintf('%s a[href="/admin/variantes/%d/modifier"]', $lowStock, $mug->getId()));
     }
 
     private function placeOrder(int $quantity, bool $paid): void

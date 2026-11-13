@@ -97,16 +97,18 @@ class ProductRepository extends ServiceEntityRepository
     }
 
     /**
-     * Tous les produits, actifs ou non, avec leur catégorie (pour l'administration).
+     * Tous les produits, actifs ou non, avec leur catégorie et leurs variantes (pour l'administration).
      *
      * @return list<Product>
      */
     public function findAllWithCategory(): array
     {
         return $this->createQueryBuilder('p')
-            ->addSelect('c')
+            ->addSelect('c', 'v')
             ->join('p.category', 'c')
+            ->leftJoin('p.variants', 'v')
             ->orderBy('p.name', 'ASC')
+            ->addOrderBy('v.id', 'ASC')
             ->getQuery()
             ->getResult();
     }
