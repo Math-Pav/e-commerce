@@ -1,0 +1,20 @@
+{{ form_start(promoCodeForm, {attr: {class: 'form'}}) }}
+    {{ form_row(promoCodeForm.code) }}
+    {{ form_row(promoCodeForm.discountType) }}
+    <div class="form__inline">
+        {{ form_row(promoCodeForm.percentage) }}
+        {{ form_row(promoCodeForm.amount) }}
+    </div>
+    <div class="form__inline">
+        {{ form_row(promoCodeForm.startsAt) }}
+        {{ form_row(promoCodeForm.endsAt) }}
+    </div>
+    <div class="form__inline">
+        {{ form_row(promoCodeForm.maxUsages) }}
+        {{ form_row(promoCodeForm.minimumAmount) }}
+    </div>
+    {{ form_row(promoCodeForm.isActive) }}
+    <button type="submit" class="btn btn--primary">{{ button_label }}</button>
+{{ form_end(promoCodeForm) }}
+
+<a href="{{ path('admin_promo_code_index') }}" class="back-link">← Retour à la liste des codes promo</a>
