@@ -14,10 +14,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
- * Tests d'intégration : les requêtes sont exécutées sur la vraie base de test.
+ * Tests d'intégration de ProductRepository::findCatalogPage() : les requêtes sont exécutées sur la vraie base de test.
  * Chaque test est annulé à la fin (DAMA DoctrineTestBundle) : les produits créés ici ne restent pas en base.
  */
-final class ProductRepositoryTest extends KernelTestCase
+final class ProductRepositoryCatalogTest extends KernelTestCase
 {
     private EntityManagerInterface $entityManager;
     private ProductRepository $repository;
