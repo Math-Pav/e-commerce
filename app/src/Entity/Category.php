@@ -15,7 +15,8 @@ class Category
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(length: 100)]
+    // Unique : deux catégories ne peuvent pas porter le même nom (vérifié aussi par CategoryData)
+    #[ORM\Column(length: 100, unique: true)]
     private ?string $name = null;
 
     #[ORM\Column(length: 120, unique: true)]
