@@ -56,9 +56,15 @@ final class CartService
         $this->requestStack->getSession()->remove(self::SESSION_KEY);
     }
 
+    /**
+     * Calculé à partir du panier relu en base : un produit désactivé entre-temps n'est plus compté.
+     */
     public function getItemCount(): int
     {
-        return array_sum($this->getQuantities());
+        return array_sum(array_map(
+            static fn (CartLine $line): int => $line->quantity,
+            $this->getCart()->lines,
+        ));
     }
 
     public function getCart(): Cart

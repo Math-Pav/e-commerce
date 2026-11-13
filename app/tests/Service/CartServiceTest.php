@@ -34,12 +34,13 @@ final class CartServiceTest extends TestCase
         $requestStack = new RequestStack();
         $requestStack->push($request);
 
-        // Un faux repository : il renvoie nos produits sans toucher à la base
+        // Un faux repository : il renvoie nos produits (actifs, comme le vrai) sans toucher à la base
         $repository = $this->createStub(ProductRepository::class);
         $repository->method('findBy')->willReturnCallback(
             static fn (array $criteria): array => array_values(array_filter(
                 $products,
-                static fn (Product $product): bool => in_array($product->getId(), $criteria['id'], true),
+                static fn (Product $product): bool => in_array($product->getId(), $criteria['id'], true)
+                    && $product->isActive() === $criteria['isActive'],
             )),
         );
 
@@ -144,5 +145,18 @@ final class CartServiceTest extends TestCase
         $this->cartService->add($this->pen, 3);
 
         self::assertSame(5, $this->cartService->getItemCount());
+    }
+
+    public function testDeactivatedProductDisappearsFromCart(): void
+    {
+        $this->cartService->add($this->mug, 2);
+        $this->cartService->add($this->pen, 3);
+
+        $this->mug->setIsActive(false);
+
+        $lines = $this->cartService->getCart()->lines;
+        self::assertCount(1, $lines);
+        self::assertSame($this->pen, $lines[0]->product);
+        self::assertSame(3, $this->cartService->getItemCount());
     }
 }
