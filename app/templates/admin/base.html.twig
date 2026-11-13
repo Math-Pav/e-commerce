@@ -7,6 +7,7 @@
         <a href="{{ path('admin_dashboard') }}" class="tabs__link" aria-current="{{ route == 'admin_dashboard' ? 'page' : 'false' }}">Tableau de bord</a>
         <a href="{{ path('admin_product_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_product' ? 'page' : 'false' }}">Produits</a>
         <a href="{{ path('admin_order_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_order' ? 'page' : 'false' }}">Commandes</a>
+        <a href="{{ path('admin_category_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_category' ? 'page' : 'false' }}">Catégories</a>
     </nav>
 
     {% block admin_content %}{% endblock %}

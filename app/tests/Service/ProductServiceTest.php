@@ -9,6 +9,7 @@ use App\Entity\Product;
 use App\Model\ProductData;
 use App\Repository\ProductRepository;
 use App\Service\ProductService;
+use App\Service\SlugGenerator;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\String\Slugger\AsciiSlugger;
@@ -35,7 +36,7 @@ final class ProductServiceTest extends TestCase
         $this->productService = new ProductService(
             $this->createStub(EntityManagerInterface::class),
             $repository,
-            new AsciiSlugger(),
+            new SlugGenerator(new AsciiSlugger()),
         );
     }
 
@@ -91,7 +92,7 @@ final class ProductServiceTest extends TestCase
         $entityManager->expects(self::once())->method('persist')->with(self::isInstanceOf(Product::class));
         $entityManager->expects(self::once())->method('flush');
 
-        $service = new ProductService($entityManager, $this->createStub(ProductRepository::class), new AsciiSlugger());
+        $service = new ProductService($entityManager, $this->createStub(ProductRepository::class), new SlugGenerator(new AsciiSlugger()));
         $service->create($this->createData('Carnet'));
     }
 

@@ -13,7 +13,7 @@ erDiagram
 
     CATEGORY {
         int id PK
-        string name
+        string name UK
         string slug UK
     }
     PRODUCT {
@@ -73,8 +73,8 @@ erDiagram
 | Colonne | Type | Contraintes |
 |---|---|---|
 | id | integer | clé primaire, auto-incrémentée |
-| name | string(100) | obligatoire |
-| slug | string(120) | obligatoire, unique |
+| name | string(100) | obligatoire, unique (ADR 0008) |
+| slug | string(120) | obligatoire, unique, généré à partir du nom à la création puis figé |
 
 ### Product (`product`)
 
@@ -163,5 +163,6 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 - **Copies dans `orders` et `order_item`** (adresse, nom du produit, prix) : une commande est un document historique, elle ne doit pas changer si le produit, son prix ou l'adresse du client changent ensuite.
 - **`total_amount` stocké** plutôt que recalculé : il fige le montant réellement facturé.
 - **Adresse dans `user`** : suffisant pour le MVP. Une entité `Address` séparée sera envisagée si l'on veut plusieurs adresses par client.
+- **Une catégorie ne peut être supprimée que si elle ne contient aucun produit** (même désactivé) : `product.category_id` est obligatoire.
 - **Pas d'entité `Cart`** : le panier est stocké en session pour le MVP.
 - **Codes postaux et téléphones en `string`** : ce ne sont pas des nombres (zéros initiaux, aucun calcul).
