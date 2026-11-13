@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Entity\Category;
-use App\Entity\Product;
+use App\Model\ProductData;
 use App\Repository\CategoryRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -17,7 +17,8 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
 /**
- * Formulaire d'administration d'un produit. Le slug n'y figure pas : il est généré par ProductService.
+ * Formulaire d'administration d'un produit, lié au DTO ProductData (et non à l'entité).
+ * Le slug n'y figure pas : il est généré par ProductService.
  */
 final class ProductType extends AbstractType
 {
@@ -68,7 +69,7 @@ final class ProductType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class' => Product::class,
+            'data_class' => ProductData::class,
         ]);
     }
 }

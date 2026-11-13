@@ -147,6 +147,20 @@ final class CartServiceTest extends TestCase
         self::assertSame(5, $this->cartService->getItemCount());
     }
 
+    public function testItemCountOfEmptyCartDoesNotQueryDatabase(): void
+    {
+        // Le compteur est affiché sur chaque page : un panier vide ne doit coûter aucune requête
+        $repository = $this->createMock(ProductRepository::class);
+        $repository->expects(self::never())->method(self::anything());
+
+        $request = new Request();
+        $request->setSession(new Session(new MockArraySessionStorage()));
+        $requestStack = new RequestStack();
+        $requestStack->push($request);
+
+        self::assertSame(0, (new CartService($requestStack, $repository))->getItemCount());
+    }
+
     public function testDeactivatedProductDisappearsFromCart(): void
     {
         $this->cartService->add($this->mug, 2);

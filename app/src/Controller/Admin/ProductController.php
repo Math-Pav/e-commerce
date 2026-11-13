@@ -6,6 +6,7 @@ namespace App\Controller\Admin;
 
 use App\Entity\Product;
 use App\Form\ProductType;
+use App\Model\ProductData;
 use App\Repository\ProductRepository;
 use App\Service\ProductService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,12 +37,12 @@ final class ProductController extends AbstractController
     #[Route('/nouveau', name: 'new', methods: ['GET', 'POST'])]
     public function new(Request $request): Response
     {
-        $product = new Product();
-        $form = $this->createForm(ProductType::class, $product);
+        $data = new ProductData();
+        $form = $this->createForm(ProductType::class, $data);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->productService->create($product);
+            $product = $this->productService->create($data);
             $this->addFlash('success', sprintf('Le produit « %s » a été créé.', $product->getName()));
 
             return $this->redirectToRoute('admin_product_index');
@@ -55,11 +56,13 @@ final class ProductController extends AbstractController
     #[Route('/{id}/modifier', name: 'edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
     public function edit(Product $product, Request $request): Response
     {
-        $form = $this->createForm(ProductType::class, $product);
+        // Le formulaire modifie une copie des données : le produit n'est touché qu'une fois la saisie validée
+        $data = ProductData::fromProduct($product);
+        $form = $this->createForm(ProductType::class, $data);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->productService->update($product);
+            $this->productService->update($product, $data);
             $this->addFlash('success', sprintf('Le produit « %s » a été modifié.', $product->getName()));
 
             return $this->redirectToRoute('admin_product_index');

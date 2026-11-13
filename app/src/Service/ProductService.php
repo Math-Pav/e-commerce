@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Product;
+use App\Model\ProductData;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\String\Slugger\SluggerInterface;
@@ -27,19 +28,29 @@ final class ProductService
     ) {
     }
 
-    public function create(Product $product): void
+    /**
+     * @param ProductData $data données déjà validées par le formulaire
+     */
+    public function create(ProductData $data): Product
     {
-        $product->setSlug($this->generateUniqueSlug((string) $product->getName()));
+        $product = new Product();
+        $this->applyData($product, $data);
+        $product->setSlug($this->generateUniqueSlug($data->name));
 
         $this->entityManager->persist($product);
         $this->entityManager->flush();
+
+        return $product;
     }
 
     /**
      * Le slug n'est pas régénéré : l'adresse de la fiche produit reste stable (voir ADR 0004).
+     *
+     * @param ProductData $data données déjà validées par le formulaire
      */
-    public function update(Product $product): void
+    public function update(Product $product, ProductData $data): void
     {
+        $this->applyData($product, $data);
         $this->entityManager->flush();
     }
 
@@ -56,6 +67,20 @@ final class ProductService
     {
         $product->setIsActive(false);
         $this->entityManager->flush();
+    }
+
+    private function applyData(Product $product, ProductData $data): void
+    {
+        if ($data->price === null || $data->category === null) {
+            throw new \InvalidArgumentException('Les données du produit doivent être validées avant d\'être enregistrées.');
+        }
+
+        $product
+            ->setName($data->name)
+            ->setCategory($data->category)
+            ->setPrice($data->price)
+            ->setStock($data->stock)
+            ->setDescription($data->description);
     }
 
     /**

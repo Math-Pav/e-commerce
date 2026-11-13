@@ -166,6 +166,26 @@ final class ProductControllerTest extends WebTestCase
         self::assertSelectorTextContains('form', 'Veuillez saisir le prix.');
     }
 
+    public function testInvalidEditDoesNotChangeProduct(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+
+        $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
+        $client->submit($crawler->selectButton('Enregistrer les modifications')->form([
+            'product[name]' => '',
+            'product[price]' => '',
+        ]));
+
+        self::assertResponseStatusCodeSame(422);
+        // Le formulaire travaille sur un DTO : le produit garde son nom, même dans le titre de la page en erreur
+        self::assertPageTitleContains('Modifier Mug noir mat');
+        $product = $this->findProduct('mug-noir-mat');
+        self::assertSame('Mug noir mat', $product->getName());
+        self::assertSame(1490, $product->getPrice());
+    }
+
     public function testDeactivatedProductDisappearsFromPublicSite(): void
     {
         $client = static::createClient();

@@ -8,7 +8,6 @@ use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Exception\InsufficientStockException;
-use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -21,25 +20,19 @@ class Product
     private ?int $id = null;
 
     #[ORM\Column(length: 150)]
-    #[Assert\NotBlank(message: 'Veuillez saisir le nom du produit.')]
-    #[Assert\Length(max: 150)]
     private ?string $name = null;
 
     #[ORM\Column(length: 170, unique: true)]
     private ?string $slug = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Assert\Length(max: 5000)]
     private ?string $description = null;
 
     // Prix en centimes : 1299 = 12,99 €
     #[ORM\Column]
-    #[Assert\NotNull(message: 'Veuillez saisir le prix.')]
-    #[Assert\PositiveOrZero(message: 'Le prix ne peut pas être négatif.')]
     private ?int $price = null;
 
     #[ORM\Column(options: ['default' => 0])]
-    #[Assert\PositiveOrZero(message: 'Le stock ne peut pas être négatif.')]
     private int $stock = 0;
 
     #[ORM\Column(options: ['default' => true])]
@@ -51,7 +44,6 @@ class Product
     // Plusieurs produits pour une catégorie : la clé étrangère category_id est dans la table product
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    #[Assert\NotNull(message: 'Veuillez choisir une catégorie.')]
     private ?Category $category = null;
 
     public function __construct()
@@ -105,8 +97,7 @@ class Product
         return $this->price;
     }
 
-    // Accepte null : un champ vidé dans le formulaire d'édition passe par ce setter avant la validation (NotNull)
-    public function setPrice(?int $price): static
+    public function setPrice(int $price): static
     {
         $this->price = $price;
 
@@ -147,8 +138,7 @@ class Product
         return $this->category;
     }
 
-    // Accepte null pour la même raison que setPrice() : la contrainte NotNull renvoie l'erreur au formulaire
-    public function setCategory(?Category $category): static
+    public function setCategory(Category $category): static
     {
         $this->category = $category;
 
