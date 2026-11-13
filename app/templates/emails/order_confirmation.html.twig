@@ -1,0 +1,15 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% block content %}
+    <h1 style="margin:0 0 16px; font-size:24px;">Merci pour votre commande !</h1>
+    <p style="margin:0 0 12px;">Bonjour {{ order.customer.firstName }},</p>
+    <p style="margin:0;">
+        Nous avons bien enregistré votre commande <strong>{{ order.reference }}</strong>
+        du {{ order.createdAt|date('d/m/Y à H:i') }}. Vos articles sont réservés :
+        il ne reste plus qu'à la régler depuis votre espace client.
+    </p>
+
+    {% include 'emails/_order_summary.html.twig' with {order: order} only %}
+
+    {% include 'emails/_button.html.twig' with {url: url('order_show', {reference: order.reference}), label: 'Voir et payer ma commande'} only %}
+{% endblock %}

@@ -1,0 +1,11 @@
+Commande annulée
+
+Bonjour {{ order.customer.firstName }},
+
+Votre commande {{ order.reference }} d'un montant de {{ order.totalAmount|price }} a été annulée le {{ order.cancelledAt|date('d/m/Y à H:i') }}.
+
+Elle n'avait pas été payée : aucun montant ne vous a été débité.
+
+Voir la commande : {{ url('order_show', {reference: order.reference}) }}
+
+{% include 'emails/_footer.txt.twig' %}
