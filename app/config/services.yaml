@@ -12,6 +12,15 @@ parameters:
     app.mailer.sender_name: 'Atelier Papier'
     # Dossier des photos de produits, servi par Nginx à l'adresse /uploads/products/ (voir ADR 0010)
     app.product_images_directory: '%kernel.project_dir%/public/uploads/products'
+    # Vendeur imprimé sur les factures (ADR 0018). Données fictives : projet d'apprentissage.
+    app.invoice.seller_name: 'Atelier Papier SAS'
+    app.invoice.seller_address: '8 rue de la Papeterie'
+    app.invoice.seller_postal_code: '69002'
+    app.invoice.seller_city: 'Lyon'
+    app.invoice.seller_siret: '12345678900017'
+    app.invoice.seller_vat_number: 'FR40123456789'
+    # Taux de TVA appliqué à tous les produits, en pourcentage entier (les prix du site sont TTC)
+    app.invoice.vat_rate: 20
 
 services:
     # default configuration for services in *this* file

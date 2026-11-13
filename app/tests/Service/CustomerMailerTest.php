@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\Entity\Invoice;
 use App\Entity\Order;
+use App\Entity\OrderItem;
 use App\Entity\User;
+use App\Model\SellerDetails;
 use App\Service\CustomerMailer;
+use App\Service\InvoicePdfGenerator;
+use App\Service\VatCalculator;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -14,6 +19,8 @@ use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\RawMessage;
+use Twig\Environment;
+use Twig\Loader\ArrayLoader;
 
 final class CustomerMailerTest extends TestCase
 {
@@ -28,7 +35,7 @@ final class CustomerMailerTest extends TestCase
             });
 
         $order = $this->createOrder();
-        (new CustomerMailer($mailer, new NullLogger(), 'boutique@example.test', 'Boutique de test'))
+        (new CustomerMailer($mailer, self::createPdfGenerator(), new NullLogger(), 'boutique@example.test', 'Boutique de test'))
             ->sendOrderConfirmation($order);
 
         self::assertInstanceOf(TemplatedEmail::class, $sentEmail);
@@ -51,8 +58,69 @@ final class CustomerMailerTest extends TestCase
         $logger->expects(self::once())->method('error');
 
         // Aucune exception ne doit remonter jusqu'à l'appelant
-        (new CustomerMailer($mailer, $logger, 'boutique@example.test', 'Boutique de test'))
-            ->sendPaymentConfirmation($this->createOrder());
+        (new CustomerMailer($mailer, self::createPdfGenerator(), $logger, 'boutique@example.test', 'Boutique de test'))
+            ->sendPaymentConfirmation(...self::createPaidOrderWithInvoice());
+    }
+
+    public function testPaymentConfirmationHasInvoiceAttached(): void
+    {
+        $sentEmail = null;
+        $mailer = $this->createMock(MailerInterface::class);
+        $mailer->expects(self::once())
+            ->method('send')
+            ->willReturnCallback(static function (RawMessage $message) use (&$sentEmail): void {
+                $sentEmail = $message;
+            });
+
+        [$order, $invoice] = self::createPaidOrderWithInvoice();
+        (new CustomerMailer($mailer, self::createPdfGenerator(), new NullLogger(), 'boutique@example.test', 'Boutique de test'))
+            ->sendPaymentConfirmation($order, $invoice);
+
+        self::assertInstanceOf(TemplatedEmail::class, $sentEmail);
+        self::assertSame($invoice, $sentEmail->getContext()['invoice']);
+        $attachments = $sentEmail->getAttachments();
+        self::assertCount(1, $attachments);
+        self::assertSame('FA-2026-000001.pdf', $attachments[0]->getFilename());
+        self::assertSame('application/pdf', $attachments[0]->getContentType());
+        self::assertStringStartsWith('%PDF', $attachments[0]->getBody());
+    }
+
+    /**
+     * Vrai générateur, avec un template minimal en mémoire : le test ne dépend pas du template réel.
+     */
+    public static function createPdfGenerator(): InvoicePdfGenerator
+    {
+        return new InvoicePdfGenerator(new Environment(new ArrayLoader([
+            'invoice/pdf.html.twig' => '<p>Facture {{ invoice.number }}</p>',
+        ])));
+    }
+
+    /**
+     * @return array{Order, Invoice}
+     */
+    public static function createPaidOrderWithInvoice(): array
+    {
+        $customer = (new User())->setEmail('camille@example.com')->setFirstName('Camille')->setLastName('Martin');
+        $order = (new Order())
+            ->setCustomer($customer)
+            ->setReference('CMD-TEST-1')
+            ->setShippingFullName('Camille Martin')
+            ->setShippingAddress('12 rue des Lilas')
+            ->setShippingPostalCode('69001')
+            ->setShippingCity('Lyon')
+            ->addItem((new OrderItem())->setProductName('Mug')->setUnitPrice(1200)->setQuantity(1));
+        $order->recalculateTotal();
+        $order->markAsPaid(new \DateTimeImmutable('2026-11-13 10:00'));
+
+        $invoice = Invoice::issue(
+            $order,
+            'FA-2026-000001',
+            new \DateTimeImmutable('2026-11-13 10:00'),
+            new SellerDetails('Vendeur', '1 rue A', '69000', 'Lyon', '12345678900017', 'FR40123456789'),
+            (new VatCalculator())->fromAmountIncludingTax(1200, 20),
+        );
+
+        return [$order, $invoice];
     }
 
     private function createOrder(): Order

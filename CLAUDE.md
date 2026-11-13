@@ -19,6 +19,7 @@ Instructions permanentes pour Claude sur ce projet. À lire avant toute interven
 - **Symfony Translation** pour traduire en français les messages par défaut de Symfony (site en français uniquement)
 - **Symfony Mailer** pour les e-mails clients (envoi synchrone ; **Mailpit** capture les e-mails en développement, `null://null` en test)
 - **Symfony Mime** pour vérifier le type des fichiers envoyés (photos des produits)
+- **dompdf** pour convertir en PDF le template Twig des factures (`docs/adr/0018-factures.md`)
 - **PHPUnit** pour les tests
 - **PHPStan** (niveau 8, extensions Symfony et Doctrine) pour l'analyse statique et **PHP-CS-Fixer** (règles `@Symfony`) pour le formatage, en dépendances de développement (voir `docs/adr/0014-analyse-statique-et-formatage.md`)
 - **Docker Compose** pour l'environnement local (php, nginx, database, adminer, mailpit : interface sur http://localhost:8025)
@@ -36,9 +37,9 @@ Toutes les commandes PHP, Composer et Symfony s'exécutent **dans le conteneur**
 
 ## Périmètre du MVP
 
-Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, variantes de produits (couleur, format… : stock et prix facultatif par variante), inscription/connexion, espace « Mon compte » (profil, adresse, changement de mot de passe), panier, codes promo (un par commande, voir `docs/adr/0016-codes-promo.md`), commande, annulation par le client, paiement **simulé**, historique des commandes, e-mails clients, administration (tableau de bord, produits et leurs variantes, commandes, catégories, codes promo).
+Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, variantes de produits (couleur, format… : stock et prix facultatif par variante), inscription/connexion, espace « Mon compte » (profil, adresse, changement de mot de passe), panier, codes promo (un par commande, voir `docs/adr/0016-codes-promo.md`), commande, annulation par le client, paiement **simulé**, facture PDF de chaque commande payée (`docs/adr/0018-factures.md`), historique des commandes, e-mails clients, administration (tableau de bord, produits et leurs variantes, commandes, catégories, codes promo).
 
-Hors périmètre pour l'instant (ne pas implémenter sans demande explicite) : recherche avancée (plein texte, facettes), avis, e-mails pour l'administrateur, envoi asynchrone (Messenger), vrai paiement.
+Hors périmètre pour l'instant (ne pas implémenter sans demande explicite) : recherche avancée (plein texte, facettes), avis, e-mails pour l'administrateur, envoi asynchrone (Messenger), vrai paiement, avoirs.
 
 ## Architecture
 
@@ -65,6 +66,7 @@ Principes :
 - Une ligne de commande (`OrderItem`) **copie le prix** du produit au moment de l'achat ; la commande copie de même le code promo utilisé et le montant de la remise.
 - La validation d'une commande et la décrémentation du stock se font **dans une même transaction**.
 - Le stock ne peut jamais devenir négatif.
+- Une facture est créée dans la transaction du paiement, avec un numéro chronologique sans trou ; elle est immuable (jamais modifiée ni supprimée). Les prix sont TTC (TVA 20 %) ; le HT se calcule avec `VatCalculator`.
 - Le stock est porté par les **variantes** (`ProductVariant`), jamais par le produit. Tout produit a au moins une variante ; un produit sans déclinaison a une variante par défaut sans libellé, invisible pour le client (voir `docs/adr/0017-variantes-de-produits.md`).
 
 ## Conventions

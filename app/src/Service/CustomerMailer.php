@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Invoice;
 use App\Entity\Order;
 use App\Entity\User;
 use Psr\Log\LoggerInterface;
@@ -23,6 +24,7 @@ final class CustomerMailer
 {
     public function __construct(
         private readonly MailerInterface $mailer,
+        private readonly InvoicePdfGenerator $invoicePdfGenerator,
         private readonly LoggerInterface $logger,
         #[Autowire('%app.mailer.sender_email%')]
         private readonly string $senderEmail,
@@ -33,7 +35,7 @@ final class CustomerMailer
 
     public function sendWelcome(User $user): void
     {
-        $this->send($user, 'Bienvenue chez Atelier Papier', 'welcome', ['user' => $user]);
+        $this->send($this->createEmail($user, 'Bienvenue chez Atelier Papier', 'welcome', ['user' => $user]), $user);
     }
 
     public function sendOrderConfirmation(Order $order): void
@@ -41,9 +43,12 @@ final class CustomerMailer
         $this->sendForOrder($order, 'Confirmation de votre commande %s', 'order_confirmation');
     }
 
-    public function sendPaymentConfirmation(Order $order): void
+    /**
+     * La facture est jointe en PDF (voir docs/adr/0018-factures.md).
+     */
+    public function sendPaymentConfirmation(Order $order, Invoice $invoice): void
     {
-        $this->sendForOrder($order, 'Paiement reçu pour votre commande %s', 'payment_confirmation');
+        $this->sendForOrder($order, 'Paiement reçu pour votre commande %s', 'payment_confirmation', $invoice);
     }
 
     public function sendOrderCancellation(Order $order): void
@@ -51,7 +56,7 @@ final class CustomerMailer
         $this->sendForOrder($order, 'Annulation de votre commande %s', 'order_cancellation');
     }
 
-    private function sendForOrder(Order $order, string $subjectFormat, string $template): void
+    private function sendForOrder(Order $order, string $subjectFormat, string $template, ?Invoice $invoice = null): void
     {
         $customer = $order->getCustomer();
 
@@ -59,29 +64,38 @@ final class CustomerMailer
             throw new \LogicException('Une commande sans client ne peut pas donner lieu à un e-mail.');
         }
 
-        $this->send($customer, sprintf($subjectFormat, $order->getReference()), $template, ['order' => $order]);
+        $email = $this->createEmail($customer, sprintf($subjectFormat, $order->getReference()), $template, ['order' => $order, 'invoice' => $invoice]);
+
+        if (null !== $invoice) {
+            $email->attach($this->invoicePdfGenerator->generate($invoice), $invoice->getFilename(), 'application/pdf');
+        }
+
+        $this->send($email, $customer);
     }
 
     /**
      * @param array<string, mixed> $context variables transmises aux templates
      *                                      (« email » est réservé par Symfony)
      */
-    private function send(User $recipient, string $subject, string $template, array $context): void
+    private function createEmail(User $recipient, string $subject, string $template, array $context): TemplatedEmail
     {
-        $email = (new TemplatedEmail())
+        return (new TemplatedEmail())
             ->from(new Address($this->senderEmail, $this->senderName))
             ->to(new Address((string) $recipient->getEmail(), sprintf('%s %s', $recipient->getFirstName(), $recipient->getLastName())))
             ->subject($subject)
             ->htmlTemplate(sprintf('emails/%s.html.twig', $template))
             ->textTemplate(sprintf('emails/%s.txt.twig', $template))
             ->context($context);
+    }
 
+    private function send(TemplatedEmail $email, User $recipient): void
+    {
         try {
             $this->mailer->send($email);
         } catch (TransportExceptionInterface $exception) {
             // L'identifiant suffit pour enquêter : inutile d'écrire l'adresse e-mail dans les journaux
             $this->logger->error('Échec de l\'envoi de l\'e-mail « {subject} » au client n°{userId}.', [
-                'subject' => $subject,
+                'subject' => $email->getSubject(),
                 'userId' => $recipient->getId(),
                 'exception' => $exception,
             ]);

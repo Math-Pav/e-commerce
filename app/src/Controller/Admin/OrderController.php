@@ -6,9 +6,12 @@ namespace App\Controller\Admin;
 
 use App\Entity\Order;
 use App\Enum\OrderStatus;
+use App\Repository\InvoiceRepository;
 use App\Repository\OrderRepository;
+use App\Service\InvoicePdfGenerator;
 use App\Service\OrderService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
@@ -25,6 +28,8 @@ final class OrderController extends AbstractController
     public function __construct(
         private readonly OrderService $orderService,
         private readonly OrderRepository $orderRepository,
+        private readonly InvoiceRepository $invoiceRepository,
+        private readonly InvoicePdfGenerator $invoicePdfGenerator,
     ) {
     }
 
@@ -44,8 +49,23 @@ final class OrderController extends AbstractController
     #[Route('/{reference}', name: 'show', methods: ['GET'])]
     public function show(string $reference): Response
     {
+        $order = $this->findOrder($reference);
+
         return $this->render('admin/order/show.html.twig', [
-            'order' => $this->findOrder($reference),
+            'order' => $order,
+            'invoice' => $this->invoiceRepository->findOneByOrder($order),
+        ]);
+    }
+
+    #[Route('/{reference}/facture', name: 'invoice', methods: ['GET'])]
+    public function invoice(string $reference): Response
+    {
+        $invoice = $this->invoiceRepository->findOneByOrder($this->findOrder($reference))
+            ?? throw $this->createNotFoundException('Facture introuvable.');
+
+        return new Response($this->invoicePdfGenerator->generate($invoice), Response::HTTP_OK, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $invoice->getFilename()),
         ]);
     }
 

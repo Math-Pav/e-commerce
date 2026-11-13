@@ -13,6 +13,7 @@ use App\Repository\OrderRepository;
 use App\Repository\ProductVariantRepository;
 use App\Repository\UserRepository;
 use App\Service\OrderService;
+use App\Service\PaymentService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -162,6 +163,46 @@ final class OrderControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(403);
         self::assertSame(OrderStatus::Paid, $this->findOrder($reference)->getStatus());
+    }
+
+    public function testAdminDownloadsInvoice(): void
+    {
+        $client = static::createClient();
+        $reference = $this->createOrder(paid: false);
+        static::getContainer()->get(PaymentService::class)->pay($this->findOrder($reference));
+        $this->logIn($client, 'admin@example.com');
+
+        $crawler = $client->request('GET', '/admin/commandes/'.$reference);
+        $client->click($crawler->selectLink('Télécharger la facture')->link());
+
+        self::assertResponseIsSuccessful();
+        self::assertResponseHeaderSame('Content-Type', 'application/pdf');
+        self::assertStringStartsWith('%PDF', (string) $client->getResponse()->getContent());
+    }
+
+    public function testInvoiceIsForbiddenToCustomerInAdministration(): void
+    {
+        $client = static::createClient();
+        $reference = $this->createOrder(paid: false);
+        static::getContainer()->get(PaymentService::class)->pay($this->findOrder($reference));
+        $this->logIn($client, 'client@example.com');
+
+        $client->request('GET', sprintf('/admin/commandes/%s/facture', $reference));
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    public function testInvoiceOfUnpaidOrderReturns404(): void
+    {
+        $client = static::createClient();
+        $reference = $this->createOrder(paid: false);
+        $this->logIn($client, 'admin@example.com');
+
+        $crawler = $client->request('GET', '/admin/commandes/'.$reference);
+        self::assertCount(0, $crawler->selectLink('Télécharger la facture'));
+
+        $client->request('GET', sprintf('/admin/commandes/%s/facture', $reference));
+        self::assertResponseStatusCodeSame(404);
     }
 
     public function testUnknownOrderReturns404(): void

@@ -13,6 +13,8 @@ erDiagram
     ORDERS ||--|{ ORDER_ITEM : contient
     PRODUCT |o--o{ ORDER_ITEM : "référencé par"
     PROMO_CODE |o--o{ ORDERS : "utilisé par"
+    ORDERS ||--o| INVOICE : "facturée par"
+    INVOICE ||--|{ INVOICE_LINE : contient
 
     CATEGORY {
         int id PK
@@ -93,6 +95,35 @@ erDiagram
         string variant_label
         int unit_price
         int quantity
+    }
+    INVOICE {
+        int id PK
+        int order_id FK
+        string number UK
+        datetime issued_at
+        string order_reference
+        string seller_name
+        string customer_name
+        string billing_address
+        int subtotal_amount
+        int discount_amount
+        int total_excluding_tax
+        int vat_rate
+        int vat_amount
+        int total_including_tax
+    }
+    INVOICE_LINE {
+        int id PK
+        int invoice_id FK
+        string product_name
+        string variant_label
+        int unit_price
+        int quantity
+        int total_amount
+    }
+    INVOICE_SEQUENCE {
+        int fiscal_year PK
+        int last_number
     }
 ```
 
@@ -226,6 +257,52 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 | unit_price | integer | obligatoire, en centimes, copie au moment de l'achat |
 | quantity | integer | obligatoire, ≥ 1 |
 
+### Invoice (`invoice`)
+
+Facture d'une commande payée, créée dans la transaction du paiement (ADR 0018). Immuable (entité `readOnly`, sans setter) : tout ce qu'elle affiche est copié.
+
+| Colonne | Type | Contraintes |
+|---|---|---|
+| id | integer | clé primaire |
+| order_id | integer | clé étrangère → orders, obligatoire, **unique** (une facture au plus par commande), sans cascade |
+| number | string(20) | obligatoire, unique, ex. `FA-2026-000001` : chronologique et sans trou dans l'année |
+| issued_at | datetime_immutable | obligatoire, égale à `orders.paid_at` |
+| order_reference | string(20) | obligatoire, copie de la référence de la commande |
+| seller_name, seller_address, seller_postal_code, seller_city | string | obligatoires, copies de la configuration (`app.invoice.seller_*`) |
+| seller_siret | string(14) | obligatoire, copie |
+| seller_vat_number | string(20) | obligatoire, copie (numéro de TVA intracommunautaire) |
+| customer_name | string(100) | obligatoire, prénom et nom du client au moment du paiement |
+| customer_email | string(180) | obligatoire, copie |
+| billing_address, billing_postal_code, billing_city | string | obligatoires, copies de l'adresse de livraison de la commande |
+| subtotal_amount | integer | obligatoire, centimes TTC, avant remise |
+| discount_amount | integer | obligatoire, centimes TTC |
+| discount_code | string(30) | facultatif, copie |
+| total_excluding_tax | integer | obligatoire, centimes, HT (arrondi au centime, voir ADR 0018) |
+| vat_rate | integer | obligatoire, pourcentage entier (20) |
+| vat_amount | integer | obligatoire, centimes = TTC − HT |
+| total_including_tax | integer | obligatoire, centimes, = `orders.total_amount` |
+
+### InvoiceLine (`invoice_line`)
+
+| Colonne | Type | Contraintes |
+|---|---|---|
+| id | integer | clé primaire |
+| invoice_id | integer | clé étrangère → invoice, obligatoire |
+| product_name | string(150) | obligatoire, copie de `order_item.product_name` |
+| variant_label | string(100) | facultatif, copie |
+| unit_price | integer | obligatoire, centimes TTC |
+| quantity | integer | obligatoire |
+| total_amount | integer | obligatoire, centimes TTC (prix unitaire × quantité) |
+
+### InvoiceSequence (`invoice_sequence`)
+
+Compteur des numéros de facture, une ligne par année, incrémenté sous verrou par `InvoiceSequenceRepository::nextNumber()` (ADR 0018).
+
+| Colonne | Type | Contraintes |
+|---|---|---|
+| fiscal_year | integer | clé primaire (ex. 2026) |
+| last_number | integer | obligatoire, dernier numéro attribué dans l'année |
+
 ## Relations
 
 | Relation | Question 1 | Question 2 | Type | Clé étrangère |
@@ -236,6 +313,8 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 | User ↔ Order | Un utilisateur a combien de commandes ? Plusieurs | Une commande a combien d'utilisateurs ? Un | un-à-plusieurs | `orders.customer_id` |
 | Order ↔ OrderItem | Une commande a combien de lignes ? Plusieurs (au moins une) | Une ligne appartient à combien de commandes ? Une | un-à-plusieurs | `order_item.order_id` |
 | PromoCode ↔ Order | Un code est utilisé par combien de commandes ? Plusieurs | Une commande utilise combien de codes ? Zéro ou un | un-à-plusieurs | `orders.promo_code_id` |
+| Order ↔ Invoice | Une commande a combien de factures ? Zéro (non payée) ou une | Une facture concerne combien de commandes ? Une | un-à-un | `invoice.order_id` (unique) |
+| Invoice ↔ InvoiceLine | Une facture a combien de lignes ? Au moins une | Une ligne appartient à combien de factures ? Une | un-à-plusieurs | `invoice_line.invoice_id` |
 | Product ↔ OrderItem | Un produit apparaît dans combien de lignes ? Plusieurs | Une ligne concerne combien de produits ? Un (ou aucun s'il a été supprimé) | un-à-plusieurs | `order_item.product_id` |
 
 ## Décisions
@@ -243,6 +322,7 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 - **Prix en centimes (`integer`)** : évite les erreurs d'arrondi des nombres à virgule.
 - **Stock sur les variantes** (ADR 0017) : un seul chemin dans le code (panier, commande, annulation), y compris pour un produit sans déclinaison, grâce à sa variante par défaut.
 - **Copies dans `orders` et `order_item`** (adresse, nom du produit, libellé de la variante, prix) : une commande est un document historique, elle ne doit pas changer si le produit, son prix ou l'adresse du client changent ensuite.
+- **Facture séparée de la commande et entièrement copiée** (ADR 0018) : document comptable immuable, qui ne se supprime ni ne se modifie ; une erreur se corrige par un avoir (hors périmètre).
 - **`total_amount` stocké** plutôt que recalculé : il fige le montant réellement facturé.
 - **Remise copiée dans `orders`** (code, montant) : modifier ou désactiver un code ne change pas les commandes passées (ADR 0016).
 - **Adresse dans `user`** : une seule adresse par client, qui préremplit l'adresse de livraison (ADR 0013). Suffisant pour le MVP. Une entité `Address` séparée sera envisagée si l'on veut plusieurs adresses par client.
