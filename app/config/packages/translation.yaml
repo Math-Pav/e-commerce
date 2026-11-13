@@ -1,0 +1,10 @@
+framework:
+    # Le site est entièrement en français : c'est la locale de toutes les requêtes
+    default_locale: fr
+    # Seule langue proposée (pas de site multilingue pour l'instant)
+    enabled_locales: ['fr']
+    translator:
+        default_path: '%kernel.project_dir%/translations'
+        # Langue de repli quand une traduction manque
+        fallbacks: ['fr']
+        providers:

@@ -48,12 +48,37 @@ final class RegistrationControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Les deux mots de passe ne correspondent pas.');
     }
 
-    private function submitRegistration(KernelBrowser $client, string $email, string $password, string $confirmation): void
+    public function testDefaultConstraintMessageIsInFrench(): void
     {
+        $client = static::createClient();
+
+        // Length(max: 50) sur le prénom n'a pas de message personnalisé : c'est le message par défaut de Symfony
+        $this->submitRegistration($client, 'lea.' . uniqid() . '@example.com', 'motdepasse123', 'motdepasse123', str_repeat('a', 51));
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('body', 'Cette chaîne est trop longue. Elle doit contenir au maximum 50 caractères.');
+        self::assertSelectorTextNotContains('body', 'This value is too long');
+    }
+
+    public function testPageLanguageIsFrench(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/inscription');
+
+        self::assertSelectorExists('html[lang="fr"]');
+    }
+
+    private function submitRegistration(
+        KernelBrowser $client,
+        string $email,
+        string $password,
+        string $confirmation,
+        string $firstName = 'Léa',
+    ): void {
         $client->request('GET', '/inscription');
 
         $client->submitForm('Créer mon compte', [
-            'registration_form[firstName]' => 'Léa',
+            'registration_form[firstName]' => $firstName,
             'registration_form[lastName]' => 'Bernard',
             'registration_form[email]' => $email,
             'registration_form[plainPassword][first]' => $password,
