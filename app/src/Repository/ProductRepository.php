@@ -56,6 +56,23 @@ class ProductRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Produits en rupture ou en stock faible (voir Product::isInStock() et Product::isLowStock()),
+     * actifs ou non, les plus urgents en premier.
+     *
+     * @return list<Product>
+     */
+    public function findOutOfStockOrLowStock(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.stock <= :threshold')
+            ->setParameter('threshold', Product::LOW_STOCK_THRESHOLD)
+            ->orderBy('p.stock', 'ASC')
+            ->addOrderBy('p.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function isSlugTaken(string $slug): bool
     {
         return $this->count(['slug' => $slug]) > 0;

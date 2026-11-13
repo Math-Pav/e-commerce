@@ -4,6 +4,7 @@
     {% set route = app.request.attributes.get('_route') %}
 
     <nav class="tabs" aria-label="Administration">
+        <a href="{{ path('admin_dashboard') }}" class="tabs__link" aria-current="{{ route == 'admin_dashboard' ? 'page' : 'false' }}">Tableau de bord</a>
         <a href="{{ path('admin_product_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_product' ? 'page' : 'false' }}">Produits</a>
         <a href="{{ path('admin_order_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_order' ? 'page' : 'false' }}">Commandes</a>
     </nav>

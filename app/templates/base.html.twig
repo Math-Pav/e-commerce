@@ -29,7 +29,7 @@
                         {% if app.user %}
                             <a href="{{ path('order_index') }}" class="site-nav__link" aria-current="{{ route starts with 'order' ? 'page' : 'false' }}">Mes commandes</a>
                             {% if is_granted('ROLE_ADMIN') %}
-                                <a href="{{ path('admin_product_index') }}" class="site-nav__link" aria-current="{{ route starts with 'admin' ? 'page' : 'false' }}">Administration</a>
+                                <a href="{{ path('admin_dashboard') }}" class="site-nav__link" aria-current="{{ route starts with 'admin' ? 'page' : 'false' }}">Administration</a>
                             {% endif %}
                             <span class="site-nav__user">
                                 <span class="avatar" aria-hidden="true">{{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}</span>

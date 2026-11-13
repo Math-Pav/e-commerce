@@ -1,0 +1,165 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Tableau de bord · Administration{% endblock %}
+
+{% block admin_content %}
+    <div class="page-header">
+        <p class="eyebrow">Administration</p>
+        <h1 class="page-title">Tableau de bord</h1>
+    </div>
+
+    <section class="dashboard-section" aria-labelledby="sales-title">
+        <h2 id="sales-title" class="section-title">Ventes</h2>
+        <p class="note">Seules les commandes payées, expédiées ou livrées sont comptées.</p>
+        <dl class="stat-grid">
+            <div class="panel stat">
+                <dt class="stat__label">Chiffre d'affaires total</dt>
+                <dd class="stat__value">{{ summary.totalRevenue|price }}</dd>
+            </div>
+            <div class="panel stat">
+                <dt class="stat__label">Chiffre d'affaires des 30 derniers jours</dt>
+                <dd class="stat__value">{{ summary.revenueLast30Days|price }}</dd>
+            </div>
+            <div class="panel stat">
+                <dt class="stat__label">Panier moyen</dt>
+                <dd class="stat__value">{{ summary.averageOrderValue is null ? 'Aucune vente' : summary.averageOrderValue|price }}</dd>
+            </div>
+            <div class="panel stat">
+                <dt class="stat__label">Commandes payées</dt>
+                <dd class="stat__value">{{ summary.orderCount }}</dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="dashboard-section" aria-labelledby="statuses-title">
+        <h2 id="statuses-title" class="section-title">Commandes par statut</h2>
+        <div class="panel">
+            <ul class="summary-list">
+                {% for row in ordersByStatus %}
+                    <li class="summary-row">
+                        <a href="{{ path('admin_order_index', {statut: row.status.value}) }}" class="summary-row__label">{{ row.status.label }}</a>
+                        <strong>{{ row.count }}</strong>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </section>
+
+    <section class="dashboard-section" aria-labelledby="daily-revenue-title">
+        <h2 id="daily-revenue-title" class="section-title">Chiffre d'affaires des 14 derniers jours</h2>
+        {# Hauteur de chaque barre : part du meilleur jour (le merge évite un max() sur une liste vide) #}
+        {% set best_day_revenue = max(dailyRevenue|column('revenue')|merge([0])) %}
+        <figure class="bar-chart">
+            <div class="bar-chart__scroll">
+                {# Le graphique est décoratif pour les lecteurs d'écran : le tableau ci-dessous donne les mêmes données #}
+                <div class="bar-chart__bars" aria-hidden="true">
+                    {% for row in dailyRevenue %}
+                        {% set bar_size = best_day_revenue > 0 ? (row.revenue / best_day_revenue * 100)|round(1) : 0 %}
+                        <div class="bar-chart__column" title="{{ row.day|date('d/m/Y') }} : {{ row.revenue|price }}">
+                            <div class="bar-chart__track">
+                                <div class="bar-chart__bar" style="--bar-size: {{ bar_size }}%"></div>
+                            </div>
+                            <span class="bar-chart__label">{{ row.day|date('d/m') }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <figcaption class="note">Chiffre d'affaires par jour, du {{ (dailyRevenue|first).day|date('d/m/Y') }} au {{ (dailyRevenue|last).day|date('d/m/Y') }} (heure de Paris).</figcaption>
+            <details class="bar-chart__data">
+                <summary>Voir les données du graphique</summary>
+                <div class="table-wrapper">
+                    <table class="table">
+                        <caption class="visually-hidden">Chiffre d'affaires par jour</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Jour</th>
+                                <th scope="col" class="num">Chiffre d'affaires</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in dailyRevenue %}
+                                <tr>
+                                    <th scope="row">{{ row.day|date('d/m/Y') }}</th>
+                                    <td class="num">{{ row.revenue|price }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        </figure>
+    </section>
+
+    <div class="layout-split">
+        <section class="layout-split__main dashboard-section" aria-labelledby="best-sellers-title">
+            <h2 id="best-sellers-title" class="section-title">Produits les plus vendus</h2>
+            {% if bestSellers is empty %}
+                <p class="empty-state">Aucune vente pour l'instant.</p>
+            {% else %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Rang</th>
+                                <th scope="col">Produit</th>
+                                <th scope="col" class="num">Quantité vendue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in bestSellers %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td><a href="{{ path('admin_product_edit', {id: product.id}) }}">{{ product.name }}</a></td>
+                                    <td class="num">{{ product.quantitySold }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="layout-split__aside dashboard-section" aria-labelledby="low-stock-title">
+            <h2 id="low-stock-title" class="section-title">Stock à surveiller</h2>
+            {% if lowStockProducts is empty %}
+                <p class="empty-state">Aucun produit en rupture ou en stock faible.</p>
+            {% else %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Produit</th>
+                                <th scope="col" class="num">Stock</th>
+                                <th scope="col"><span class="visually-hidden">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in lowStockProducts %}
+                                <tr>
+                                    <td>
+                                        {{ product.name }}
+                                        {% if not product.active %}
+                                            <span class="badge badge--neutral">Désactivé</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="num">
+                                        {% if not product.inStock %}
+                                            <span class="stock stock--out">Rupture</span>
+                                        {% else %}
+                                            <span class="stock stock--low">{{ product.stock }} · faible</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="table__actions">
+                                            <a href="{{ path('admin_product_edit', {id: product.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ product.name }}</span></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

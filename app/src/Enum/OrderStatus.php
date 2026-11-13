@@ -15,6 +15,17 @@ enum OrderStatus: string
     case Delivered = 'delivered';
     case Cancelled = 'cancelled';
 
+    /**
+     * Statuts qui comptent dans le chiffre d'affaires : la commande a été payée.
+     * Une commande en attente n'a rien rapporté, une commande annulée ne rapportera rien.
+     *
+     * @return list<self>
+     */
+    public static function revenueStatuses(): array
+    {
+        return [self::Paid, self::Shipped, self::Delivered];
+    }
+
     public function label(): string
     {
         return match ($this) {
