@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Entity\Order;
 use App\Entity\User;
 use App\Exception\InsufficientStockException;
+use App\Exception\InvalidPromoCodeException;
 use App\Exception\PaymentFailedException;
 use App\Form\ShippingAddressType;
 use App\Model\ShippingAddress;
@@ -51,6 +52,12 @@ final class OrderController extends AbstractController
                 $order = $this->orderService->placeOrder($user, $cart, $form->getData());
             } catch (InsufficientStockException $exception) {
                 $this->addFlash('error', $exception->getMessage());
+
+                return $this->redirectToRoute('cart_show');
+            } catch (InvalidPromoCodeException $exception) {
+                // Code devenu inapplicable entre l'affichage et la validation (ex. dernière utilisation prise)
+                $this->cartService->removePromoCode();
+                $this->addFlash('error', $exception->getMessage().' Il a été retiré de votre panier.');
 
                 return $this->redirectToRoute('cart_show');
             }

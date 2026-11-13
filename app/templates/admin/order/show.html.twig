@@ -71,6 +71,16 @@
                         {% endfor %}
                     </tbody>
                     <tfoot>
+                        {% if order.discountCode %}
+                            <tr>
+                                <th scope="row" colspan="3" class="num">Sous-total</th>
+                                <td class="num">{{ order.subtotalAmount|price }}</td>
+                            </tr>
+                            <tr>
+                                <th scope="row" colspan="3" class="num">Remise ({{ order.discountCode }})</th>
+                                <td class="num">− {{ order.discountAmount|price }}</td>
+                            </tr>
+                        {% endif %}
                         <tr>
                             <th scope="row" colspan="3" class="num">Total</th>
                             <td class="num price">{{ order.totalAmount|price }}</td>

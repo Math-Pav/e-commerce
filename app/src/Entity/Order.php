@@ -26,9 +26,26 @@ class Order
     #[ORM\Column(length: 20, enumType: OrderStatus::class)]
     private OrderStatus $status = OrderStatus::Pending;
 
-    // Montant total en centimes, figé au moment de la commande
+    // Somme des lignes en centimes, avant remise
+    #[ORM\Column]
+    private ?int $subtotalAmount = null;
+
+    // Remise du code promo en centimes, figée au moment de la commande
+    #[ORM\Column(options: ['default' => 0])]
+    private int $discountAmount = 0;
+
+    // Montant total en centimes (sous-total moins remise), figé au moment de la commande
     #[ORM\Column]
     private ?int $totalAmount = null;
+
+    // Copie du code utilisé : la commande le garde même si le code est renommé ensuite
+    #[ORM\Column(length: 30, nullable: true)]
+    private ?string $discountCode = null;
+
+    // Lien vers le code promo, pour rendre son utilisation si la commande est annulée
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(onDelete: 'SET NULL')]
+    private ?PromoCode $promoCode = null;
 
     // Adresse de livraison copiée : elle ne doit pas changer si le client déménage
     #[ORM\Column(length: 100)]
@@ -110,6 +127,26 @@ class Order
         $this->totalAmount = $totalAmount;
 
         return $this;
+    }
+
+    public function getSubtotalAmount(): ?int
+    {
+        return $this->subtotalAmount;
+    }
+
+    public function getDiscountAmount(): int
+    {
+        return $this->discountAmount;
+    }
+
+    public function getDiscountCode(): ?string
+    {
+        return $this->discountCode;
+    }
+
+    public function getPromoCode(): ?PromoCode
+    {
+        return $this->promoCode;
     }
 
     public function getShippingFullName(): ?string
@@ -224,10 +261,26 @@ class Order
 
     public function recalculateTotal(): void
     {
-        $this->totalAmount = array_sum(array_map(
+        $this->subtotalAmount = array_sum(array_map(
             static fn (OrderItem $item): int => $item->getSubtotal(),
             $this->items->toArray(),
         ));
+        $this->totalAmount = $this->subtotalAmount - $this->discountAmount;
+    }
+
+    /**
+     * Enregistre la remise et une copie du code. À appeler après recalculateTotal() (le sous-total doit être connu).
+     */
+    public function applyDiscount(PromoCode $promoCode, int $discountAmount): void
+    {
+        if ($discountAmount < 0 || $discountAmount > (int) $this->subtotalAmount) {
+            throw new \DomainException('La remise doit être comprise entre zéro et le sous-total de la commande.');
+        }
+
+        $this->promoCode = $promoCode;
+        $this->discountCode = $promoCode->getCode();
+        $this->discountAmount = $discountAmount;
+        $this->recalculateTotal();
     }
 
     public function canBePaid(): bool

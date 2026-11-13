@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
+use App\Entity\PromoCode;
+use App\Enum\DiscountType;
 use App\Enum\OrderStatus;
 use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
@@ -344,6 +346,33 @@ final class OrderControllerTest extends WebTestCase
 
         self::assertResponseStatusCodeSame(403);
         self::assertSame(OrderStatus::Pending, $this->findOrderStatus($orderUrl));
+    }
+
+    public function testDiscountIsVisibleOnOrder(): void
+    {
+        $client = static::createClient();
+        $promoCode = (new PromoCode())->setCode('MOINS5')->setDiscountType(DiscountType::FixedAmount)->setValue(500);
+        static::getContainer()->get(EntityManagerInterface::class)->persist($promoCode);
+        static::getContainer()->get(EntityManagerInterface::class)->flush();
+        $this->logIn($client, 'client@example.com');
+        $this->addToCart($client, 'mug-noir-mat', 2);
+        $client->request('GET', '/panier');
+        $client->submitForm('Appliquer', ['code' => 'MOINS5']);
+
+        $this->submitCheckout($client, '69001');
+
+        // Avant toute nouvelle requête : chaque requête vide la liste des e-mails collectés
+        $message = self::getMailerMessage();
+        self::assertNotNull($message);
+        self::assertEmailTextBodyContains($message, 'Remise (MOINS5) : − 5,00 €');
+        self::assertEmailTextBodyContains($message, 'Total : 24,80 €');
+
+        $client->followRedirect();
+        // 29,80 € − 5,00 € = 24,80 €
+        self::assertSelectorTextContains('tfoot', 'Remise (MOINS5)');
+        self::assertSelectorTextContains('tfoot', '− 5,00 €');
+        self::assertSelectorTextContains('tfoot', '24,80 €');
+        self::assertSelectorTextContains('body', 'Payer la commande · 24,80 €');
     }
 
     /**

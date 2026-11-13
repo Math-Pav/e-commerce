@@ -6,12 +6,15 @@ namespace App\Service;
 
 use App\Entity\Order;
 use App\Entity\OrderItem;
+use App\Entity\PromoCode;
 use App\Entity\User;
 use App\Exception\InsufficientStockException;
+use App\Exception\InvalidPromoCodeException;
 use App\Model\Cart;
 use App\Model\ShippingAddress;
 use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
+use App\Repository\PromoCodeRepository;
 use Doctrine\DBAL\Exception as DBALException;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -22,16 +25,20 @@ final class OrderService
         private readonly EntityManagerInterface $entityManager,
         private readonly ProductRepository $productRepository,
         private readonly OrderRepository $orderRepository,
+        private readonly PromoCodeRepository $promoCodeRepository,
+        private readonly DiscountCalculator $discountCalculator,
         private readonly CustomerMailer $customerMailer,
         private readonly LoggerInterface $logger,
     ) {
     }
 
     /**
-     * Crée la commande et décrémente le stock, en une seule transaction : tout réussit, ou rien ne change.
+     * Crée la commande, décrémente le stock et compte l'utilisation du code promo,
+     * en une seule transaction : tout réussit, ou rien ne change.
      * Si le client l'a demandé, l'adresse de livraison est ensuite enregistrée dans son profil.
      *
      * @throws InsufficientStockException
+     * @throws InvalidPromoCodeException  si le code promo n'est plus applicable
      */
     public function placeOrder(User $customer, Cart $cart, ShippingAddress $address): Order
     {
@@ -65,6 +72,11 @@ final class OrderService
             }
 
             $order->recalculateTotal();
+
+            if (null !== $cart->promoCode) {
+                $this->applyPromoCode($order, $cart->promoCode);
+            }
+
             $this->entityManager->persist($order);
 
             return $order;
@@ -115,6 +127,13 @@ final class OrderService
                 $this->productRepository->lockForUpdate($product);
                 $product->increaseStock((int) $item->getQuantity());
             }
+
+            // L'utilisation du code est rendue, sous le même verrou que lors de la commande
+            $promoCode = $order->getPromoCode();
+            if (null !== $promoCode) {
+                $this->promoCodeRepository->lockForUpdate($promoCode);
+                $promoCode->decrementUsage();
+            }
         });
 
         $this->customerMailer->sendOrderCancellation($order);
@@ -136,6 +155,25 @@ final class OrderService
     {
         $order->markAsDelivered(new \DateTimeImmutable());
         $this->entityManager->flush();
+    }
+
+    /**
+     * Appelée DANS la transaction de placeOrder(). Le verrou sur le code fait attendre une commande
+     * simultanée avec le même code jusqu'à la fin de cette transaction : elle relit alors le compteur
+     * à jour, et le nombre maximal d'utilisations ne peut pas être dépassé.
+     * La remise est recalculée sur le sous-total de la commande (prix relus sous verrou), pas sur celui du panier.
+     *
+     * @throws InvalidPromoCodeException
+     */
+    private function applyPromoCode(Order $order, PromoCode $promoCode): void
+    {
+        $this->promoCodeRepository->lockForUpdate($promoCode);
+
+        $subtotal = (int) $order->getSubtotalAmount();
+        $promoCode->assertApplicable(new \DateTimeImmutable(), $subtotal);
+        $promoCode->incrementUsage();
+
+        $order->applyDiscount($promoCode, $this->discountCalculator->calculate($promoCode, $subtotal));
     }
 
     /**
