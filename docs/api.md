@@ -2,10 +2,12 @@
 
 API REST publique, en lecture seule, pour afficher nos produits dans une application mobile ou sur un site partenaire. Les choix de conception sont expliqués dans `docs/adr/0020-api-catalogue.md`.
 
+Les adresses `/api/v1/me/…` donnent au client ses propres commandes, avec un jeton d'accès personnel (voir [Mes commandes](#mes-commandes-jeton-daccès), `docs/adr/0021-jetons-acces-api.md`).
+
 - **Adresse de base** : `http://localhost:8080/api/v1` (environnement local)
 - **Méthode** : `GET` uniquement (toute autre méthode : 405)
 - **Format** : JSON (`application/json`), erreurs en `application/problem+json`
-- **Authentification** : aucune
+- **Authentification** : aucune pour le catalogue ; jeton d'accès (`Authorization: Bearer <jeton>`) pour `/api/v1/me/…`
 - **Limite** : 60 requêtes par minute et par adresse IP (voir [Erreurs](#erreurs))
 
 ## Conventions
@@ -127,6 +129,83 @@ Exemple : `GET /api/v1/categories`
 
 Erreurs : **429**.
 
+## Mes commandes (jeton d'accès)
+
+### Obtenir un jeton
+
+Le client se connecte au site, ouvre **Mon compte › Gérer mes jetons d'accès** (`/mon-compte/jetons-api`), donne un nom au jeton (« Mon téléphone ») et le crée. Le jeton (64 caractères hexadécimaux) n'est affiché **qu'une fois** : il faut le copier aussitôt. Il est valable 90 jours ; 5 jetons actifs au plus par client. La même page liste les jetons (nom, début du jeton, dates de création, de dernière utilisation et d'expiration) et permet de les révoquer.
+
+### Utiliser le jeton
+
+Chaque requête envoie le jeton dans l'en-tête `Authorization` (jamais dans l'adresse) :
+
+```
+GET /api/v1/me/orders
+Authorization: Bearer 3f9c…
+```
+
+Aucune session, aucun cookie : la connexion au site n'ouvre pas ces adresses, et le jeton n'ouvre pas le site. Sans jeton valide, la réponse est **401** (voir [Erreurs](#erreurs)).
+
+### GET /api/v1/me/orders
+
+Les commandes du client, les plus récentes en premier, sans pagination.
+
+Champs d'une commande : `reference` (identifiant), `status` (`pending`, `paid`, `shipped`, `delivered`, `cancelled`), `statusLabel` (intitulé en français), `createdAt` (date ISO 8601 avec fuseau), `total` (montant payé, remise déduite), `itemCount` (nombre d'articles).
+
+```json
+{
+  "data": [
+    {
+      "reference": "CMD-2026-00042",
+      "status": "paid",
+      "statusLabel": "Payée",
+      "createdAt": "2026-11-14T10:30:00+01:00",
+      "total": { "amount": 2980, "currency": "EUR" },
+      "itemCount": 2
+    }
+  ]
+}
+```
+
+Erreurs : **401**, **429**.
+
+### GET /api/v1/me/orders/{reference}
+
+Détail d'une commande du client. La commande d'un autre client répond **404**, comme une commande inexistante.
+
+Champs : ceux de la liste (sauf `itemCount`), plus `paidAt`, `shippedAt`, `deliveredAt`, `cancelledAt` (date ISO 8601 ou `null`), `subtotal` (avant remise), `discount`, `discountCode` (ou `null`), `shippingAddress` (`fullName`, `address`, `postalCode`, `city`) et `items` : `productName`, `variantLabel` (ou `null`), `unitPrice` (prix au moment de l'achat), `quantity`, `subtotal`.
+
+```json
+{
+  "data": {
+    "reference": "CMD-2026-00042",
+    "status": "paid",
+    "statusLabel": "Payée",
+    "createdAt": "2026-11-14T10:30:00+01:00",
+    "paidAt": "2026-11-14T10:31:12+01:00",
+    "shippedAt": null,
+    "deliveredAt": null,
+    "cancelledAt": null,
+    "subtotal": { "amount": 2980, "currency": "EUR" },
+    "discount": { "amount": 0, "currency": "EUR" },
+    "discountCode": null,
+    "total": { "amount": 2980, "currency": "EUR" },
+    "shippingAddress": { "fullName": "Camille Martin", "address": "12 rue des Lilas", "postalCode": "69001", "city": "Lyon" },
+    "items": [
+      {
+        "productName": "Mug noir mat",
+        "variantLabel": null,
+        "unitPrice": { "amount": 1490, "currency": "EUR" },
+        "quantity": 2,
+        "subtotal": { "amount": 2980, "currency": "EUR" }
+      }
+    ]
+  }
+}
+```
+
+Erreurs : **401**, **404**, **429**.
+
 ## Erreurs
 
 Toutes les erreurs suivent le format `application/problem+json` (RFC 9457) : `type` (toujours `about:blank`), `title` (intitulé du code HTTP), `status`, et `detail` (explication en français, absente pour une erreur 500).
@@ -134,7 +213,8 @@ Toutes les erreurs suivent le format `application/problem+json` (RFC 9457) : `ty
 | Code | Cas |
 |---|---|
 | 400 | Paramètre invalide : `sort` inconnu, `page` non entière ou < 1, `q` trop long, catégorie inconnue, paramètre envoyé sous forme de tableau (`?q[]=`) |
-| 404 | Produit inconnu ou désactivé, adresse inexistante sous `/api/` |
+| 401 | `/api/v1/me/…` : jeton absent, inconnu, révoqué ou expiré. L'en-tête `WWW-Authenticate: Bearer realm="api"` est ajouté (avec `error="invalid_token"` si un jeton a été envoyé) |
+| 404 | Produit inconnu ou désactivé, commande inexistante ou d'un autre client, adresse inexistante sous `/api/` |
 | 405 | Méthode autre que `GET` (en-tête `Allow: GET`) |
 | 429 | Plus de 60 requêtes en une minute depuis la même adresse IP ; l'en-tête `Retry-After` donne le nombre de secondes à attendre |
 | 500 | Erreur interne (aucun détail exposé) |
@@ -147,6 +227,10 @@ Exemples réels :
 
 ```json
 {"type": "about:blank", "title": "Not Found", "status": 404, "detail": "Le produit « agenda-2026 » n'existe pas."}
+```
+
+```json
+{"type": "about:blank", "title": "Unauthorized", "status": 401, "detail": "Jeton d'accès expiré : créez-en un nouveau dans « Mon compte »."}
 ```
 
 ```json
