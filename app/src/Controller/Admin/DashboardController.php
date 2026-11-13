@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Repository\OrderItemRepository;
-use App\Repository\ProductRepository;
+use App\Repository\ProductVariantRepository;
 use App\Service\DashboardService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +23,7 @@ final class DashboardController extends AbstractController
     public function index(
         DashboardService $dashboardService,
         OrderItemRepository $orderItemRepository,
-        ProductRepository $productRepository,
+        ProductVariantRepository $variantRepository,
     ): Response {
         $now = new \DateTimeImmutable();
 
@@ -32,7 +32,7 @@ final class DashboardController extends AbstractController
             'ordersByStatus' => $dashboardService->countOrdersByStatus(),
             'dailyRevenue' => $dashboardService->getDailyRevenue($now, self::DAILY_REVENUE_DAYS),
             'bestSellers' => $orderItemRepository->findBestSellingProducts(self::BEST_SELLERS_LIMIT),
-            'lowStockProducts' => $productRepository->findOutOfStockOrLowStock(),
+            'lowStockVariants' => $variantRepository->findOutOfStockOrLowStock(),
         ]);
     }
 }

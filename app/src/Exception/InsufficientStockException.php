@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace App\Exception;
 
-use App\Entity\Product;
+use App\Entity\ProductVariant;
 
 /**
- * Levée quand la quantité demandée dépasse le stock disponible.
+ * Levée quand la quantité demandée dépasse le stock disponible d'une variante.
  */
 final class InsufficientStockException extends \DomainException
 {
-    public function __construct(public readonly Product $product)
+    public function __construct(public readonly ProductVariant $variant)
     {
         parent::__construct(sprintf(
             'Stock insuffisant pour « %s » : %d disponible(s).',
-            $product->getName(),
-            $product->getStock(),
+            $variant->getName(),
+            $variant->getStock(),
         ));
     }
 }

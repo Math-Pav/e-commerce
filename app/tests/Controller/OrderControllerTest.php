@@ -8,7 +8,7 @@ use App\Entity\PromoCode;
 use App\Enum\DiscountType;
 use App\Enum\OrderStatus;
 use App\Repository\OrderRepository;
-use App\Repository\ProductRepository;
+use App\Repository\ProductVariantRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -405,10 +405,11 @@ final class OrderControllerTest extends WebTestCase
     private function findProductStock(string $slug): int
     {
         static::getContainer()->get(EntityManagerInterface::class)->clear();
-        $product = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => $slug]);
-        self::assertNotNull($product);
+        // Produit sans déclinaison : sa variante par défaut porte le stock (référence = slug en majuscules)
+        $variant = static::getContainer()->get(ProductVariantRepository::class)->findOneBy(['sku' => strtoupper($slug)]);
+        self::assertNotNull($variant);
 
-        return $product->getStock();
+        return $variant->getStock();
     }
 
     private function logIn(KernelBrowser $client, string $email): void

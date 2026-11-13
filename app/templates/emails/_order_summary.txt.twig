@@ -1,6 +1,6 @@
 {# Récapitulatif d'une commande en texte brut. Paramètre : order #}
 {% for item in order.items %}
-- {{ item.productName }} : {{ item.quantity }} × {{ item.unitPrice|price }} = {{ item.subtotal|price }}
+- {{ item.displayName }} : {{ item.quantity }} × {{ item.unitPrice|price }} = {{ item.subtotal|price }}
 {% endfor %}
 
 {% if order.discountCode %}

@@ -80,7 +80,7 @@
                         </div>
                         <span class="product-card__category">{{ product.category.name }}</span>
                         <span class="product-card__name">{{ product.name }}</span>
-                        <span class="product-card__price">{{ product.price|price }}</span>
+                        <span class="product-card__price">{{ product.hasVariedPrices ? 'À partir de ' }}{{ product.fromPrice|price }}</span>
                     </a>
                 </li>
             {% endfor %}

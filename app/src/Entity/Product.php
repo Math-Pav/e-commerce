@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Exception\InsufficientStockException;
 use App\Repository\ProductRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
-// Index composites du catalogue (ADR 0011) : un par tri, pour lire les produits actifs déjà dans l'ordre
+// Index composites du catalogue (ADR 0011) pour lire les produits actifs déjà dans l'ordre.
+// Le tri par prix utilise le prix des variantes (ADR 0017) : il n'a plus d'index.
 #[ORM\Index(name: 'idx_product_active_name', columns: ['is_active', 'name'])]
-#[ORM\Index(name: 'idx_product_active_price', columns: ['is_active', 'price'])]
 #[ORM\Index(name: 'idx_product_active_created_at', columns: ['is_active', 'created_at'])]
 class Product
 {
-    public const LOW_STOCK_THRESHOLD = 5;
-
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -32,12 +31,9 @@ class Product
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
-    // Prix en centimes : 1299 = 12,99 €
+    // Prix de base en centimes (1299 = 12,99 €), utilisé par les variantes qui n'ont pas leur propre prix
     #[ORM\Column]
     private ?int $price = null;
-
-    #[ORM\Column(options: ['default' => 0])]
-    private int $stock = 0;
 
     #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;
@@ -54,9 +50,16 @@ class Product
     #[ORM\JoinColumn(nullable: false)]
     private ?Category $category = null;
 
+    // Le stock est porté par les variantes (ADR 0017). Tout produit en a au moins une.
+    /** @var Collection<int, ProductVariant> */
+    #[ORM\OneToMany(targetEntity: ProductVariant::class, mappedBy: 'product', cascade: ['persist'])]
+    #[ORM\OrderBy(['id' => 'ASC'])]
+    private Collection $variants;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->variants = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -112,18 +115,6 @@ class Product
         return $this;
     }
 
-    public function getStock(): int
-    {
-        return $this->stock;
-    }
-
-    public function setStock(int $stock): static
-    {
-        $this->stock = $stock;
-
-        return $this;
-    }
-
     public function isActive(): bool
     {
         return $this->isActive;
@@ -165,44 +156,104 @@ class Product
         return $this;
     }
 
+    /**
+     * @return Collection<int, ProductVariant>
+     */
+    public function getVariants(): Collection
+    {
+        return $this->variants;
+    }
+
+    public function addVariant(ProductVariant $variant): static
+    {
+        if (!$this->variants->contains($variant)) {
+            $this->variants->add($variant);
+            $variant->setProduct($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Les variantes proposées au client, dans l'ordre de création.
+     *
+     * @return list<ProductVariant>
+     */
+    public function getActiveVariants(): array
+    {
+        return array_values($this->variants->filter(
+            static fn (ProductVariant $variant): bool => $variant->isActive(),
+        )->toArray());
+    }
+
+    /**
+     * La variante présélectionnée sur la fiche produit : la première variante active encore en stock.
+     */
+    public function getFirstVariantInStock(): ?ProductVariant
+    {
+        foreach ($this->getActiveVariants() as $variant) {
+            if ($variant->isInStock()) {
+                return $variant;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Le client choisit une variante seulement s'il y en a plusieurs ; sinon la variante par défaut est implicite.
+     */
+    public function hasVariantChoice(): bool
+    {
+        return count($this->getActiveVariants()) > 1;
+    }
+
+    /**
+     * En stock si au moins une variante active l'est : « Rupture » seulement quand toutes sont épuisées.
+     */
     public function isInStock(): bool
     {
-        return $this->stock > 0;
+        return null !== $this->getFirstVariantInStock();
     }
 
     /**
-     * Stock faible : encore disponible, mais à réapprovisionner bientôt.
+     * Stock total des variantes actives (affiché dans l'administration).
      */
-    public function isLowStock(): bool
+    public function getTotalStock(): int
     {
-        return $this->stock > 0 && $this->stock <= self::LOW_STOCK_THRESHOLD;
+        return array_sum(array_map(
+            static fn (ProductVariant $variant): int => $variant->getStock(),
+            $this->getActiveVariants(),
+        ));
     }
 
     /**
-     * @throws InsufficientStockException
+     * Le plus petit prix des variantes actives : le « à partir de » du catalogue.
+     * Sans variante active, le prix de base du produit.
      */
-    public function decreaseStock(int $quantity): void
+    public function getFromPrice(): int
     {
-        if ($quantity < 1) {
-            throw new \InvalidArgumentException('La quantité doit être au moins égale à 1.');
-        }
+        $prices = $this->getActiveVariantPrices();
 
-        if ($quantity > $this->stock) {
-            throw new InsufficientStockException($this);
-        }
-
-        $this->stock -= $quantity;
+        return [] === $prices ? (int) $this->price : min($prices);
     }
 
     /**
-     * Remet en stock une quantité (par exemple à l'annulation d'une commande).
+     * Vrai si les variantes actives n'ont pas toutes le même prix (le catalogue affiche alors « à partir de »).
      */
-    public function increaseStock(int $quantity): void
+    public function hasVariedPrices(): bool
     {
-        if ($quantity < 1) {
-            throw new \InvalidArgumentException('La quantité doit être au moins égale à 1.');
-        }
+        return count(array_unique($this->getActiveVariantPrices())) > 1;
+    }
 
-        $this->stock += $quantity;
+    /**
+     * @return list<int>
+     */
+    private function getActiveVariantPrices(): array
+    {
+        return array_map(
+            static fn (ProductVariant $variant): int => $variant->getEffectivePrice(),
+            $this->getActiveVariants(),
+        );
     }
 }

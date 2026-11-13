@@ -6,6 +6,7 @@ namespace App\Tests\Controller;
 
 use App\Entity\Category;
 use App\Entity\Product;
+use App\Entity\ProductVariant;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
@@ -67,6 +68,53 @@ final class ProductControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Rupture de stock');
+    }
+
+    public function testProductPageLetsCustomerChooseVariant(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/produits/mug-emaille');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.product-detail__price-row', 'À partir de 16,90 €');
+        // Un bouton radio par variante active, avec son prix et sa disponibilité ; la première en stock est cochée
+        self::assertSelectorCount(3, 'input[type="radio"][name="variant"]');
+        self::assertSelectorTextContains('.variant-choice', 'Bleu');
+        self::assertSelectorTextContains('.variant-choice', '18,90 €');
+        self::assertSelectorTextContains('.variant-choice', '10 disponibles');
+        self::assertSelectorExists('label.variant-choice__option:nth-of-type(1) input:checked');
+        // Seule la variante rouge est épuisée : elle est désactivée, le produit n'est pas en rupture
+        self::assertSelectorExists('label.variant-choice__option:nth-of-type(2) input:disabled');
+        self::assertSelectorTextContains('label.variant-choice__option:nth-of-type(2)', 'Rupture de stock');
+        self::assertSelectorTextNotContains('.product-detail__price-row', 'Rupture de stock');
+    }
+
+    public function testProductWithoutVariantChoiceHidesDefaultVariant(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/produits/mug-noir-mat');
+
+        self::assertSelectorNotExists('.variant-choice');
+        self::assertSelectorExists('form.add-to-cart input[type="hidden"][name="variant"]');
+    }
+
+    public function testCatalogueShowsFromPriceAndStockOverAllVariants(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/produits?categorie=mugs-et-tasses');
+
+        $cards = $client->getCrawler()->filter('.product-card');
+        $card = static fn (string $name) => $cards->reduce(static fn ($node): bool => str_contains($node->text(), $name));
+
+        // Prix différents selon la variante : « à partir de » ; une variante épuisée sur trois : pas de rupture
+        self::assertStringContainsString('À partir de 16,90 €', $card('Mug émaillé')->text());
+        self::assertStringNotContainsString('Rupture de stock', $card('Mug émaillé')->text());
+        // Sans déclinaison : le prix seul ; toutes les variantes épuisées : rupture
+        self::assertStringNotContainsString('À partir de', $card('Mug noir mat')->text());
+        self::assertStringContainsString('Rupture de stock', $card('Mug isotherme')->text());
     }
 
     #[DataProvider('unavailableSlugProvider')]
@@ -246,9 +294,9 @@ final class ProductControllerTest extends WebTestCase
         $client->request('GET', '/produits?q=produit&categorie=carnets');
 
         self::assertResponseIsSuccessful();
-        // Catégorie courante, comptage, page de produits (avec leur catégorie), liste des catégories.
-        // Sans la jointure, chaque carte produit déclencherait une requête de plus (N+1).
-        self::assertSame(4, $this->countSelectQueries($debugData));
+        // Catégorie courante, comptage, page de produits (avec leur catégorie), variantes de la page, liste des catégories.
+        // Sans la jointure et le chargement groupé des variantes, chaque carte produit déclencherait des requêtes en plus (N+1).
+        self::assertSame(5, $this->countSelectQueries($debugData));
     }
 
     /**
@@ -265,8 +313,8 @@ final class ProductControllerTest extends WebTestCase
                 ->setName(sprintf('Produit de test %02d', $i))
                 ->setSlug(sprintf('produit-de-test-%02d', $i))
                 ->setPrice(10000 + $i)
-                ->setStock(5)
-                ->setCategory($category));
+                ->setCategory($category)
+                ->addVariant((new ProductVariant())->setSku(sprintf('TEST-%02d', $i))->setStock(5)));
         }
 
         $entityManager->flush();

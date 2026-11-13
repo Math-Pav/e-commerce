@@ -5,96 +5,69 @@ declare(strict_types=1);
 namespace App\Tests\Entity;
 
 use App\Entity\Product;
-use App\Exception\InsufficientStockException;
-use PHPUnit\Framework\Attributes\DataProvider;
+use App\Entity\ProductVariant;
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Disponibilité et prix d'un produit, calculés à partir de ses variantes (ADR 0017).
+ */
 final class ProductTest extends TestCase
 {
-    public function testDecreaseStock(): void
+    public function testInStockWhileAtLeastOneActiveVariantIs(): void
     {
-        $product = (new Product())->setStock(5);
+        $product = $this->createProduct(1290, [[null, 0], [null, 3]]);
 
-        $product->decreaseStock(3);
-
-        self::assertSame(2, $product->getStock());
+        self::assertTrue($product->isInStock());
+        self::assertSame($product->getVariants()[1], $product->getFirstVariantInStock());
     }
 
-    public function testCanDecreaseStockToZero(): void
+    public function testOutOfStockWhenAllActiveVariantsAreSoldOut(): void
     {
-        $product = (new Product())->setStock(5);
+        $product = $this->createProduct(1290, [[null, 0], [null, 4]]);
+        $product->getVariants()[1]?->setIsActive(false);
 
-        $product->decreaseStock(5);
-
-        self::assertSame(0, $product->getStock());
+        self::assertFalse($product->isInStock());
+        self::assertNull($product->getFirstVariantInStock());
+        self::assertSame(0, $product->getTotalStock());
     }
 
-    public function testCannotDecreaseStockBelowZero(): void
+    public function testFromPriceIsLowestActiveVariantPrice(): void
     {
-        $product = (new Product())->setName('Mug')->setStock(5);
+        $product = $this->createProduct(1290, [[null, 1], [990, 1], [590, 1]]);
+        $product->getVariants()[2]?->setIsActive(false);
 
-        try {
-            $product->decreaseStock(6);
-            self::fail('Une InsufficientStockException était attendue.');
-        } catch (InsufficientStockException) {
-            self::assertSame(5, $product->getStock(), 'Le stock ne doit pas changer après un échec.');
-        }
+        self::assertSame(990, $product->getFromPrice());
+        self::assertTrue($product->hasVariedPrices());
     }
 
-    public function testCannotDecreaseByZero(): void
+    public function testPricesDoNotVaryWhenVariantsUseProductPrice(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $product = $this->createProduct(1290, [[null, 1], [1290, 1]]);
 
-        (new Product())->setStock(5)->decreaseStock(0);
+        self::assertSame(1290, $product->getFromPrice());
+        self::assertFalse($product->hasVariedPrices());
     }
 
-    #[DataProvider('lowStockProvider')]
-    public function testIsLowStock(int $stock, bool $expected): void
+    public function testVariantChoiceOnlyWithSeveralActiveVariants(): void
     {
-        $product = (new Product())->setStock($stock);
+        $product = $this->createProduct(1290, [[null, 1], [null, 1]]);
+        self::assertTrue($product->hasVariantChoice());
 
-        self::assertSame($expected, $product->isLowStock());
-    }
-
-    /**
-     * @return iterable<string, array{int, bool}>
-     */
-    public static function lowStockProvider(): iterable
-    {
-        yield 'rupture : pas un stock faible' => [0, false];
-        yield 'un seul exemplaire' => [1, true];
-        yield 'au seuil' => [Product::LOW_STOCK_THRESHOLD, true];
-        yield 'juste au-dessus du seuil' => [Product::LOW_STOCK_THRESHOLD + 1, false];
-    }
-
-    public function testIncreaseStock(): void
-    {
-        $product = (new Product())->setStock(2);
-
-        $product->increaseStock(3);
-
-        self::assertSame(5, $product->getStock());
-    }
-
-    #[DataProvider('invalidQuantities')]
-    public function testCannotIncreaseStockWithInvalidQuantity(int $quantity): void
-    {
-        $product = (new Product())->setStock(2);
-
-        try {
-            $product->increaseStock($quantity);
-            self::fail('Une InvalidArgumentException était attendue.');
-        } catch (\InvalidArgumentException) {
-            self::assertSame(2, $product->getStock());
-        }
+        $product->getVariants()[0]?->setIsActive(false);
+        self::assertFalse($product->hasVariantChoice());
     }
 
     /**
-     * @return iterable<string, array{int}>
+     * @param list<array{?int, int}> $variants [prix propre, stock]
      */
-    public static function invalidQuantities(): iterable
+    private function createProduct(int $price, array $variants): Product
     {
-        yield 'zéro' => [0];
-        yield 'négative' => [-1];
+        $product = (new Product())->setName('Mug')->setPrice($price);
+
+        foreach ($variants as [$variantPrice, $stock]) {
+            $product->addVariant((new ProductVariant())->setPrice($variantPrice)->setStock($stock));
+        }
+
+        return $product;
     }
 }

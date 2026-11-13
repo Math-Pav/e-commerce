@@ -27,6 +27,7 @@ final class ProductData
     #[Assert\PositiveOrZero(message: 'Le prix ne peut pas être négatif.')]
     public ?int $price = null;
 
+    // Stock initial de la variante par défaut, saisi à la création seulement (ADR 0017)
     #[Assert\PositiveOrZero(message: 'Le stock ne peut pas être négatif.')]
     public int $stock = 0;
 
@@ -58,7 +59,6 @@ final class ProductData
         $data->name = (string) $product->getName();
         $data->category = $product->getCategory();
         $data->price = $product->getPrice();
-        $data->stock = $product->getStock();
         $data->description = $product->getDescription();
 
         return $data;

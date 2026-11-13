@@ -20,12 +20,22 @@
                 <h1 class="page-title">{{ product.name }}</h1>
             </div>
 
+            {# Variante présélectionnée : la première en stock. Sans choix, c'est la seule variante proposée. #}
+            {% set selected_variant = product.firstVariantInStock %}
+
             <div class="product-detail__price-row">
-                <span class="price price--lg">{{ product.price|price }}</span>
-                {% if product.inStock %}
-                    <span class="badge badge--success">En stock · {{ product.stock }} disponible{{ product.stock > 1 ? 's' }}</span>
+                {% if product.hasVariantChoice %}
+                    <span class="price price--lg">{{ product.hasVariedPrices ? 'À partir de ' }}{{ product.fromPrice|price }}</span>
+                    {% if not product.inStock %}
+                        <span class="badge badge--danger">Rupture de stock</span>
+                    {% endif %}
                 {% else %}
-                    <span class="badge badge--danger">Rupture de stock</span>
+                    <span class="price price--lg">{{ product.fromPrice|price }}</span>
+                    {% if selected_variant %}
+                        <span class="badge badge--success">En stock · {{ selected_variant.stock }} disponible{{ selected_variant.stock > 1 ? 's' }}</span>
+                    {% else %}
+                        <span class="badge badge--danger">Rupture de stock</span>
+                    {% endif %}
                 {% endif %}
             </div>
 
@@ -33,12 +43,32 @@
                 <p class="product-detail__description">{{ product.description }}</p>
             {% endif %}
 
-            {% if product.inStock %}
+            {% if selected_variant %}
                 <form method="post" action="{{ path('cart_add', {id: product.id}) }}" class="add-to-cart">
                     <input type="hidden" name="_token" value="{{ csrf_token('cart') }}">
+                    {% if product.hasVariantChoice %}
+                        {# Boutons radio : le choix se fait sans JavaScript, chaque option affiche son prix et sa disponibilité #}
+                        <fieldset class="variant-choice">
+                            <legend class="variant-choice__legend">Choisissez une variante</legend>
+                            {% for variant in product.activeVariants %}
+                                <label class="variant-choice__option">
+                                    <input type="radio" name="variant" value="{{ variant.id }}" required{{ variant is same as(selected_variant) ? ' checked' }}{{ not variant.inStock ? ' disabled' }}>
+                                    <span class="variant-choice__label">{{ variant.label }}</span>
+                                    <span class="variant-choice__price">{{ variant.effectivePrice|price }}</span>
+                                    {% if variant.inStock %}
+                                        <span class="badge badge--success">{{ variant.stock }} disponible{{ variant.stock > 1 ? 's' }}</span>
+                                    {% else %}
+                                        <span class="badge badge--danger">Rupture de stock</span>
+                                    {% endif %}
+                                </label>
+                            {% endfor %}
+                        </fieldset>
+                    {% else %}
+                        <input type="hidden" name="variant" value="{{ selected_variant.id }}">
+                    {% endif %}
                     <div class="field">
                         <label for="quantity">Quantité</label>
-                        <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ product.stock }}" required class="input input--quantity">
+                        <input type="number" id="quantity" name="quantity" value="1" min="1"{% if not product.hasVariantChoice %} max="{{ selected_variant.stock }}"{% endif %} required class="input input--quantity">
                     </div>
                     <button type="submit" class="btn btn--primary btn--lg">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>

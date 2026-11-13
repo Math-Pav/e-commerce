@@ -33,12 +33,11 @@
                         <td>{{ product.category.name }}</td>
                         <td class="num">{{ product.price|price }}</td>
                         <td class="num">
+                            {# Stock total des variantes actives ; le détail par variante est dans « Variantes » #}
                             {% if not product.inStock %}
                                 <span class="stock stock--out">Rupture</span>
-                            {% elseif product.lowStock %}
-                                <span class="stock stock--low">{{ product.stock }} · faible</span>
                             {% else %}
-                                {{ product.stock }}
+                                {{ product.totalStock }}
                             {% endif %}
                         </td>
                         <td>

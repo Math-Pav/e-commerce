@@ -54,14 +54,8 @@ final class ProductType extends AbstractType
                 'input' => 'integer',
                 'html5' => true,
                 'attr' => ['min' => 0, 'step' => '0.01'],
-                'help' => 'En euros, par exemple 12,90.',
+                'help' => 'En euros, par exemple 12,90. Prix des variantes qui n\'ont pas leur propre prix.',
                 'invalid_message' => 'Veuillez saisir un prix valide, par exemple 12,90.',
-            ])
-            ->add('stock', IntegerType::class, [
-                'label' => 'Stock',
-                'empty_data' => '0',
-                'attr' => ['min' => 0],
-                'invalid_message' => 'Veuillez saisir un nombre entier.',
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'Description',
@@ -79,6 +73,17 @@ final class ProductType extends AbstractType
             ]);
 
         // La case n'a de sens que si le produit a déjà une photo
+        // Création seulement : le stock initial va à la variante par défaut, ensuite il se gère dans « Variantes » (ADR 0017)
+        if ($options['include_stock']) {
+            $builder->add('stock', IntegerType::class, [
+                'label' => 'Stock initial',
+                'empty_data' => '0',
+                'attr' => ['min' => 0],
+                'help' => 'Ensuite, le stock se gère dans la page « Variantes » du produit.',
+                'invalid_message' => 'Veuillez saisir un nombre entier.',
+            ]);
+        }
+
         if ($options['allow_image_removal']) {
             $builder->add('removeImage', CheckboxType::class, [
                 'label' => 'Retirer la photo actuelle',
@@ -93,7 +98,10 @@ final class ProductType extends AbstractType
             'data_class' => ProductData::class,
             // Vrai seulement à la modification d'un produit qui a déjà une photo : affiche la case « Retirer la photo »
             'allow_image_removal' => false,
+            // Faux à la modification : le stock est porté par les variantes
+            'include_stock' => true,
         ]);
         $resolver->setAllowedTypes('allow_image_removal', 'bool');
+        $resolver->setAllowedTypes('include_stock', 'bool');
     }
 }

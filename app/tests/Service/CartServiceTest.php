@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\Product;
+use App\Entity\ProductVariant;
 use App\Exception\InsufficientStockException;
-use App\Repository\ProductRepository;
+use App\Repository\ProductVariantRepository;
 use App\Repository\PromoCodeRepository;
 use App\Service\CartService;
 use App\Service\DiscountCalculator;
@@ -20,29 +21,38 @@ final class CartServiceTest extends TestCase
 {
     private CartService $cartService;
 
-    private Product $mug;
+    private Session $session;
 
-    private Product $pen;
+    private ProductVariant $mug;
+
+    private ProductVariant $pen;
+
+    // Deux variantes d'un même produit, la verte ayant son propre prix
+    private ProductVariant $blueMug;
+
+    private ProductVariant $greenMug;
 
     protected function setUp(): void
     {
-        $this->mug = $this->createProduct(1, 'Mug', price: 1290, stock: 5);
-        $this->pen = $this->createProduct(2, 'Stylo', price: 150, stock: 100);
-        $products = [$this->mug, $this->pen];
+        $this->mug = $this->createVariant(1, 'Mug', price: 1290, stock: 5);
+        $this->pen = $this->createVariant(2, 'Stylo', price: 150, stock: 100);
+        $this->blueMug = $this->createVariant(3, 'Mug émaillé', price: 1690, stock: 10, label: 'Bleu');
+        $this->greenMug = $this->createVariant(4, 'Mug émaillé', price: 1690, stock: 3, label: 'Vert', variantPrice: 1890);
+        $variants = [$this->mug, $this->pen, $this->blueMug, $this->greenMug];
 
         // Une vraie session, mais stockée en mémoire au lieu d'un fichier
+        $this->session = new Session(new MockArraySessionStorage());
         $request = new Request();
-        $request->setSession(new Session(new MockArraySessionStorage()));
+        $request->setSession($this->session);
         $requestStack = new RequestStack();
         $requestStack->push($request);
 
-        // Un faux repository : il renvoie nos produits (actifs, comme le vrai) sans toucher à la base
-        $repository = $this->createStub(ProductRepository::class);
-        $repository->method('findBy')->willReturnCallback(
-            static fn (array $criteria): array => array_values(array_filter(
-                $products,
-                static fn (Product $product): bool => in_array($product->getId(), $criteria['id'], true)
-                    && $product->isActive() === $criteria['isActive'],
+        // Un faux repository : il renvoie nos variantes en vente (comme le vrai) sans toucher à la base
+        $repository = $this->createStub(ProductVariantRepository::class);
+        $repository->method('findAvailableByIds')->willReturnCallback(
+            static fn (array $ids): array => array_values(array_filter(
+                $variants,
+                static fn (ProductVariant $variant): bool => in_array($variant->getId(), $ids, true) && $variant->isAvailable(),
             )),
         );
 
@@ -63,7 +73,7 @@ final class CartServiceTest extends TestCase
 
         $lines = $this->cartService->getCart()->lines;
         self::assertCount(1, $lines);
-        self::assertSame($this->mug, $lines[0]->product);
+        self::assertSame($this->mug, $lines[0]->variant);
         self::assertSame(2, $lines[0]->quantity);
     }
 
@@ -116,7 +126,7 @@ final class CartServiceTest extends TestCase
 
         $lines = $this->cartService->getCart()->lines;
         self::assertCount(1, $lines);
-        self::assertSame($this->pen, $lines[0]->product);
+        self::assertSame($this->pen, $lines[0]->variant);
     }
 
     public function testClearEmptiesCart(): void
@@ -128,26 +138,28 @@ final class CartServiceTest extends TestCase
         self::assertTrue($this->cartService->getCart()->isEmpty());
     }
 
-    public function testUnsavedProductCannotBeAdded(): void
+    public function testUnsavedVariantCannotBeAdded(): void
     {
-        $unsaved = (new Product())->setName('Brouillon')->setPrice(100)->setStock(10);
+        $unsaved = (new ProductVariant())->setStock(10);
+        (new Product())->setName('Brouillon')->setPrice(100)->addVariant($unsaved);
 
         $this->expectException(\LogicException::class);
 
         $this->cartService->add($unsaved);
     }
 
-    private function createProduct(int $id, string $name, int $price, int $stock): Product
+    private function createVariant(int $id, string $name, int $price, int $stock, ?string $label = null, ?int $variantPrice = null): ProductVariant
     {
-        $product = (new Product())
-            ->setName($name)
-            ->setPrice($price)
+        $variant = (new ProductVariant())
+            ->setLabel($label)
+            ->setPrice($variantPrice)
             ->setStock($stock);
+        (new Product())->setName($name)->setPrice($price)->addVariant($variant);
 
         // L'id est normalement attribué par la base ; dans un test unitaire, on le force par réflexion
-        (new \ReflectionProperty(Product::class, 'id'))->setValue($product, $id);
+        (new \ReflectionProperty(ProductVariant::class, 'id'))->setValue($variant, $id);
 
-        return $product;
+        return $variant;
     }
 
     public function testItemCountSumsQuantities(): void
@@ -161,7 +173,7 @@ final class CartServiceTest extends TestCase
     public function testItemCountOfEmptyCartDoesNotQueryDatabase(): void
     {
         // Le compteur est affiché sur chaque page : un panier vide ne doit coûter aucune requête
-        $repository = $this->createMock(ProductRepository::class);
+        $repository = $this->createMock(ProductVariantRepository::class);
         $repository->expects(self::never())->method(self::anything());
 
         $request = new Request();
@@ -181,7 +193,7 @@ final class CartServiceTest extends TestCase
 
         $lines = $this->cartService->getCart()->lines;
         self::assertCount(1, $lines);
-        self::assertSame($this->pen, $lines[0]->product);
+        self::assertSame($this->pen, $lines[0]->variant);
         self::assertSame(3, $this->cartService->getItemCount());
     }
 }

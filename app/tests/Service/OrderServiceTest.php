@@ -6,7 +6,7 @@ namespace App\Tests\Service;
 
 use App\Entity\Order;
 use App\Entity\OrderItem;
-use App\Entity\Product;
+use App\Entity\ProductVariant;
 use App\Entity\PromoCode;
 use App\Entity\User;
 use App\Enum\DiscountType;
@@ -17,7 +17,7 @@ use App\Model\Cart;
 use App\Model\CartLine;
 use App\Model\ShippingAddress;
 use App\Repository\OrderRepository;
-use App\Repository\ProductRepository;
+use App\Repository\ProductVariantRepository;
 use App\Repository\PromoCodeRepository;
 use App\Service\CustomerMailer;
 use App\Service\DiscountCalculator;
@@ -44,7 +44,7 @@ final class OrderServiceTest extends KernelTestCase
         $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->orderService = new OrderService(
             $this->entityManager,
-            $container->get(ProductRepository::class),
+            $container->get(ProductVariantRepository::class),
             $container->get(OrderRepository::class),
             $container->get(PromoCodeRepository::class),
             new DiscountCalculator(),
@@ -55,8 +55,8 @@ final class OrderServiceTest extends KernelTestCase
 
     public function testPlaceOrder(): void
     {
-        $mug = $this->findProduct('mug-noir-mat');          // 14,90 €, stock 12
-        $pen = $this->findProduct('stylo-a-bille-bleu');    // 1,50 €, stock 200
+        $mug = $this->findVariant('MUG-NOIR-MAT');          // 14,90 €, stock 12
+        $pen = $this->findVariant('STYLO-A-BILLE-BLEU');    // 1,50 €, stock 200
         $cart = new Cart([new CartLine($mug, 2), new CartLine($pen, 3)]);
 
         $order = $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
@@ -74,14 +74,14 @@ final class OrderServiceTest extends KernelTestCase
 
     public function testOrderKeepsPriceAndNameAtTimeOfPurchase(): void
     {
-        $mug = $this->findProduct('mug-noir-mat');
+        $mug = $this->findVariant('MUG-NOIR-MAT');
         $order = $this->orderService->placeOrder(
             $this->findCustomer(),
             new Cart([new CartLine($mug, 1)]),
             $this->createAddress(),
         );
 
-        $mug->setPrice(9990)->setName('Mug noir mat (nouvelle édition)');
+        $mug->getProduct()?->setPrice(9990)->setName('Mug noir mat (nouvelle édition)');
         $this->entityManager->flush();
 
         $item = $order->getItems()->first();
@@ -91,12 +91,101 @@ final class OrderServiceTest extends KernelTestCase
         self::assertSame(1490, $order->getTotalAmount());
     }
 
+    public function testOrderCopiesVariantLabelAndPrice(): void
+    {
+        $blue = $this->findVariant('MUG-EMAILLE-BLEU');    // prix du produit : 16,90 €, stock 10
+        $green = $this->findVariant('MUG-EMAILLE-VERT');   // prix propre : 18,90 €, stock 3
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($blue, 2), new CartLine($green, 1)]),
+            $this->createAddress(),
+        );
+
+        $green->setLabel('Vert sapin')->setPrice(2490);
+        $this->entityManager->flush();
+
+        [$blueItem, $greenItem] = $order->getItems()->getValues();
+        self::assertSame('Bleu', $blueItem->getVariantLabel());
+        self::assertSame('Mug émaillé – Bleu', $blueItem->getDisplayName());
+        self::assertSame(1690, $blueItem->getUnitPrice());
+        self::assertSame($green, $greenItem->getVariant());
+        self::assertSame('Vert', $greenItem->getVariantLabel(), 'Le libellé copié ne change pas avec la variante.');
+        self::assertSame(1890, $greenItem->getUnitPrice(), 'Le prix propre de la variante est copié.');
+        // (2 × 16,90 €) + 18,90 € = 52,70 €
+        self::assertSame(5270, $order->getTotalAmount());
+        self::assertSame(8, $blue->getStock());
+        self::assertSame(2, $green->getStock());
+    }
+
+    public function testDefaultVariantHasNoLabelInOrder(): void
+    {
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)]),
+            $this->createAddress(),
+        );
+
+        $item = $order->getItems()->first();
+        self::assertInstanceOf(OrderItem::class, $item);
+        self::assertNull($item->getVariantLabel());
+        self::assertSame('Mug noir mat', $item->getDisplayName());
+    }
+
+    public function testSoldOutVariantFailsOrderWithoutTouchingOtherVariant(): void
+    {
+        $cart = new Cart([
+            new CartLine($this->findVariant('MUG-EMAILLE-BLEU'), 1),
+            new CartLine($this->findVariant('MUG-EMAILLE-ROUGE'), 1), // stock à 0
+        ]);
+
+        try {
+            $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
+            self::fail('Une InsufficientStockException était attendue.');
+        } catch (InsufficientStockException $exception) {
+            self::assertSame('MUG-EMAILLE-ROUGE', $exception->variant->getSku());
+        }
+
+        $entityManager = static::getContainer()->get('doctrine')->resetManager();
+        $blue = $entityManager->getRepository(ProductVariant::class)->findOneBy(['sku' => 'MUG-EMAILLE-BLEU']);
+        self::assertNotNull($blue);
+        self::assertSame(10, $blue->getStock());
+    }
+
+    public function testCancelRestoresStockOfEachVariant(): void
+    {
+        $blue = $this->findVariant('MUG-EMAILLE-BLEU');
+        $green = $this->findVariant('MUG-EMAILLE-VERT');
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($blue, 4), new CartLine($green, 3)]),
+            $this->createAddress(),
+        );
+
+        $this->orderService->cancel($order);
+
+        self::assertSame(10, $blue->getStock());
+        self::assertSame(3, $green->getStock());
+    }
+
+    public function testPromoCodeAppliesToVariantPrices(): void
+    {
+        $promoCode = $this->createPromoCode(null);
+        // 18,90 € (prix propre de la variante verte) − 10 % = 1,89 € de remise
+        $cart = new Cart([new CartLine($this->findVariant('MUG-EMAILLE-VERT'), 1)], $promoCode, 189);
+
+        $order = $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
+
+        self::assertSame(1890, $order->getSubtotalAmount());
+        self::assertSame(189, $order->getDiscountAmount());
+        self::assertSame(1701, $order->getTotalAmount());
+    }
+
     public function testFailedOrderChangesNothing(): void
     {
         $orderCountBefore = $this->entityManager->getRepository(Order::class)->count([]);
         $cart = new Cart([
-            new CartLine($this->findProduct('mug-noir-mat'), 2),
-            new CartLine($this->findProduct('mug-isotherme'), 1), // stock à 0 : doit faire échouer la commande
+            new CartLine($this->findVariant('MUG-NOIR-MAT'), 2),
+            new CartLine($this->findVariant('MUG-ISOTHERME'), 1), // stock à 0 : doit faire échouer la commande
         ]);
 
         try {
@@ -107,7 +196,7 @@ final class OrderServiceTest extends KernelTestCase
 
         // Après l'échec, on relit la base avec un EntityManager neuf
         $entityManager = static::getContainer()->get('doctrine')->resetManager();
-        $mug = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        $mug = $entityManager->getRepository(ProductVariant::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
         self::assertNotNull($mug);
 
         self::assertSame(12, $mug->getStock(), 'Le stock du premier produit doit être intact.');
@@ -124,8 +213,8 @@ final class OrderServiceTest extends KernelTestCase
 
     public function testCancelRestoresExactStock(): void
     {
-        $mug = $this->findProduct('mug-noir-mat');          // stock 12
-        $pen = $this->findProduct('stylo-a-bille-bleu');    // stock 200
+        $mug = $this->findVariant('MUG-NOIR-MAT');          // stock 12
+        $pen = $this->findVariant('STYLO-A-BILLE-BLEU');    // stock 200
         $order = $this->orderService->placeOrder(
             $this->findCustomer(),
             new Cart([new CartLine($mug, 2), new CartLine($pen, 3)]),
@@ -137,8 +226,8 @@ final class OrderServiceTest extends KernelTestCase
         // On relit la base avec un EntityManager neuf : le changement doit être enregistré, pas seulement en mémoire
         $entityManager = static::getContainer()->get('doctrine')->resetManager();
         $savedOrder = $entityManager->getRepository(Order::class)->find($order->getId());
-        $savedMug = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat']);
-        $savedPen = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'stylo-a-bille-bleu']);
+        $savedMug = $entityManager->getRepository(ProductVariant::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
+        $savedPen = $entityManager->getRepository(ProductVariant::class)->findOneBy(['sku' => 'STYLO-A-BILLE-BLEU']);
         self::assertNotNull($savedOrder);
         self::assertNotNull($savedMug);
         self::assertNotNull($savedPen);
@@ -151,8 +240,8 @@ final class OrderServiceTest extends KernelTestCase
 
     public function testCancelIgnoresItemsWhoseProductWasDeleted(): void
     {
-        $mug = $this->findProduct('mug-noir-mat');
-        $pen = $this->findProduct('stylo-a-bille-bleu');
+        $mug = $this->findVariant('MUG-NOIR-MAT');
+        $pen = $this->findVariant('STYLO-A-BILLE-BLEU');
         $order = $this->orderService->placeOrder(
             $this->findCustomer(),
             new Cart([new CartLine($mug, 2), new CartLine($pen, 3)]),
@@ -160,8 +249,9 @@ final class OrderServiceTest extends KernelTestCase
         );
         $orderId = $order->getId();
 
-        // Suppression du stylo : la base met product_id à NULL dans la ligne de commande (onDelete: SET NULL)
-        $this->entityManager->remove($pen);
+        // Suppression du stylo : la base supprime ses variantes (onDelete: CASCADE)
+        // et met product_id et variant_id à NULL dans la ligne de commande (onDelete: SET NULL)
+        $this->entityManager->remove($pen->getProduct() ?? throw new \LogicException('Variante sans produit.'));
         $this->entityManager->flush();
         $this->entityManager->clear();
 
@@ -170,14 +260,14 @@ final class OrderServiceTest extends KernelTestCase
         $this->orderService->cancel($order);
 
         self::assertSame(OrderStatus::Cancelled, $order->getStatus());
-        self::assertSame(12, $this->findProduct('mug-noir-mat')->getStock());
+        self::assertSame(12, $this->findVariant('MUG-NOIR-MAT')->getStock());
     }
 
     public function testCancelChangesNothingWhenTransitionIsForbidden(): void
     {
         $order = $this->orderService->placeOrder(
             $this->findCustomer(),
-            new Cart([new CartLine($this->findProduct('mug-noir-mat'), 2)]),
+            new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 2)]),
             $this->createAddress(),
         );
         $order->markAsPaid(new \DateTimeImmutable());
@@ -191,7 +281,7 @@ final class OrderServiceTest extends KernelTestCase
 
         $entityManager = static::getContainer()->get('doctrine')->resetManager();
         $savedOrder = $entityManager->getRepository(Order::class)->find($order->getId());
-        $savedMug = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        $savedMug = $entityManager->getRepository(ProductVariant::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
         self::assertNotNull($savedOrder);
         self::assertNotNull($savedMug);
 
@@ -206,7 +296,7 @@ final class OrderServiceTest extends KernelTestCase
     {
         $order = $this->orderService->placeOrder(
             $this->findCustomer(),
-            new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)]),
+            new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)]),
             $this->createAddress(),
         );
         $order->markAsPaid(new \DateTimeImmutable());
@@ -222,7 +312,7 @@ final class OrderServiceTest extends KernelTestCase
     {
         $customer = $this->findCustomer();
 
-        $this->orderService->placeOrder($customer, new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)]), $this->createAddress());
+        $this->orderService->placeOrder($customer, new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)]), $this->createAddress());
 
         $this->entityManager->clear();
         self::assertNull($this->findCustomer()->getAddress());
@@ -234,7 +324,7 @@ final class OrderServiceTest extends KernelTestCase
         $address = $this->createAddress();
         $address->saveToProfile = true;
 
-        $this->orderService->placeOrder($customer, new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)]), $address);
+        $this->orderService->placeOrder($customer, new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)]), $address);
 
         $this->entityManager->clear();
         $saved = $this->findCustomer();
@@ -248,7 +338,7 @@ final class OrderServiceTest extends KernelTestCase
     {
         $address = $this->createAddress();
         $address->saveToProfile = true;
-        $cart = new Cart([new CartLine($this->findProduct('mug-isotherme'), 1)]); // stock à 0
+        $cart = new Cart([new CartLine($this->findVariant('MUG-ISOTHERME'), 1)]); // stock à 0
 
         try {
             $this->orderService->placeOrder($this->findCustomer(), $cart, $address);
@@ -277,7 +367,7 @@ final class OrderServiceTest extends KernelTestCase
         $container = static::getContainer();
         $orderService = new OrderService(
             $failingEntityManager,
-            $container->get(ProductRepository::class),
+            $container->get(ProductVariantRepository::class),
             $container->get(OrderRepository::class),
             $container->get(PromoCodeRepository::class),
             new DiscountCalculator(),
@@ -287,7 +377,7 @@ final class OrderServiceTest extends KernelTestCase
         $address = $this->createAddress();
         $address->saveToProfile = true;
 
-        $order = $orderService->placeOrder($this->findCustomer(), new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)]), $address);
+        $order = $orderService->placeOrder($this->findCustomer(), new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)]), $address);
 
         self::assertNotNull($order->getId(), 'La commande doit être enregistrée malgré l\'échec du profil.');
         self::assertEmailCount(1, message: 'La confirmation de commande doit quand même partir.');
@@ -296,7 +386,7 @@ final class OrderServiceTest extends KernelTestCase
     public function testPromoCodeUsageIsCountedAndDiscountIsCopied(): void
     {
         $promoCode = $this->createPromoCode(maxUsages: null);
-        $cart = new Cart([new CartLine($this->findProduct('mug-noir-mat'), 2)], $promoCode, 298);
+        $cart = new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 2)], $promoCode, 298);
 
         $order = $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
 
@@ -311,7 +401,7 @@ final class OrderServiceTest extends KernelTestCase
     public function testCancelGivesPromoCodeUsageBack(): void
     {
         $promoCode = $this->createPromoCode(maxUsages: null);
-        $cart = new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)], $promoCode, 149);
+        $cart = new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)], $promoCode, 149);
         $order = $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
 
         $this->orderService->cancel($order);
@@ -322,7 +412,7 @@ final class OrderServiceTest extends KernelTestCase
     public function testOrderIsRefusedWhenPromoCodeMaxUsagesIsReached(): void
     {
         $promoCode = $this->createPromoCode(maxUsages: 1);
-        $cart = new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)], $promoCode, 149);
+        $cart = new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)], $promoCode, 149);
         $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
         $orderCountBefore = $this->entityManager->getRepository(Order::class)->count([]);
 
@@ -335,7 +425,7 @@ final class OrderServiceTest extends KernelTestCase
 
         // La transaction est annulée : ni commande, ni stock décrémenté, ni utilisation en plus
         $entityManager = static::getContainer()->get('doctrine')->resetManager();
-        $mug = $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        $mug = $entityManager->getRepository(ProductVariant::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
         $savedPromoCode = $entityManager->getRepository(PromoCode::class)->findOneBy(['code' => 'MOINS10']);
         self::assertNotNull($mug);
         self::assertNotNull($savedPromoCode);
@@ -357,12 +447,15 @@ final class OrderServiceTest extends KernelTestCase
         return $promoCode;
     }
 
-    private function findProduct(string $slug): Product
+    /**
+     * Les références des fixtures reprennent le slug du produit (et le libellé de la variante) en majuscules.
+     */
+    private function findVariant(string $sku): ProductVariant
     {
-        $product = $this->entityManager->getRepository(Product::class)->findOneBy(['slug' => $slug]);
-        self::assertNotNull($product);
+        $variant = $this->entityManager->getRepository(ProductVariant::class)->findOneBy(['sku' => $sku]);
+        self::assertNotNull($variant);
 
-        return $product;
+        return $variant;
     }
 
     private function findCustomer(): User

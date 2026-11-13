@@ -63,7 +63,7 @@
                     <tbody>
                         {% for item in order.items %}
                             <tr>
-                                <td>{{ item.productName }}</td>
+                                <td>{{ item.displayName }}</td>
                                 <td class="num">{{ item.unitPrice|price }}</td>
                                 <td class="num">{{ item.quantity }}</td>
                                 <td class="num">{{ item.subtotal|price }}</td>

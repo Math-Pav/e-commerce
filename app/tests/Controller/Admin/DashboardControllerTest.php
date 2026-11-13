@@ -8,6 +8,7 @@ use App\Model\Cart;
 use App\Model\CartLine;
 use App\Model\ShippingAddress;
 use App\Repository\ProductRepository;
+use App\Repository\ProductVariantRepository;
 use App\Repository\UserRepository;
 use App\Service\OrderService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -87,6 +88,9 @@ final class DashboardControllerTest extends WebTestCase
         self::assertSelectorTextContains($lowStock, 'Rupture');
         self::assertSelectorTextContains($lowStock, 'Stylo plume');
         self::assertSelectorTextNotContains($lowStock, 'Mug blanc classique');
+        // Variantes : seule la variante épuisée du mug émaillé est signalée, avec son libellé
+        self::assertSelectorTextContains($lowStock, 'Mug émaillé – Rouge');
+        self::assertSelectorTextNotContains($lowStock, 'Mug émaillé – Bleu');
 
         $mug = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => 'mug-isotherme']);
         self::assertNotNull($mug);
@@ -104,13 +108,13 @@ final class DashboardControllerTest extends WebTestCase
         $address->city = 'Lyon';
 
         $customer = $container->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
-        $product = $container->get(ProductRepository::class)->findOneBy(['slug' => 'mug-noir-mat']);
+        $variant = $container->get(ProductVariantRepository::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
         self::assertNotNull($customer);
-        self::assertNotNull($product);
+        self::assertNotNull($variant);
 
         $order = $container->get(OrderService::class)->placeOrder(
             $customer,
-            new Cart([new CartLine($product, $quantity)]),
+            new Cart([new CartLine($variant, $quantity)]),
             $address,
         );
 
