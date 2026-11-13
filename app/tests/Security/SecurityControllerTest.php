@@ -38,4 +38,22 @@ final class SecurityControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Identifiants invalides');
         self::assertSelectorNotExists('a[href="/deconnexion"]');
     }
+
+    public function testLoginWithInvalidCsrfTokenShowsFrenchError(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/connexion');
+
+        // Message d'erreur par défaut du composant Security, traduit grâce au composant Translation
+        $client->submitForm('Se connecter', [
+            '_username' => 'client@example.com',
+            '_password' => 'password',
+            '_csrf_token' => 'jeton-invalide',
+        ]);
+
+        self::assertResponseRedirects('/connexion');
+        $client->followRedirect();
+        self::assertSelectorTextContains('.flash--error', 'Jeton CSRF invalide.');
+        self::assertSelectorNotExists('a[href="/deconnexion"]');
+    }
 }

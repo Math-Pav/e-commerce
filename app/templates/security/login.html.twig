@@ -10,7 +10,8 @@
         </div>
 
         {% if error %}
-            <div class="flash flash--error" role="alert">Identifiants invalides.</div>
+            {# Message fourni par Symfony selon la cause de l'échec, traduit via le domaine « security » #}
+            <div class="flash flash--error" role="alert">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
         {% endif %}
 
         <form method="post" class="form">
