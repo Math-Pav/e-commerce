@@ -33,6 +33,20 @@ final class ApiProblemListener
         $isHttpException = $exception instanceof HttpExceptionInterface;
         $status = $isHttpException ? $exception->getStatusCode() : Response::HTTP_INTERNAL_SERVER_ERROR;
 
+        $detail = $isHttpException && '' !== $exception->getMessage() ? $exception->getMessage() : null;
+        $headers = $isHttpException ? $exception->getHeaders() : [];
+
+        $event->setResponse(self::createResponse($status, $detail, $headers));
+    }
+
+    /**
+     * Construit une réponse problem+json. Sert aussi aux réponses 401 de l'API (ApiAuthenticationHandler),
+     * produites par le pare-feu sans passer par une exception.
+     *
+     * @param array<string, string> $headers
+     */
+    public static function createResponse(int $status, ?string $detail = null, array $headers = []): JsonResponse
+    {
         $problem = [
             // about:blank : le code HTTP suffit à décrire le problème, pas de page de documentation dédiée
             'type' => 'about:blank',
@@ -40,13 +54,12 @@ final class ApiProblemListener
             'status' => $status,
         ];
 
-        if ($isHttpException && '' !== $exception->getMessage()) {
-            $problem['detail'] = $exception->getMessage();
+        if (null !== $detail) {
+            $problem['detail'] = $detail;
         }
 
-        $headers = $isHttpException ? $exception->getHeaders() : [];
         $headers['Content-Type'] = self::CONTENT_TYPE;
 
-        $event->setResponse(new JsonResponse($problem, $status, $headers));
+        return new JsonResponse($problem, $status, $headers);
     }
 }
