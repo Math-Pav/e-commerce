@@ -322,6 +322,19 @@ final class ProductControllerTest extends WebTestCase
         self::assertSelectorExists('.product-detail div.product-visual svg');
     }
 
+    public function testImageBetweenOneAndTwoMegabytesIsAccepted(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $this->submitCreationForm($client, 'Mug grande photo', '12.90', $this->files->largePng());
+
+        self::assertResponseRedirects('/admin/produits');
+        $filename = (string) $this->findProduct('mug-grande-photo')->getImageFilename();
+        self::assertFileExists($this->imageDirectory().'/'.$filename);
+        self::assertGreaterThan(1_000_000, filesize($this->imageDirectory().'/'.$filename));
+    }
+
     public function testTooLargeImageIsRefused(): void
     {
         $client = static::createClient();

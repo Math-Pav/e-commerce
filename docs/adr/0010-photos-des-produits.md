@@ -18,20 +18,23 @@ Les produits étaient affichés avec un visuel de remplacement (une icône par c
 
 ### Comment vérifier le type du fichier
 
-1. **Contrainte `Image` de Symfony avec `mimeTypes`** : la solution habituelle, mais elle nécessite le composant `symfony/mime`, qui n'est pas installé dans le projet.
-2. **Extension PHP `fileinfo` (classe `finfo`)**, déjà disponible : elle lit les premiers octets du fichier (sa « signature ») pour en déduire le type, sans croire le nom ni le type annoncé par le navigateur.
+1. **Contrainte `Image` de Symfony avec `mimeTypes`** : la solution habituelle. Elle demande le composant `symfony/mime`, qui détecte le type d'après le contenu (il s'appuie sur l'extension PHP fileinfo).
+2. **Appel direct à `finfo` dans un `Callback`** : aucune dépendance, mais du code maison pour ce que Symfony fait déjà.
+
+La première version de cette décision utilisait l'option 2, faute de `symfony/mime`. Le composant a ensuite été ajouté avec l'accord du développeur : c'est l'option 1 qui est retenue.
+
+Entre `File(mimeTypes: …)` et `Image(mimeTypes: …)`, `Image` est choisie : elle dit explicitement qu'on attend une image et permettra d'ajouter plus tard des limites de dimensions (`maxWidth`, `minWidth`…). Sans ces options, elle se comporte exactement comme `File`.
 
 ## Décision
 
-Stockage : option 1. Vérification : option 2 (pas de nouvelle dépendance).
+Stockage : option 1. Vérification : option 1 (`symfony/mime`, ajouté pour cela).
 
 - `Product::$imageFilename` (colonne `image_filename`, facultative) : nom du fichier, ou `null` pour garder le visuel de remplacement.
 - `ProductData` porte le fichier envoyé (`$image`) et la case « Retirer la photo actuelle » (`$removeImage`). Si les deux sont remplis, la nouvelle photo l'emporte (elle remplace l'ancienne).
 - Validation dans `ProductData` :
-  - contrainte `File(maxSize: '2M')` : 2 Mo maximum ;
-  - `Callback` `validateImageType()` : le contenu doit être du JPEG, du PNG ou du WebP, détecté par `ProductImageStorage::guessExtension()` (fileinfo). Le SVG est refusé : c'est du texte XML qui peut contenir du JavaScript, exécuté si l'on ouvre l'image dans le navigateur.
+  - contrainte `Image(maxSize: '2M', mimeTypes: ['image/jpeg', 'image/png', 'image/webp'])`, messages en français. `2M` = 2 000 000 octets. Le type est détecté d'après le contenu du fichier : un script PHP renommé en `.png` est refusé. Le SVG est refusé : c'est du texte XML qui peut contenir du JavaScript, exécuté si l'on ouvre l'image dans le navigateur.
 - `App\Service\ProductImageStorage` :
-  - `store()` enregistre le fichier sous un nom **aléatoire** (`bin2hex(random_bytes(16))`, 32 caractères hexadécimaux) suivi de l'extension correspondant au **contenu** (`.jpg`, `.png`, `.webp`). Le nom d'origine n'est jamais utilisé : il pourrait contenir `../`, écraser un autre fichier, se terminer par `.php` ou révéler des informations ;
+  - `store()` enregistre le fichier sous un nom **aléatoire** (`bin2hex(random_bytes(16))`, 32 caractères hexadécimaux) suivi de l'extension correspondant au **contenu** (`UploadedFile::guessExtension()` : `.jpg`, `.png`, `.webp`). Il refuse toute autre extension : le formulaire a déjà filtré, mais c'est ce service qui écrit dans un dossier public, il ne doit jamais y déposer un `.svg` ou un `.php`, même s'il est appelé ailleurs un jour. Le nom d'origine n'est jamais utilisé : il pourrait contenir `../`, écraser un autre fichier, se terminer par `.php` ou révéler des informations ;
   - `remove()` supprime un fichier (avec `basename()` pour ne jamais sortir du dossier).
 - `ProductService` supprime l'ancien fichier quand la photo est remplacée ou retirée, **après** l'enregistrement en base : si l'enregistrement échoue, le produit pointe toujours vers un fichier existant.
 - Le dossier est un paramètre (`app.product_images_directory` dans `config/services.yaml`). En environnement de test, il pointe vers `var/test/uploads/products/` : les tests ne touchent jamais aux photos de développement, et ils vident ce dossier à la fin.
@@ -49,5 +52,8 @@ C'est une deuxième ligne de défense : la première reste la validation du cont
 - Les photos ne sont pas versionnées ni sauvegardées avec la base : recharger les fixtures laisse des fichiers orphelins dans `public/uploads/products/`, et une base restaurée peut référencer un fichier absent.
 - Si l'enregistrement en base échoue juste après l'envoi, le nouveau fichier reste sur le disque (fichier orphelin, sans conséquence de sécurité).
 - Une commande affiche la photo **actuelle** du produit (contrairement au prix et au nom, qui sont copiés au moment de l'achat).
-- Limite de taille : Nginx accepte par défaut des requêtes de 1 Mo au maximum (`client_max_body_size`). Tant que ce réglage n'est pas modifié, une photo entre 1 et 2 Mo envoyée depuis le navigateur est refusée par Nginx (erreur 413) avant d'atteindre Symfony.
-- Si `symfony/mime` est installé un jour, la vérification pourra être remplacée par la contrainte `Image(mimeTypes: [...])` de Symfony.
+- Limites de taille, de l'extérieur vers l'intérieur :
+  - Nginx : `client_max_body_size 3m` dans `docker/nginx/default.conf` (1 Mo par défaut, ce qui bloquait les photos entre 1 et 2 Mo avec une erreur 413). 3 Mo et non 2 : la requête contient, en plus de la photo, l'encodage multipart (séparateurs, en-têtes de chaque champ) et les autres champs du formulaire ;
+  - PHP : `upload_max_filesize = 2M` (2 097 152 octets) et `post_max_size = 8M` (valeurs par défaut de l'image Docker). Un fichier plus lourd que `upload_max_filesize` n'est pas transmis à Symfony : la contrainte `Image` affiche alors `uploadIniSizeErrorMessage`, le même message « La photo ne doit pas dépasser 2 Mo. » ;
+  - Symfony : `maxSize: '2M'` (2 000 000 octets), la règle métier.
+- Dépendance ajoutée : `symfony/mime` (et sa dépendance `symfony/polyfill-intl-idn`).

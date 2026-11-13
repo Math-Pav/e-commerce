@@ -66,15 +66,6 @@ final class ProductImageStorageTest extends TestCase
         self::assertNotSame($first, $second);
     }
 
-    public function testStoreRejectsFileThatIsNotAnAllowedImage(): void
-    {
-        $file = $this->upload($this->files->phpScriptNamedPng());
-
-        $this->expectException(\InvalidArgumentException::class);
-
-        $this->storage->store($file);
-    }
-
     /**
      * @return iterable<string, array{string}>
      */
@@ -87,9 +78,16 @@ final class ProductImageStorageTest extends TestCase
     }
 
     #[DataProvider('refusedContentProvider')]
-    public function testGuessExtensionRefusesOtherContent(string $content): void
+    public function testStoreRefusesOtherContent(string $content): void
     {
-        self::assertNull(ProductImageStorage::guessExtension($this->files->create('image.png', $content)));
+        $file = $this->upload($this->files->create('image.png', $content));
+
+        try {
+            $this->storage->store($file);
+            self::fail('Le fichier aurait dû être refusé.');
+        } catch (\InvalidArgumentException) {
+            self::assertDirectoryDoesNotExist($this->directory, 'Aucun fichier ne doit être écrit.');
+        }
     }
 
     public function testRemoveDeletesFile(): void

@@ -12,13 +12,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
  */
 final class ProductImageStorage
 {
-    // Types acceptés (détectés d'après le contenu du fichier) => extension utilisée pour l'enregistrer.
-    // Pas de SVG : c'est du texte qui peut contenir du JavaScript.
-    private const EXTENSIONS = [
-        'image/jpeg' => 'jpg',
-        'image/png' => 'png',
-        'image/webp' => 'webp',
-    ];
+    // Extensions qui peuvent être écrites dans public/uploads/products/ (JPEG, PNG, WebP ; jamais .svg ni .php)
+    private const ALLOWED_EXTENSIONS = ['jpg', 'png', 'webp'];
 
     public function __construct(
         #[Autowire(param: 'app.product_images_directory')]
@@ -27,28 +22,16 @@ final class ProductImageStorage
     }
 
     /**
-     * Renvoie l'extension correspondant au contenu du fichier, ou null si ce n'est pas une image acceptée.
-     *
-     * finfo (extension PHP fileinfo) lit les premiers octets du fichier : le nom du fichier et
-     * le type annoncé par le navigateur, que l'utilisateur contrôle, sont ignorés.
-     */
-    public static function guessExtension(string $path): ?string
-    {
-        $mimeType = (new \finfo(\FILEINFO_MIME_TYPE))->file($path);
-
-        return self::EXTENSIONS[$mimeType] ?? null;
-    }
-
-    /**
      * Déplace le fichier envoyé dans le dossier des photos et renvoie le nom sous lequel il est enregistré.
      * Ce nom est aléatoire : le nom d'origine, choisi par l'utilisateur, n'est jamais utilisé.
      */
     public function store(UploadedFile $file): string
     {
-        $extension = self::guessExtension($file->getPathname());
+        // guessExtension() lit le contenu du fichier (symfony/mime) : le nom et le type annoncés par le navigateur sont ignorés
+        $extension = $file->guessExtension();
 
-        // Le formulaire a déjà refusé ce fichier : on vérifie quand même, au cas où le service serait appelé ailleurs
-        if ($extension === null) {
+        // Le formulaire a déjà refusé ce fichier ; on vérifie quand même, car c'est ce service qui écrit dans un dossier public
+        if (!in_array($extension, self::ALLOWED_EXTENSIONS, true)) {
             throw new \InvalidArgumentException('Seules les images JPEG, PNG et WebP peuvent être enregistrées.');
         }
 

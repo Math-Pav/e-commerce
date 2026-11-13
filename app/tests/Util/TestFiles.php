@@ -21,6 +21,14 @@ final class TestFiles
     }
 
     /**
+     * Un vrai PNG (l'en-tête est valide) complété jusqu'à 1,5 Mo : sous la limite de 2 Mo, mais au-delà du 1 Mo par défaut de Nginx.
+     */
+    public function largePng(): string
+    {
+        return $this->create('grande-photo.png', base64_decode(self::PNG_BASE64, true).str_repeat("\0", 1_500_000));
+    }
+
+    /**
      * Un vrai PNG (l'en-tête est valide) complété jusqu'à dépasser la limite de 2 Mo.
      */
     public function tooLargePng(): string
