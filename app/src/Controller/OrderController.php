@@ -11,11 +11,14 @@ use App\Exception\InvalidPromoCodeException;
 use App\Exception\PaymentFailedException;
 use App\Form\ShippingAddressType;
 use App\Model\ShippingAddress;
+use App\Repository\InvoiceRepository;
 use App\Repository\OrderRepository;
 use App\Service\CartService;
+use App\Service\InvoicePdfGenerator;
 use App\Service\OrderService;
 use App\Service\PaymentService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -30,6 +33,8 @@ final class OrderController extends AbstractController
         private readonly CartService $cartService,
         private readonly OrderService $orderService,
         private readonly OrderRepository $orderRepository,
+        private readonly InvoiceRepository $invoiceRepository,
+        private readonly InvoicePdfGenerator $invoicePdfGenerator,
     ) {
     }
 
@@ -85,8 +90,24 @@ final class OrderController extends AbstractController
     #[Route('/mes-commandes/{reference}', name: 'order_show', methods: ['GET'])]
     public function show(string $reference, #[CurrentUser] User $user): Response
     {
+        $order = $this->findCustomerOrder($reference, $user);
+
         return $this->render('order/show.html.twig', [
-            'order' => $this->findCustomerOrder($reference, $user),
+            'order' => $order,
+            'invoice' => $this->invoiceRepository->findOneByOrder($order),
+        ]);
+    }
+
+    #[Route('/mes-commandes/{reference}/facture', name: 'order_invoice', methods: ['GET'])]
+    public function invoice(string $reference, #[CurrentUser] User $user): Response
+    {
+        // findCustomerOrder() renvoie une 404 si la commande n'est pas celle du client connecté (IDOR)
+        $invoice = $this->invoiceRepository->findOneByOrder($this->findCustomerOrder($reference, $user))
+            ?? throw $this->createNotFoundException('Facture introuvable.');
+
+        return new Response($this->invoicePdfGenerator->generate($invoice), Response::HTTP_OK, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $invoice->getFilename()),
         ]);
     }
 

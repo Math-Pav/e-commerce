@@ -13,6 +13,7 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Mime\Email;
 
 final class OrderControllerTest extends WebTestCase
 {
@@ -243,6 +244,81 @@ final class OrderControllerTest extends WebTestCase
         self::assertEmailTextBodyContains($message, 'paiement de 29,80 € pour la commande '.$reference);
     }
 
+    public function testPaymentConfirmationEmailHasInvoiceAttached(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $client->request('GET', $this->placeOrder($client, 'mug-noir-mat', 2));
+
+        $client->submitForm('Payer la commande');
+
+        $message = self::getMailerMessage();
+        self::assertNotNull($message);
+        self::assertEmailAttachmentCount($message, 1);
+        self::assertInstanceOf(Email::class, $message);
+        $attachment = $message->getAttachments()[0];
+        self::assertMatchesRegularExpression('/^FA-\d{4}-\d{6}\.pdf$/', (string) $attachment->getFilename());
+        self::assertSame('application/pdf', $attachment->getContentType());
+        self::assertStringStartsWith('%PDF', $attachment->getBody());
+        self::assertEmailTextBodyContains($message, 'Votre facture FA-');
+    }
+
+    public function testOwnerDownloadsInvoice(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $orderUrl = $this->placeAndPayOrder($client);
+
+        $crawler = $client->request('GET', $orderUrl);
+        $client->click($crawler->selectLink('Télécharger la facture')->link());
+
+        self::assertResponseIsSuccessful();
+        self::assertResponseHeaderSame('Content-Type', 'application/pdf');
+        self::assertMatchesRegularExpression(
+            '/^attachment; filename=FA-\d{4}-\d{6}\.pdf$/',
+            (string) $client->getResponse()->headers->get('Content-Disposition'),
+        );
+        self::assertStringStartsWith('%PDF', (string) $client->getResponse()->getContent());
+    }
+
+    public function testAnotherCustomerCannotDownloadInvoice(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $orderUrl = $this->placeAndPayOrder($client);
+
+        $this->logIn($client, 'admin@example.com');
+        $client->request('GET', $orderUrl.'/facture');
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testAnonymousCannotDownloadInvoice(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $orderUrl = $this->placeAndPayOrder($client);
+
+        // Sans cookie de session, le client redevient anonyme
+        $client->getCookieJar()->clear();
+        $client->request('GET', $orderUrl.'/facture');
+
+        self::assertResponseRedirects('/connexion');
+    }
+
+    public function testUnpaidOrderHasNoInvoice(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        $orderUrl = $this->placeOrder($client, 'mug-noir-mat', 1);
+
+        $crawler = $client->request('GET', $orderUrl);
+        self::assertCount(0, $crawler->selectLink('Télécharger la facture'));
+
+        $client->request('GET', $orderUrl.'/facture');
+        self::assertResponseStatusCodeSame(404);
+    }
+
     public function testDeclinedPaymentKeepsOrderPending(): void
     {
         $client = static::createClient();
@@ -384,6 +460,15 @@ final class OrderControllerTest extends WebTestCase
         $this->submitCheckout($client, '69001');
 
         return (string) $client->getResponse()->headers->get('Location');
+    }
+
+    private function placeAndPayOrder(KernelBrowser $client): string
+    {
+        $orderUrl = $this->placeOrder($client, 'mug-noir-mat', 2);
+        $client->request('GET', $orderUrl);
+        $client->submitForm('Payer la commande');
+
+        return $orderUrl;
     }
 
     private function findCancelToken(KernelBrowser $client, string $orderUrl): string

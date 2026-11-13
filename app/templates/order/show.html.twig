@@ -91,13 +91,20 @@
             </div>
         </section>
 
-        <aside class="layout-split__aside panel" aria-labelledby="shipping-title">
+        <aside class="layout-split__aside panel" aria-label="Livraison et facture">
             <h2 id="shipping-title" class="section-title">Livraison</h2>
             <address class="address">
                 {{ order.shippingFullName }}<br>
                 {{ order.shippingAddress }}<br>
                 {{ order.shippingPostalCode }} {{ order.shippingCity }}
             </address>
+
+            {% if invoice %}
+                <h2 class="section-title">Facture</h2>
+                <a href="{{ path('order_invoice', {reference: order.reference}) }}" class="btn btn--secondary" download>
+                    Télécharger la facture {{ invoice.number }}<span class="visually-hidden"> (PDF)</span>
+                </a>
+            {% endif %}
         </aside>
     </div>
 {% endblock %}

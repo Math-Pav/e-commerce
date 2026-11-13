@@ -121,6 +121,13 @@
                     {% endif %}
                 {% endfor %}
             </ul>
+
+            {% if invoice %}
+                <h2 class="section-title">Facture</h2>
+                <a href="{{ path('admin_order_invoice', {reference: order.reference}) }}" class="btn btn--secondary" download>
+                    Télécharger la facture {{ invoice.number }}<span class="visually-hidden"> (PDF)</span>
+                </a>
+            {% endif %}
         </aside>
     </div>
 {% endblock %}
