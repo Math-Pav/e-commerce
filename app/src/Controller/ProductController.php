@@ -9,6 +9,7 @@ use App\Model\CatalogQuery;
 use App\Model\Pagination;
 use App\Repository\CategoryRepository;
 use App\Repository\ProductRepository;
+use App\Service\CatalogFilterService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,6 +23,7 @@ final class ProductController extends AbstractController
         Request $request,
         ProductRepository $productRepository,
         CategoryRepository $categoryRepository,
+        CatalogFilterService $catalogFilterService,
     ): Response {
         $catalog = CatalogQuery::fromRequest($request);
         $currentCategory = null !== $catalog->categorySlug
@@ -46,8 +48,8 @@ final class ProductController extends AbstractController
             'pagination' => $pagination,
             'catalog' => $catalog,
             'sorts' => CatalogSort::cases(),
-            // Seules les catégories ayant au moins un produit actif apparaissent dans les filtres
-            'categories' => $categoryRepository->findWithActiveProducts(),
+            // Seules les catégories ayant au moins un produit actif apparaissent dans les filtres (en cache)
+            'categories' => $catalogFilterService->getCategories(),
             'currentCategory' => $currentCategory,
         ]);
     }

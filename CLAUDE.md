@@ -20,6 +20,8 @@ Instructions permanentes pour Claude sur ce projet. À lire avant toute interven
 - **Symfony Mailer** pour les e-mails clients (envoi synchrone ; **Mailpit** capture les e-mails en développement, `null://null` en test)
 - **Symfony Mime** pour vérifier le type des fichiers envoyés (photos des produits)
 - **dompdf** pour convertir en PDF le template Twig des factures (`docs/adr/0018-factures.md`)
+- **Symfony Cache** : pool `computed.cache` avec étiquettes pour les calculs coûteux, invalidé par un écouteur Doctrine (voir `docs/adr/0019-cache-applicatif.md`)
+- **Symfony Profiler** (développement) pour mesurer requêtes et temps de chaque page
 - **PHPUnit** pour les tests
 - **PHPStan** (niveau 8, extensions Symfony et Doctrine) pour l'analyse statique et **PHP-CS-Fixer** (règles `@Symfony`) pour le formatage, en dépendances de développement (voir `docs/adr/0014-analyse-statique-et-formatage.md`)
 - **Docker Compose** pour l'environnement local (php, nginx, database, adminer, mailpit : interface sur http://localhost:8025)
@@ -50,6 +52,7 @@ Structure Symfony standard, organisée en couches :
 - `src/Repository/` : requêtes en base. Aucune requête Doctrine en dehors des repositories.
 - `src/Entity/` : entités Doctrine (données + règles simples propres à l'entité).
 - `src/Form/` : formulaires Symfony et leur validation.
+- `src/EventListener/` : écouteurs d'événements (Doctrine, noyau), ex. invalidation du cache.
 - `src/Validator/` : contraintes de validation réutilisables (contraintes composées partagées par plusieurs DTO, ex. `PostalCode`).
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
 

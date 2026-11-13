@@ -299,6 +299,48 @@ final class ProductControllerTest extends WebTestCase
         self::assertSame(5, $this->countSelectQueries($debugData));
     }
 
+    public function testNewCategoryWithActiveProductAppearsInFilters(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/produits');
+        self::assertSelectorNotExists('.chip[href="/produits?categorie=affiches"]');
+
+        // Écrits après la mise en cache des filtres : l'écouteur Doctrine doit invalider la liste
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $category = (new Category())->setName('Affiches')->setSlug('affiches');
+        $entityManager->persist($category);
+        $entityManager->persist((new Product())
+            ->setName('Affiche de test')
+            ->setSlug('affiche-de-test')
+            ->setPrice(1500)
+            ->setCategory($category)
+            ->addVariant((new ProductVariant())->setSku('TEST-AFFICHE')->setStock(5)));
+        $entityManager->flush();
+
+        $client->request('GET', '/produits');
+
+        self::assertSelectorExists('.chip[href="/produits?categorie=affiches"]');
+    }
+
+    public function testDeactivatingLastProductRemovesCategoryFromFilters(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/produits');
+        self::assertSelectorExists('.chip[href="/produits?categorie=carnets"]');
+
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $category = $entityManager->getRepository(Category::class)->findOneBy(['slug' => 'carnets']);
+        self::assertInstanceOf(Category::class, $category);
+        foreach ($entityManager->getRepository(Product::class)->findBy(['category' => $category]) as $product) {
+            $product->setIsActive(false);
+        }
+        $entityManager->flush();
+
+        $client->request('GET', '/produits');
+
+        self::assertSelectorNotExists('.chip[href="/produits?categorie=carnets"]');
+    }
+
     /**
      * Ajoute des produits actifs (annulés à la fin du test par DAMA DoctrineTestBundle).
      */
