@@ -72,6 +72,7 @@ Principes :
 - Interface du site en **français** (locale `fr`) : nos textes sont écrits en français directement dans les templates et le code, sans fichiers de traduction ; les messages par défaut de Symfony (validation, sécurité) sont traduits par `symfony/translation` (voir `docs/adr/0006-locale-francaise.md`).
 - Respect de PSR-12 et des conventions Symfony ; le formatage est appliqué par PHP-CS-Fixer (`composer cs-fix`), pas à la main.
 - Fins de ligne **LF** pour tous les fichiers (imposées par `.gitattributes`).
+- Règles `@Symfony` appliquées sans exception, dont les comparaisons « Yoda » (`null === $order`) et les `throw` sur une seule ligne.
 - Classes en `PascalCase`, méthodes et variables en `camelCase`, tables et colonnes en `snake_case`.
 - Suffixes explicites : `ProductController`, `CartService`, `ProductRepository`, `ProductType` (formulaire).
 - Typage strict : `declare(strict_types=1);`, types sur tous les paramètres et retours.
