@@ -490,3 +490,30 @@ svg { flex: none; }
 .form input[type="file"] { height: auto; padding: 12px 14px; }
 .form div:has(> input[type="checkbox"]) { flex-direction: row; align-items: center; gap: 10px; }
 .form input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--color-accent); }
+
+/* Catalogue : recherche, tri et pagination (ADR 0011) --------------------- */
+.catalog-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px 24px; }
+.catalog-filters__search { flex: 999 1 320px; min-width: 0; }
+.catalog-filters__sort { flex: 1 1 240px; min-width: 0; }
+.catalog-filters__row { display: flex; gap: 8px; }
+.catalog-filters__row .input { flex: 1 1 auto; min-width: 0; }
+.catalog-filters__row .btn { flex: none; min-height: 50px; }
+.search-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: 15px; color: var(--color-text-soft); }
+.search-summary a { display: inline-flex; align-items: center; min-height: 44px; }
+
+.pagination__list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; }
+.pagination__link, .pagination__ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 500;
+}
+.pagination__link { border: 1px solid var(--color-border); color: var(--color-text); text-decoration: none; }
+.pagination__link:hover { color: var(--color-text); border-color: var(--color-text); }
+.pagination__link[aria-current="page"] { background: var(--color-text); border-color: var(--color-text); color: #fff; }
+.pagination__ellipsis { color: var(--color-muted); }

@@ -10,6 +10,10 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Exception\InsufficientStockException;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
+// Index composites du catalogue (ADR 0011) : un par tri, pour lire les produits actifs déjà dans l'ordre
+#[ORM\Index(name: 'idx_product_active_name', columns: ['is_active', 'name'])]
+#[ORM\Index(name: 'idx_product_active_price', columns: ['is_active', 'price'])]
+#[ORM\Index(name: 'idx_product_active_created_at', columns: ['is_active', 'created_at'])]
 class Product
 {
     public const LOW_STOCK_THRESHOLD = 5;
