@@ -102,6 +102,7 @@ Principes :
 - Tests fonctionnels (WebTestCase) pour les parcours importants (connexion, ajout au panier, commande).
 - Les tests ne dépendent pas d'un vrai service externe (paiement simulé).
 - Avant chaque commit, `docker compose exec php composer check` doit passer : il enchaîne PHPStan (`composer stan`), la vérification du formatage (`composer cs`) et PHPUnit. `composer cs-fix` corrige le formatage.
+- Les mêmes vérifications tournent sur GitHub à chaque push et pull request (`.github/workflows/ci.yml`, voir `docs/adr/0015-integration-continue.md`).
 - Pas de fichier baseline PHPStan ; un `@phpstan-ignore` n'est accepté qu'avec un commentaire qui explique pourquoi l'erreur est un faux positif.
 
 ## Collaboration avec Claude

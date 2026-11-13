@@ -1,0 +1,90 @@
+# Intégration continue : rejoue toutes les vérifications du projet
+# à chaque push et à chaque pull request (voir docs/adr/0015-integration-continue.md).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    name: Vérifications
+    runs-on: ubuntu-latest
+
+    # Base de données jetable, créée pour ce job puis détruite.
+    # Les mots de passe sont des valeurs de test, écrites en clair volontairement :
+    # la base n'existe que le temps du job et ne contient que les fixtures.
+    services:
+      database:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      # Remplace le DATABASE_URL de .env (les fichiers .env*.local ne sont pas dans le dépôt).
+      # En environnement test, Doctrine ajoute le suffixe _test : la base utilisée est ecommerce_test.
+      DATABASE_URL: "mysql://root:root@127.0.0.1:3306/ecommerce?serverVersion=11.4.0-MariaDB&charset=utf8mb4"
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Récupère le code
+        uses: actions/checkout@v4
+
+      - name: Installe PHP 8.3 et les extensions du Dockerfile
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, intl, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Récupère le dossier de cache de Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Met en cache les paquets Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('app/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Installe les dépendances
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Crée la base de test
+        run: bin/console --env=test doctrine:database:create --if-not-exists
+
+      - name: Applique les migrations
+        run: bin/console --env=test doctrine:migrations:migrate -n
+
+      - name: Charge les fixtures de test
+        run: bin/console --env=test doctrine:fixtures:load -n
+
+      - name: PHPStan, formatage et PHPUnit (composer check)
+        run: composer check
+
+      - name: Vérifie les templates Twig
+        run: bin/console lint:twig templates
+
+      - name: Vérifie les fichiers YAML
+        run: bin/console lint:yaml config --parse-tags
+
+      - name: Vérifie le conteneur de services
+        run: bin/console lint:container
+
+      - name: Vérifie le mapping Doctrine et le schéma
+        run: bin/console --env=test doctrine:schema:validate
+
+      - name: Recherche les failles connues dans les dépendances
+        run: composer audit
