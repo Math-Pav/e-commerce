@@ -58,7 +58,9 @@ final class ProductController extends AbstractController
     {
         // Le formulaire modifie une copie des données : le produit n'est touché qu'une fois la saisie validée
         $data = ProductData::fromProduct($product);
-        $form = $this->createForm(ProductType::class, $data);
+        $form = $this->createForm(ProductType::class, $data, [
+            'allow_image_removal' => $product->getImageFilename() !== null,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {

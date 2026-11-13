@@ -8,9 +8,12 @@ use App\Entity\Category;
 use App\Entity\Product;
 use App\Model\ProductData;
 use App\Repository\ProductRepository;
+use App\Service\ProductImageStorage;
 use App\Service\ProductService;
+use App\Tests\Util\TestFiles;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\String\Slugger\AsciiSlugger;
 
 final class ProductServiceTest extends TestCase
@@ -24,8 +27,16 @@ final class ProductServiceTest extends TestCase
 
     private ProductService $productService;
 
+    // Dossier temporaire des photos : le vrai service d'enregistrement y écrit (il est final, donc pas de faux objet)
+    private string $imageDirectory;
+
+    private TestFiles $files;
+
     protected function setUp(): void
     {
+        $this->imageDirectory = sys_get_temp_dir().'/product-service-'.bin2hex(random_bytes(8));
+        $this->files = new TestFiles();
+
         // Un faux repository : il répond à partir de $existingSlugs, sans toucher à la base
         $repository = $this->createStub(ProductRepository::class);
         $repository->method('isSlugTaken')->willReturnCallback(
@@ -36,7 +47,17 @@ final class ProductServiceTest extends TestCase
             $this->createStub(EntityManagerInterface::class),
             $repository,
             new AsciiSlugger(),
+            new ProductImageStorage($this->imageDirectory),
         );
+    }
+
+    protected function tearDown(): void
+    {
+        $this->files->cleanUp();
+        TestFiles::emptyDirectory($this->imageDirectory);
+        if (is_dir($this->imageDirectory)) {
+            rmdir($this->imageDirectory);
+        }
     }
 
     public function testCreateBuildsProductFromData(): void
@@ -91,7 +112,12 @@ final class ProductServiceTest extends TestCase
         $entityManager->expects(self::once())->method('persist')->with(self::isInstanceOf(Product::class));
         $entityManager->expects(self::once())->method('flush');
 
-        $service = new ProductService($entityManager, $this->createStub(ProductRepository::class), new AsciiSlugger());
+        $service = new ProductService(
+            $entityManager,
+            $this->createStub(ProductRepository::class),
+            new AsciiSlugger(),
+            new ProductImageStorage($this->imageDirectory),
+        );
         $service->create($this->createData('Carnet'));
     }
 
@@ -119,6 +145,76 @@ final class ProductServiceTest extends TestCase
         self::assertSame('mug-noir', $product->getSlug());
     }
 
+    public function testCreateWithoutImageKeepsPlaceholder(): void
+    {
+        $product = $this->productService->create($this->createData('Carnet'));
+
+        self::assertNull($product->getImageFilename());
+    }
+
+    public function testCreateStoresImage(): void
+    {
+        $data = $this->createData('Carnet');
+        $data->image = $this->upload();
+
+        $product = $this->productService->create($data);
+
+        self::assertNotNull($product->getImageFilename());
+        self::assertFileExists($this->imagePath($product->getImageFilename()));
+    }
+
+    public function testUpdateWithNewImageRemovesPreviousFile(): void
+    {
+        $product = $this->createProductWithImage();
+        $previousImage = (string) $product->getImageFilename();
+
+        $data = ProductData::fromProduct($product);
+        $data->image = $this->upload();
+        $this->productService->update($product, $data);
+
+        self::assertNotSame($previousImage, $product->getImageFilename());
+        self::assertFileExists($this->imagePath((string) $product->getImageFilename()));
+        self::assertFileDoesNotExist($this->imagePath($previousImage));
+    }
+
+    public function testUpdateWithRemoveImageDeletesFile(): void
+    {
+        $product = $this->createProductWithImage();
+        $previousImage = (string) $product->getImageFilename();
+
+        $data = ProductData::fromProduct($product);
+        $data->removeImage = true;
+        $this->productService->update($product, $data);
+
+        self::assertNull($product->getImageFilename());
+        self::assertFileDoesNotExist($this->imagePath($previousImage));
+    }
+
+    public function testNewImageWinsOverRemoveImage(): void
+    {
+        $product = $this->createProductWithImage();
+
+        $data = ProductData::fromProduct($product);
+        $data->image = $this->upload();
+        $data->removeImage = true;
+        $this->productService->update($product, $data);
+
+        self::assertNotNull($product->getImageFilename());
+    }
+
+    public function testUpdateWithoutImageKeepsCurrentOne(): void
+    {
+        $product = $this->createProductWithImage();
+        $currentImage = (string) $product->getImageFilename();
+
+        $data = ProductData::fromProduct($product);
+        $data->name = 'Carnet ligné';
+        $this->productService->update($product, $data);
+
+        self::assertSame($currentImage, $product->getImageFilename());
+        self::assertFileExists($this->imagePath($currentImage));
+    }
+
     public function testDeactivate(): void
     {
         $product = $this->createProduct('Mug noir');
@@ -135,6 +231,24 @@ final class ProductServiceTest extends TestCase
         $this->productService->activate($product);
 
         self::assertTrue($product->isActive());
+    }
+
+    private function createProductWithImage(): Product
+    {
+        $data = $this->createData('Carnet');
+        $data->image = $this->upload();
+
+        return $this->productService->create($data);
+    }
+
+    private function upload(): UploadedFile
+    {
+        return new UploadedFile($this->files->png(), 'photo.png', null, null, true);
+    }
+
+    private function imagePath(string $filename): string
+    {
+        return $this->imageDirectory.'/'.$filename;
     }
 
     private function createProduct(string $name): Product

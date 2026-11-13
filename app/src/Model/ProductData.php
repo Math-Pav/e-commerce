@@ -6,7 +6,10 @@ namespace App\Model;
 
 use App\Entity\Category;
 use App\Entity\Product;
+use App\Service\ProductImageStorage;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
  * Données du formulaire d'administration d'un produit.
@@ -31,6 +34,37 @@ final class ProductData
 
     #[Assert\Length(max: 5000)]
     public ?string $description = null;
+
+    // Nouvelle photo envoyée (facultative). Vide à la modification : un champ fichier ne se pré-remplit pas.
+    // « 2M » = 2 000 000 octets. Le type du fichier est vérifié par validateImageType().
+    #[Assert\File(
+        maxSize: '2M',
+        maxSizeMessage: 'La photo ne doit pas dépasser 2 Mo.',
+        uploadIniSizeErrorMessage: 'La photo ne doit pas dépasser 2 Mo.',
+        uploadErrorMessage: 'La photo n\'a pas pu être envoyée. Veuillez réessayer.',
+    )]
+    public ?UploadedFile $image = null;
+
+    // Case « Retirer la photo actuelle » (ignorée si une nouvelle photo est envoyée : elle remplace l'actuelle)
+    public bool $removeImage = false;
+
+    /**
+     * Le type est déduit du contenu du fichier, pas de son extension : un script renommé en .png est refusé.
+     */
+    #[Assert\Callback]
+    public function validateImageType(ExecutionContextInterface $context): void
+    {
+        // Fichier absent ou mal reçu : rien à analyser (l'erreur d'envoi est signalée par la contrainte File)
+        if ($this->image === null || !$this->image->isValid()) {
+            return;
+        }
+
+        if (ProductImageStorage::guessExtension($this->image->getPathname()) === null) {
+            $context->buildViolation('La photo doit être une image JPEG, PNG ou WebP.')
+                ->atPath('image')
+                ->addViolation();
+        }
+    }
 
     /**
      * Pré-remplit le formulaire de modification avec les valeurs actuelles du produit.

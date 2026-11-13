@@ -16,7 +16,7 @@
                 <ul class="cart-lines">
                     {% for line in cart.lines %}
                         <li class="cart-line">
-                            {% include 'product/_visual.html.twig' with {category: line.product.category} %}
+                            {% include 'product/_image.html.twig' with {product: line.product} %}
                             <div class="cart-line__info">
                                 <a href="{{ path('product_show', {slug: line.product.slug}) }}" class="cart-line__name">{{ line.product.name }}</a>
                                 <span class="cart-line__unit">{{ line.product.price|price }} l'unité</span>

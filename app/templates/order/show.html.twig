@@ -48,7 +48,15 @@
                     <tbody>
                         {% for item in order.items %}
                             <tr>
-                                <td>{{ item.productName }}</td>
+                                <td>
+                                    <span class="table__product">
+                                        {# Le produit peut avoir été supprimé depuis la commande : seul son nom (copié) reste #}
+                                        {% if item.product %}
+                                            {% include 'product/_image.html.twig' with {product: item.product, thumb: true} %}
+                                        {% endif %}
+                                        {{ item.productName }}
+                                    </span>
+                                </td>
                                 <td class="num">{{ item.unitPrice|price }}</td>
                                 <td class="num">{{ item.quantity }}</td>
                                 <td class="num">{{ item.subtotal|price }}</td>

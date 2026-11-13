@@ -8,12 +8,32 @@ use App\Entity\Product;
 use App\Repository\CategoryRepository;
 use App\Repository\ProductRepository;
 use App\Repository\UserRepository;
+use App\Tests\Util\TestFiles;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class ProductControllerTest extends WebTestCase
 {
+    private TestFiles $files;
+
+    protected function setUp(): void
+    {
+        $this->files = new TestFiles();
+    }
+
+    /**
+     * Nettoie les fichiers créés : les fichiers temporaires à envoyer et les photos enregistrées.
+     * Le dossier des photos est propre à l'environnement de test (services.yaml) : le vider ne touche pas aux photos de développement.
+     */
+    protected function tearDown(): void
+    {
+        $this->files->cleanUp();
+        TestFiles::emptyDirectory($this->imageDirectory());
+
+        parent::tearDown();
+    }
+
     public function testAnonymousIsRedirectedToLogin(): void
     {
         $client = static::createClient();
@@ -247,20 +267,176 @@ final class ProductControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(405);
     }
 
-    private function submitCreationForm(KernelBrowser $client, string $name, string $price): void
+    public function testAdminUploadsImageAndItIsDisplayed(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $this->submitCreationForm($client, 'Mug photo', '12.90', $this->files->png('Ma Photo De Vacances.png'));
+
+        self::assertResponseRedirects('/admin/produits');
+        $filename = (string) $this->findProduct('mug-photo')->getImageFilename();
+        // Nom aléatoire : le nom d'origine n'est pas réutilisé
+        self::assertMatchesRegularExpression('/^[0-9a-f]{32}\.png$/', $filename);
+        self::assertFileExists($this->imageDirectory().'/'.$filename);
+
+        $client->request('GET', '/produits/mug-photo');
+        self::assertSelectorExists(sprintf('.product-detail img[src="/uploads/products/%s"][alt="Mug photo"]', $filename));
+
+        $client->request('GET', '/produits');
+        self::assertSelectorExists(sprintf('.product-card img[src="/uploads/products/%s"]', $filename));
+    }
+
+    public function testImageIsShownInCartCheckoutAndOrder(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $this->submitEditForm($client, (int) $this->findProduct('mug-noir-mat')->getId(), $this->files->png());
+        $image = sprintf('img[src="/uploads/products/%s"][alt="Mug noir mat"]', $this->findProduct('mug-noir-mat')->getImageFilename());
+
+        $this->logIn($client, 'client@example.com');
+        $client->request('GET', '/produits/mug-noir-mat');
+        $client->submitForm('Ajouter au panier', ['quantity' => '1']);
+
+        $client->request('GET', '/panier');
+        self::assertSelectorExists('.cart-line '.$image);
+
+        $client->request('GET', '/commande');
+        self::assertSelectorExists('.summary-row '.$image);
+        $client->submitForm('Valider la commande', [
+            'shipping_address[address]' => '12 rue des Lilas',
+            'shipping_address[postalCode]' => '69001',
+            'shipping_address[city]' => 'Lyon',
+        ]);
+        $client->followRedirect();
+        self::assertSelectorExists('.table__product '.$image);
+    }
+
+    public function testProductWithoutImageKeepsPlaceholder(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/produits/mug-noir-mat');
+
+        self::assertSelectorNotExists('.product-detail img');
+        self::assertSelectorExists('.product-detail div.product-visual svg');
+    }
+
+    public function testTooLargeImageIsRefused(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $this->submitCreationForm($client, 'Mug trop lourd', '12.90', $this->files->tooLargePng());
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('form', 'La photo ne doit pas dépasser 2 Mo.');
+        self::assertSame([], glob($this->imageDirectory().'/*') ?: []);
+        $this->assertProductDoesNotExist('mug-trop-lourd');
+    }
+
+    public function testPhpFileRenamedAsPngIsRefused(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $this->submitCreationForm($client, 'Mug pirate', '12.90', $this->files->phpScriptNamedPng());
+
+        self::assertResponseStatusCodeSame(422);
+        self::assertSelectorTextContains('form', 'La photo doit être une image JPEG, PNG ou WebP.');
+        self::assertSame([], glob($this->imageDirectory().'/*') ?: []);
+        $this->assertProductDoesNotExist('mug-pirate');
+    }
+
+    public function testReplacingImageDeletesPreviousFile(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+
+        $this->submitEditForm($client, $id, $this->files->png());
+        $firstImage = (string) $this->findProduct('mug-noir-mat')->getImageFilename();
+        self::assertFileExists($this->imageDirectory().'/'.$firstImage);
+
+        $this->submitEditForm($client, $id, $this->files->png());
+
+        self::assertResponseRedirects('/admin/produits');
+        $secondImage = (string) $this->findProduct('mug-noir-mat')->getImageFilename();
+        self::assertNotSame($firstImage, $secondImage);
+        self::assertFileExists($this->imageDirectory().'/'.$secondImage);
+        self::assertFileDoesNotExist($this->imageDirectory().'/'.$firstImage);
+    }
+
+    public function testRemovingImageDeletesFileAndShowsPlaceholder(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+        $this->submitEditForm($client, $id, $this->files->png());
+        $image = (string) $this->findProduct('mug-noir-mat')->getImageFilename();
+
+        $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
+        self::assertSelectorExists(sprintf('figure img[src="/uploads/products/%s"]', $image));
+        $form = $crawler->selectButton('Enregistrer les modifications')->form();
+        $form['product[removeImage]']->tick();
+        $client->submit($form);
+
+        self::assertResponseRedirects('/admin/produits');
+        self::assertNull($this->findProduct('mug-noir-mat')->getImageFilename());
+        self::assertFileDoesNotExist($this->imageDirectory().'/'.$image);
+
+        $client->request('GET', '/produits/mug-noir-mat');
+        self::assertSelectorNotExists('.product-detail img');
+    }
+
+    public function testRemoveCheckboxIsHiddenWhenProductHasNoImage(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+        $id = $this->findProduct('mug-noir-mat')->getId();
+
+        $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
+
+        self::assertSelectorExists('input[type="file"][name="product[image]"]');
+        self::assertSelectorNotExists('input[name="product[removeImage]"]');
+    }
+
+    private function submitEditForm(KernelBrowser $client, int $id, string $imagePath): void
+    {
+        $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
+        $form = $crawler->selectButton('Enregistrer les modifications')->form();
+        $form['product[image]']->upload($imagePath);
+        $client->submit($form);
+    }
+
+    private function assertProductDoesNotExist(string $slug): void
+    {
+        self::assertNull(static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => $slug]));
+    }
+
+    private function imageDirectory(): string
+    {
+        return static::getContainer()->getParameter('app.product_images_directory');
+    }
+
+    private function submitCreationForm(KernelBrowser $client, string $name, string $price, ?string $imagePath = null): void
     {
         $category = static::getContainer()->get(CategoryRepository::class)->findOneBy(['slug' => 'mugs-et-tasses']);
 
         $crawler = $client->request('GET', '/admin/produits/nouveau');
         self::assertResponseIsSuccessful();
 
-        $client->submit($crawler->selectButton('Créer le produit')->form([
+        $form = $crawler->selectButton('Créer le produit')->form([
             'product[name]' => $name,
             'product[category]' => (string) $category->getId(),
             'product[price]' => $price,
             'product[stock]' => '7',
             'product[description]' => 'Un mug de test.',
-        ]));
+        ]);
+        if ($imagePath !== null) {
+            $form['product[image]']->upload($imagePath);
+        }
+        $client->submit($form);
     }
 
     /**

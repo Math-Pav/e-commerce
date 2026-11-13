@@ -1,0 +1,8 @@
+{# Photo du produit, ou visuel de remplacement s'il n'en a pas encore.
+   Paramètres : product, large (fiche produit), thumb (petite vignette des récapitulatifs). #}
+{% set modifier = large|default(false) ? ' product-visual--lg' : (thumb|default(false) ? ' product-visual--thumb' : '') %}
+{% if product.imageFilename %}
+    <img src="/uploads/products/{{ product.imageFilename }}" alt="{{ product.name }}" class="product-visual product-visual--photo{{ modifier }}"{% if not large|default(false) %} loading="lazy"{% endif %}>
+{% else %}
+    {% include 'product/_visual.html.twig' with {category: product.category, large: large|default(false), thumb: thumb|default(false)} only %}
+{% endif %}
