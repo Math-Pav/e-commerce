@@ -104,4 +104,4 @@ final class CartService
     {
         $this->requestStack->getSession()->set(self::SESSION_KEY, $quantities);
     }
-}
+}
