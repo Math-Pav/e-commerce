@@ -1,6 +1,10 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Catalogue{% endblock %}
+{% block title -%}
+    {{ catalog.search ? 'Recherche « ' ~ catalog.search ~ ' »' : 'Catalogue' }}
+    {{- currentCategory ? ' – ' ~ currentCategory.name }}
+    {{- catalog.page > 1 ? ' – page ' ~ catalog.page }}
+{%- endblock %}
 
 {% block body %}
     <div class="page-header">
@@ -9,18 +13,60 @@
         <p class="lead">Mugs, carnets et stylos pour accompagner vos journées de travail.</p>
     </div>
 
+    {# Formulaire en GET : il ne modifie rien, il construit seulement l'adresse de la page de résultats #}
+    <form method="get" action="{{ path('product_index') }}" class="catalog-filters" role="search" aria-label="Rechercher et trier le catalogue">
+        {% if currentCategory %}
+            <input type="hidden" name="categorie" value="{{ currentCategory.slug }}">
+        {% endif %}
+        <div class="field catalog-filters__search">
+            <label for="catalog-search">Rechercher un produit</label>
+            <div class="catalog-filters__row">
+                <input type="search" id="catalog-search" name="q" value="{{ catalog.search }}" maxlength="{{ constant('App\\Model\\CatalogQuery::SEARCH_MAX_LENGTH') }}" placeholder="Mug, carnet, stylo…" enterkeyhint="search" class="input">
+                <button type="submit" class="btn btn--primary">Rechercher</button>
+            </div>
+        </div>
+        <div class="field catalog-filters__sort">
+            <label for="catalog-sort">Trier par</label>
+            <div class="catalog-filters__row">
+                <select id="catalog-sort" name="tri" class="input">
+                    {% for sort in sorts %}
+                        <option value="{{ sort.value }}" {{ sort == catalog.sort ? 'selected' }}>{{ sort.label }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn--secondary">Trier</button>
+            </div>
+        </div>
+    </form>
+
     <div class="toolbar">
         <nav class="chips" aria-label="Filtrer par catégorie">
-            <a href="{{ path('product_index') }}" class="chip" aria-current="{{ currentCategory is null ? 'page' : 'false' }}">Tous les produits</a>
+            <a href="{{ path('product_index', catalog.withCategory(null).toRouteParameters) }}" class="chip" aria-current="{{ currentCategory is null ? 'page' : 'false' }}">Tous les produits</a>
             {% for category in categories %}
-                <a href="{{ path('product_index', {categorie: category.slug}) }}" class="chip" aria-current="{{ currentCategory and currentCategory.id == category.id ? 'page' : 'false' }}">{{ category.name }}</a>
+                <a href="{{ path('product_index', catalog.withCategory(category.slug).toRouteParameters) }}" class="chip" aria-current="{{ currentCategory and currentCategory.id == category.id ? 'page' : 'false' }}">{{ category.name }}</a>
             {% endfor %}
         </nav>
-        <p class="toolbar__count">{{ products|length }} produit{{ products|length > 1 ? 's' }}</p>
+        <p class="toolbar__count">
+            {{ pagination.totalItems }} produit{{ pagination.totalItems > 1 ? 's' }}
+            {%- if pagination.lastPage > 1 %} · page {{ pagination.currentPage }} sur {{ pagination.lastPage }}{% endif %}
+        </p>
     </div>
 
-    {% if products is empty %}
-        <p class="empty-state">Aucun produit pour le moment.</p>
+    {% if catalog.search and pagination.totalItems > 0 %}
+        <p class="search-summary">
+            Résultats pour « <strong>{{ catalog.search }}</strong> »
+            <a href="{{ path('product_index', catalog.withoutSearch.toRouteParameters) }}">Effacer la recherche</a>
+        </p>
+    {% endif %}
+
+    {% if pagination.totalItems == 0 %}
+        {% if catalog.search %}
+            <div class="empty-state">
+                <p>Aucun produit ne correspond à « {{ catalog.search }} ».</p>
+                <a href="{{ path('product_index') }}" class="btn btn--secondary">Réinitialiser la recherche et les filtres</a>
+            </div>
+        {% else %}
+            <p class="empty-state">Aucun produit pour le moment.</p>
+        {% endif %}
     {% else %}
         <ul class="product-grid">
             {% for product in products %}
@@ -39,5 +85,7 @@
                 </li>
             {% endfor %}
         </ul>
+
+        {% include 'product/_pagination.html.twig' %}
     {% endif %}
 {% endblock %}

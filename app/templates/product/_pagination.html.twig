@@ -1,0 +1,22 @@
+{# Pagination du catalogue : liens simples, utilisables sans JavaScript ; chaque page a sa propre adresse #}
+{% if pagination.lastPage > 1 %}
+    <nav class="pagination" aria-label="Pagination du catalogue">
+        <ul class="pagination__list">
+            {% if pagination.hasPrevious %}
+                <li><a href="{{ path('product_index', catalog.withPage(pagination.currentPage - 1).toRouteParameters) }}" class="pagination__link" rel="prev">Page précédente</a></li>
+            {% endif %}
+            {% for page in pagination.pages %}
+                <li>
+                    {% if page is null %}
+                        <span class="pagination__ellipsis" aria-hidden="true">…</span>
+                    {% else %}
+                        <a href="{{ path('product_index', catalog.withPage(page).toRouteParameters) }}" class="pagination__link" aria-current="{{ page == pagination.currentPage ? 'page' : 'false' }}"><span class="visually-hidden">Page </span>{{ page }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            {% if pagination.hasNext %}
+                <li><a href="{{ path('product_index', catalog.withPage(pagination.currentPage + 1).toRouteParameters) }}" class="pagination__link" rel="next">Page suivante</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}
