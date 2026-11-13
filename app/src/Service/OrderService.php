@@ -107,7 +107,7 @@ final class OrderService
                 $product = $item->getProduct();
 
                 // Produit supprimé du catalogue depuis la commande : rien à remettre en stock
-                if ($product === null) {
+                if (null === $product) {
                     continue;
                 }
 

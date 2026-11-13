@@ -128,7 +128,7 @@ final class OrderController extends AbstractController
     {
         $order = $this->orderRepository->findOneBy(['reference' => $reference, 'customer' => $user]);
 
-        if ($order === null) {
+        if (null === $order) {
             throw $this->createNotFoundException('Commande introuvable.');
         }
 

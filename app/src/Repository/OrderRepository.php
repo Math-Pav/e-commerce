@@ -35,7 +35,7 @@ class OrderRepository extends ServiceEntityRepository
             ->orderBy('o.createdAt', 'DESC')
             ->addOrderBy('o.id', 'DESC');
 
-        if ($status !== null) {
+        if (null !== $status) {
             $queryBuilder
                 ->andWhere('o.status = :status')
                 ->setParameter('status', $status);
@@ -74,7 +74,7 @@ class OrderRepository extends ServiceEntityRepository
             ->where('o.status IN (:statuses)')
             ->setParameter('statuses', OrderStatus::revenueStatuses());
 
-        if ($paidSince !== null) {
+        if (null !== $paidSince) {
             $queryBuilder
                 ->andWhere('o.paidAt >= :paidSince')
                 ->setParameter('paidSince', self::toStorageTimezone($paidSince));

@@ -64,14 +64,14 @@ final class CartControllerTest extends WebTestCase
         self::assertNotNull($product);
 
         // Requête forgée à la main, sans passer par le formulaire : pas de jeton CSRF
-        $client->request('POST', '/panier/ajouter/' . $product->getId(), ['quantity' => 1]);
+        $client->request('POST', '/panier/ajouter/'.$product->getId(), ['quantity' => 1]);
 
         self::assertResponseStatusCodeSame(403);
     }
 
     private function addToCart(KernelBrowser $client, string $slug, int $quantity): void
     {
-        $client->request('GET', '/produits/' . $slug);
+        $client->request('GET', '/produits/'.$slug);
 
         $client->submitForm('Ajouter au panier', [
             'quantity' => $quantity,

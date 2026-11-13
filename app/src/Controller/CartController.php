@@ -14,7 +14,6 @@ use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
-
 #[Route('/panier')]
 final class CartController extends AbstractController
 {

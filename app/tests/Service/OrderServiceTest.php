@@ -259,10 +259,10 @@ final class OrderServiceTest extends KernelTestCase
     {
         // EntityManager dont seul le flush() appelé par OrderService échoue ; la transaction de la commande,
         // elle, utilise le flush() de l'EntityManager réel et réussit.
-        $failingEntityManager = new class ($this->entityManager) extends EntityManagerDecorator {
+        $failingEntityManager = new class($this->entityManager) extends EntityManagerDecorator {
             public function flush(): void
             {
-                throw new ConnectionLost(new class ('Connexion à la base perdue.') extends AbstractException {}, null);
+                throw new ConnectionLost(new class('Connexion à la base perdue.') extends AbstractException {}, null);
             }
         };
         $logger = $this->createMock(LoggerInterface::class);

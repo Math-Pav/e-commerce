@@ -37,7 +37,7 @@ final class OrderControllerTest extends WebTestCase
         $client->request('GET', '/admin/commandes');
         self::assertResponseStatusCodeSame(403);
 
-        $client->request('GET', '/admin/commandes/' . $reference);
+        $client->request('GET', '/admin/commandes/'.$reference);
         self::assertResponseStatusCodeSame(403);
 
         $client->request('POST', sprintf('/admin/commandes/%s/expedier', $reference));
@@ -95,10 +95,10 @@ final class OrderControllerTest extends WebTestCase
         $reference = $this->createOrder(paid: true);
         $this->logIn($client, 'admin@example.com');
 
-        $client->request('GET', '/admin/commandes/' . $reference);
+        $client->request('GET', '/admin/commandes/'.$reference);
         $client->submitForm('Marquer comme expédiée');
 
-        self::assertResponseRedirects('/admin/commandes/' . $reference);
+        self::assertResponseRedirects('/admin/commandes/'.$reference);
         $client->followRedirect();
         self::assertSelectorTextContains('.flash--success', sprintf('La commande %s est expédiée.', $reference));
         self::assertSelectorTextContains('.order-header', 'Statut : Expédiée');
@@ -113,13 +113,13 @@ final class OrderControllerTest extends WebTestCase
 
         // Le bouton n'est pas affiché pour une commande en attente : on envoie la requête à la main,
         // avec un jeton CSRF valide récupéré sur la page (celui du formulaire d'annulation)
-        $crawler = $client->request('GET', '/admin/commandes/' . $reference);
+        $crawler = $client->request('GET', '/admin/commandes/'.$reference);
         self::assertSelectorNotExists('form[action$="/expedier"]');
         $token = $crawler->filter('input[name="_token"]')->attr('value');
 
         $client->request('POST', sprintf('/admin/commandes/%s/expedier', $reference), ['_token' => $token]);
 
-        self::assertResponseRedirects('/admin/commandes/' . $reference);
+        self::assertResponseRedirects('/admin/commandes/'.$reference);
         $client->followRedirect();
         self::assertSelectorTextContains('.flash--error', 'Seule une commande payée peut être expédiée.');
         self::assertSame(OrderStatus::Pending, $this->findOrder($reference)->getStatus());
@@ -131,17 +131,17 @@ final class OrderControllerTest extends WebTestCase
         $reference = $this->createOrder(paid: false); // 2 mugs noirs : stock 12 → 10
         $this->logIn($client, 'admin@example.com');
 
-        $client->request('GET', '/admin/commandes/' . $reference);
+        $client->request('GET', '/admin/commandes/'.$reference);
         $client->submitForm('Annuler la commande');
 
-        self::assertResponseRedirects('/admin/commandes/' . $reference);
+        self::assertResponseRedirects('/admin/commandes/'.$reference);
         // Le client est prévenu, pas l'administrateur qui a annulé
         self::assertEmailCount(1);
         $message = self::getMailerMessage();
         self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', 'client@example.com');
         self::assertEmailAddressNotContains($message, 'To', 'admin@example.com');
-        self::assertEmailSubjectContains($message, 'Annulation de votre commande ' . $reference);
+        self::assertEmailSubjectContains($message, 'Annulation de votre commande '.$reference);
         self::assertEmailTextBodyContains($message, '29,80 €');
         $client->followRedirect();
         self::assertSelectorTextContains('.flash--success', 'annulée');

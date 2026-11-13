@@ -74,7 +74,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $client->request('GET', '/produits/' . $slug);
+        $client->request('GET', '/produits/'.$slug);
 
         self::assertResponseStatusCodeSame(404);
     }
@@ -155,7 +155,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $crawler = $client->request('GET', '/produits?tri=' . $sort);
+        $crawler = $client->request('GET', '/produits?tri='.$sort);
 
         self::assertResponseIsSuccessful();
         self::assertStringContainsString($firstProduct, $crawler->filter('.product-card__name')->first()->text());
@@ -175,7 +175,7 @@ final class ProductControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $client->request('GET', '/produits?page=' . $page);
+        $client->request('GET', '/produits?page='.$page);
 
         self::assertResponseIsSuccessful();
         self::assertAnySelectorTextContains('li', 'Mug noir mat');

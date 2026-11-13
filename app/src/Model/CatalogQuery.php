@@ -63,7 +63,7 @@ final class CatalogQuery
 
     public function hasFilters(): bool
     {
-        return $this->search !== null || $this->categorySlug !== null;
+        return null !== $this->search || null !== $this->categorySlug;
     }
 
     /**
@@ -77,9 +77,9 @@ final class CatalogQuery
         return array_filter([
             'q' => $this->search,
             'categorie' => $this->categorySlug,
-            'tri' => $this->sort !== CatalogSort::DEFAULT ? $this->sort->value : null,
+            'tri' => CatalogSort::DEFAULT !== $this->sort ? $this->sort->value : null,
             'page' => $this->page > 1 ? $this->page : null,
-        ], static fn (string|int|null $value): bool => $value !== null);
+        ], static fn (string|int|null $value): bool => null !== $value);
     }
 
     /**
@@ -90,7 +90,7 @@ final class CatalogQuery
         $search = trim((string) preg_replace('/\s+/u', ' ', (string) $search));
         $search = mb_substr($search, 0, self::SEARCH_MAX_LENGTH);
 
-        return $search !== '' ? rtrim($search) : null;
+        return '' !== $search ? rtrim($search) : null;
     }
 
     /**
@@ -100,7 +100,7 @@ final class CatalogQuery
     {
         $page = filter_var($page, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 
-        return $page !== false ? $page : 1;
+        return false !== $page ? $page : 1;
     }
 
     /**

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Repository\ProductRepository;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
-use App\Repository\CategoryRepository;
 use App\Enum\CatalogSort;
 use App\Model\CatalogQuery;
 use App\Model\Pagination;
+use App\Repository\CategoryRepository;
+use App\Repository\ProductRepository;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
 
 final class ProductController extends AbstractController
 {
@@ -24,7 +24,7 @@ final class ProductController extends AbstractController
         CategoryRepository $categoryRepository,
     ): Response {
         $catalog = CatalogQuery::fromRequest($request);
-        $currentCategory = $catalog->categorySlug !== null
+        $currentCategory = null !== $catalog->categorySlug
             ? $categoryRepository->findOneBy(['slug' => $catalog->categorySlug])
             : null;
 
@@ -52,7 +52,7 @@ final class ProductController extends AbstractController
     {
         $product = $productRepository->findOneBy(['slug' => $slug, 'isActive' => true]);
 
-        if ($product === null) {
+        if (null === $product) {
             throw $this->createNotFoundException('Produit introuvable.');
         }
 

@@ -66,13 +66,13 @@ final class OrderControllerTest extends WebTestCase
         $message = self::getMailerMessage();
         self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', 'client@example.com');
-        self::assertEmailSubjectContains($message, 'Confirmation de votre commande ' . $reference);
+        self::assertEmailSubjectContains($message, 'Confirmation de votre commande '.$reference);
         self::assertEmailHtmlBodyContains($message, $reference);
         self::assertEmailHtmlBodyContains($message, 'Mug noir mat');
         self::assertEmailHtmlBodyContains($message, '29,80 €');
         self::assertEmailHtmlBodyContains($message, '12 rue des Lilas');
         self::assertEmailHtmlBodyContains($message, '69001 Lyon');
-        self::assertEmailHtmlBodyContains($message, 'href="http://localhost' . $orderUrl . '"');
+        self::assertEmailHtmlBodyContains($message, 'href="http://localhost'.$orderUrl.'"');
         self::assertEmailTextBodyContains($message, $reference);
         self::assertEmailTextBodyContains($message, 'Total : 29,80 €');
         self::assertEmailTextBodyContains($message, '12 rue des Lilas');
@@ -236,9 +236,9 @@ final class OrderControllerTest extends WebTestCase
         $message = self::getMailerMessage();
         self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', 'client@example.com');
-        self::assertEmailSubjectContains($message, 'Paiement reçu pour votre commande ' . $reference);
+        self::assertEmailSubjectContains($message, 'Paiement reçu pour votre commande '.$reference);
         self::assertEmailHtmlBodyContains($message, '29,80 €');
-        self::assertEmailTextBodyContains($message, 'paiement de 29,80 € pour la commande ' . $reference);
+        self::assertEmailTextBodyContains($message, 'paiement de 29,80 € pour la commande '.$reference);
     }
 
     public function testDeclinedPaymentKeepsOrderPending(): void
@@ -287,7 +287,7 @@ final class OrderControllerTest extends WebTestCase
         $message = self::getMailerMessage();
         self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', 'client@example.com');
-        self::assertEmailSubjectContains($message, 'Annulation de votre commande ' . basename($orderUrl));
+        self::assertEmailSubjectContains($message, 'Annulation de votre commande '.basename($orderUrl));
         self::assertEmailHtmlBodyContains($message, '29,80 €');
         self::assertEmailTextBodyContains($message, basename($orderUrl));
         $client->followRedirect();
@@ -307,7 +307,7 @@ final class OrderControllerTest extends WebTestCase
         // Un autre client récupère un jeton CSRF valide sur sa propre commande, puis vise celle de Camille
         $this->logIn($client, 'admin@example.com');
         $token = $this->findCancelToken($client, $this->placeOrder($client, 'stylo-a-bille-bleu', 1));
-        $client->request('POST', $otherCustomerOrderUrl . '/annuler', ['_token' => $token]);
+        $client->request('POST', $otherCustomerOrderUrl.'/annuler', ['_token' => $token]);
 
         self::assertResponseStatusCodeSame(404);
         self::assertEmailCount(0);
@@ -325,7 +325,7 @@ final class OrderControllerTest extends WebTestCase
         $client->followRedirect();
         self::assertSelectorNotExists('form[action$="/annuler"]');
 
-        $client->request('POST', $orderUrl . '/annuler', ['_token' => $token]);
+        $client->request('POST', $orderUrl.'/annuler', ['_token' => $token]);
 
         self::assertResponseRedirects($orderUrl);
         $client->followRedirect();
@@ -340,7 +340,7 @@ final class OrderControllerTest extends WebTestCase
         $this->logIn($client, 'client@example.com');
         $orderUrl = $this->placeOrder($client, 'mug-noir-mat', 1);
 
-        $client->request('POST', $orderUrl . '/annuler');
+        $client->request('POST', $orderUrl.'/annuler');
 
         self::assertResponseStatusCodeSame(403);
         self::assertSame(OrderStatus::Pending, $this->findOrderStatus($orderUrl));
@@ -391,7 +391,7 @@ final class OrderControllerTest extends WebTestCase
 
     private function addToCart(KernelBrowser $client, string $slug, int $quantity): void
     {
-        $client->request('GET', '/produits/' . $slug);
+        $client->request('GET', '/produits/'.$slug);
         $client->submitForm('Ajouter au panier', ['quantity' => $quantity]);
     }
 

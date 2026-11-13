@@ -455,7 +455,7 @@ final class ProductControllerTest extends WebTestCase
             'product[stock]' => '7',
             'product[description]' => 'Un mug de test.',
         ]);
-        if ($imagePath !== null) {
+        if (null !== $imagePath) {
             $imageField = $form['product[image]'];
             self::assertInstanceOf(FileFormField::class, $imageField);
             $imageField->upload($imagePath);

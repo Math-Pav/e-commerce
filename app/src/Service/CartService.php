@@ -71,7 +71,7 @@ final class CartService
     {
         $quantities = $this->getQuantities();
 
-        if ($quantities === []) {
+        if ([] === $quantities) {
             return new Cart([]);
         }
 

@@ -55,7 +55,7 @@ final class CustomerMailer
     {
         $customer = $order->getCustomer();
 
-        if ($customer === null) {
+        if (null === $customer) {
             throw new \LogicException('Une commande sans client ne peut pas donner lieu à un e-mail.');
         }
 

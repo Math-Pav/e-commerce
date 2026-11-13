@@ -6,8 +6,8 @@ namespace App\Tests\Entity;
 
 use App\Entity\Product;
 use App\Exception\InsufficientStockException;
-use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
 final class ProductTest extends TestCase
 {

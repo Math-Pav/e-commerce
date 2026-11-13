@@ -168,17 +168,17 @@ final class DashboardServiceTest extends KernelTestCase
         }
         $order->recalculateTotal();
 
-        if ($parisPaidAt !== null) {
+        if (null !== $parisPaidAt) {
             $paidAt = $this->parisTimeToStorage($parisPaidAt);
             $order->markAsPaid($paidAt);
-            if ($status === OrderStatus::Shipped || $status === OrderStatus::Delivered) {
+            if (OrderStatus::Shipped === $status || OrderStatus::Delivered === $status) {
                 $order->markAsShipped($paidAt);
             }
-            if ($status === OrderStatus::Delivered) {
+            if (OrderStatus::Delivered === $status) {
                 $order->markAsDelivered($paidAt);
             }
         }
-        if ($status === OrderStatus::Cancelled) {
+        if (OrderStatus::Cancelled === $status) {
             $order->cancel(new \DateTimeImmutable());
         }
 

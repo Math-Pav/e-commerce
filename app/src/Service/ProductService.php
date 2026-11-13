@@ -65,7 +65,7 @@ final class ProductService
         $this->entityManager->flush();
 
         // Suppression après l'enregistrement en base : si flush() échoue, le produit pointe toujours vers un fichier existant
-        if ($previousImage !== null && $previousImage !== $product->getImageFilename()) {
+        if (null !== $previousImage && $previousImage !== $product->getImageFilename()) {
             $this->imageStorage->remove($previousImage);
         }
     }
@@ -87,7 +87,7 @@ final class ProductService
 
     private function applyData(Product $product, ProductData $data): void
     {
-        if ($data->price === null || $data->category === null) {
+        if (null === $data->price || null === $data->category) {
             throw new \InvalidArgumentException('Les données du produit doivent être validées avant d\'être enregistrées.');
         }
 
@@ -104,7 +104,7 @@ final class ProductService
      */
     private function applyImage(Product $product, ProductData $data): void
     {
-        if ($data->image !== null) {
+        if (null !== $data->image) {
             $product->setImageFilename($this->imageStorage->store($data->image));
         } elseif ($data->removeImage) {
             $product->setImageFilename(null);

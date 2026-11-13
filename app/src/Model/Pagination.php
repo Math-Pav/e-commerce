@@ -57,7 +57,7 @@ final class Pagination
                 continue;
             }
 
-            if ($page - $previous === 2) {
+            if (2 === $page - $previous) {
                 // Une seule page sautée : l'afficher prend autant de place que « … »
                 $pages[] = $page - 1;
             } elseif ($page - $previous > 2) {
@@ -73,7 +73,7 @@ final class Pagination
 
     private function isDisplayed(int $page): bool
     {
-        return $page === 1
+        return 1 === $page
             || $page === $this->lastPage
             || abs($page - $this->currentPage) <= self::NEIGHBOURS;
     }

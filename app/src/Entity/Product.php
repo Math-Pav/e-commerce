@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Exception\InsufficientStockException;
 use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use App\Exception\InsufficientStockException;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 // Index composites du catalogue (ADR 0011) : un par tri, pour lire les produits actifs déjà dans l'ordre
