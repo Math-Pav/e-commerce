@@ -43,15 +43,12 @@ final class OrderController extends AbstractController
             return $this->redirectToRoute('cart_show');
         }
 
-        $address = new ShippingAddress();
-        $address->fullName = sprintf('%s %s', $user->getFirstName(), $user->getLastName());
-
-        $form = $this->createForm(ShippingAddressType::class, $address);
+        $form = $this->createForm(ShippingAddressType::class, ShippingAddress::fromCustomer($user));
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             try {
-                $order = $this->orderService->placeOrder($user, $cart, $address);
+                $order = $this->orderService->placeOrder($user, $cart, $form->getData());
             } catch (InsufficientStockException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
