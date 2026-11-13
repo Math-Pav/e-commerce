@@ -5,6 +5,7 @@
 
     <nav class="tabs" aria-label="Administration">
         <a href="{{ path('admin_product_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_product' ? 'page' : 'false' }}">Produits</a>
+        <a href="{{ path('admin_order_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_order' ? 'page' : 'false' }}">Commandes</a>
     </nav>
 
     {% block admin_content %}{% endblock %}

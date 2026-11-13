@@ -1,0 +1,51 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Commandes · Administration{% endblock %}
+
+{% block admin_content %}
+    <div class="page-toolbar">
+        <div class="page-header">
+            <p class="eyebrow">Administration</p>
+            <h1 class="page-title">Commandes</h1>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <nav class="chips" aria-label="Filtrer par statut">
+            <a href="{{ path('admin_order_index') }}" class="chip" aria-current="{{ currentStatus is null ? 'page' : 'false' }}">Toutes</a>
+            {% for status in statuses %}
+                <a href="{{ path('admin_order_index', {statut: status.value}) }}" class="chip" aria-current="{{ currentStatus == status ? 'page' : 'false' }}">{{ status.label }}</a>
+            {% endfor %}
+        </nav>
+        <p class="toolbar__count">{{ orders|length }} commande{{ orders|length > 1 ? 's' }}</p>
+    </div>
+
+    {% if orders is empty %}
+        <p class="empty-state">Aucune commande{{ currentStatus ? ' avec ce statut' }}.</p>
+    {% else %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Référence</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Client</th>
+                        <th scope="col">Statut</th>
+                        <th scope="col" class="num">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                        <tr>
+                            <td><a href="{{ path('admin_order_show', {reference: order.reference}) }}">{{ order.reference }}</a></td>
+                            <td>{{ order.createdAt|date('d/m/Y à H:i') }}</td>
+                            <td>{{ order.customer.firstName }} {{ order.customer.lastName }}</td>
+                            <td>{% include 'order/_status_badge.html.twig' with {status: order.status} %}</td>
+                            <td class="num">{{ order.totalAmount|price }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endblock %}

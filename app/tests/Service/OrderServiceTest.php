@@ -12,6 +12,7 @@ use App\Exception\InsufficientStockException;
 use App\Model\Cart;
 use App\Model\CartLine;
 use App\Model\ShippingAddress;
+use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
 use App\Service\OrderService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,7 +30,11 @@ final class OrderServiceTest extends KernelTestCase
         $container = static::getContainer();
 
         $this->entityManager = $container->get(EntityManagerInterface::class);
-        $this->orderService = new OrderService($this->entityManager, $container->get(ProductRepository::class));
+        $this->orderService = new OrderService(
+            $this->entityManager,
+            $container->get(ProductRepository::class),
+            $container->get(OrderRepository::class),
+        );
     }
 
     public function testPlaceOrder(): void
@@ -95,6 +100,91 @@ final class OrderServiceTest extends KernelTestCase
         $this->expectException(\DomainException::class);
 
         $this->orderService->placeOrder($this->findCustomer(), new Cart([]), $this->createAddress());
+    }
+
+    public function testCancelRestoresExactStock(): void
+    {
+        $mug = $this->findProduct('mug-noir-mat');          // stock 12
+        $pen = $this->findProduct('stylo-a-bille-bleu');    // stock 200
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($mug, 2), new CartLine($pen, 3)]),
+            $this->createAddress(),
+        );
+
+        $this->orderService->cancel($order);
+
+        // On relit la base avec un EntityManager neuf : le changement doit être enregistré, pas seulement en mémoire
+        $entityManager = static::getContainer()->get('doctrine')->resetManager();
+        $savedOrder = $entityManager->getRepository(Order::class)->find($order->getId());
+
+        self::assertSame(OrderStatus::Cancelled, $savedOrder->getStatus());
+        self::assertNotNull($savedOrder->getCancelledAt());
+        self::assertSame(12, $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat'])->getStock());
+        self::assertSame(200, $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'stylo-a-bille-bleu'])->getStock());
+    }
+
+    public function testCancelIgnoresItemsWhoseProductWasDeleted(): void
+    {
+        $mug = $this->findProduct('mug-noir-mat');
+        $pen = $this->findProduct('stylo-a-bille-bleu');
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($mug, 2), new CartLine($pen, 3)]),
+            $this->createAddress(),
+        );
+        $orderId = $order->getId();
+
+        // Suppression du stylo : la base met product_id à NULL dans la ligne de commande (onDelete: SET NULL)
+        $this->entityManager->remove($pen);
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+
+        $order = $this->entityManager->getRepository(Order::class)->find($orderId);
+        $this->orderService->cancel($order);
+
+        self::assertSame(OrderStatus::Cancelled, $order->getStatus());
+        self::assertSame(12, $this->findProduct('mug-noir-mat')->getStock());
+    }
+
+    public function testCancelChangesNothingWhenTransitionIsForbidden(): void
+    {
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($this->findProduct('mug-noir-mat'), 2)]),
+            $this->createAddress(),
+        );
+        $order->markAsPaid(new \DateTimeImmutable());
+        $this->entityManager->flush();
+
+        try {
+            $this->orderService->cancel($order);
+            self::fail('Une \DomainException était attendue : une commande payée ne peut pas être annulée.');
+        } catch (\DomainException) {
+        }
+
+        $entityManager = static::getContainer()->get('doctrine')->resetManager();
+        $savedOrder = $entityManager->getRepository(Order::class)->find($order->getId());
+
+        self::assertSame(OrderStatus::Paid, $savedOrder->getStatus());
+        self::assertNull($savedOrder->getCancelledAt());
+        self::assertSame(10, $entityManager->getRepository(Product::class)->findOneBy(['slug' => 'mug-noir-mat'])->getStock(), 'Le stock ne doit pas être remis.');
+    }
+
+    public function testShipThenDeliverPaidOrder(): void
+    {
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($this->findProduct('mug-noir-mat'), 1)]),
+            $this->createAddress(),
+        );
+        $order->markAsPaid(new \DateTimeImmutable());
+
+        $this->orderService->ship($order);
+        self::assertSame(OrderStatus::Shipped, $order->getStatus());
+
+        $this->orderService->deliver($order);
+        self::assertSame(OrderStatus::Delivered, $order->getStatus());
     }
 
     private function findProduct(string $slug): Product

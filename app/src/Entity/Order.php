@@ -49,6 +49,15 @@ class Order
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $paidAt = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $shippedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $deliveredAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $cancelledAt = null;
+
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $customer = null;
@@ -161,6 +170,21 @@ class Order
         return $this->paidAt;
     }
 
+    public function getShippedAt(): ?\DateTimeImmutable
+    {
+        return $this->shippedAt;
+    }
+
+    public function getDeliveredAt(): ?\DateTimeImmutable
+    {
+        return $this->deliveredAt;
+    }
+
+    public function getCancelledAt(): ?\DateTimeImmutable
+    {
+        return $this->cancelledAt;
+    }
+
     public function getCustomer(): ?User
     {
         return $this->customer;
@@ -219,5 +243,54 @@ class Order
 
         $this->status = OrderStatus::Paid;
         $this->paidAt = $paidAt;
+    }
+
+    public function canBeShipped(): bool
+    {
+        return $this->status === OrderStatus::Paid;
+    }
+
+    public function markAsShipped(\DateTimeImmutable $shippedAt): void
+    {
+        if (!$this->canBeShipped()) {
+            throw new \DomainException('Seule une commande payée peut être expédiée.');
+        }
+
+        $this->status = OrderStatus::Shipped;
+        $this->shippedAt = $shippedAt;
+    }
+
+    public function canBeDelivered(): bool
+    {
+        return $this->status === OrderStatus::Shipped;
+    }
+
+    public function markAsDelivered(\DateTimeImmutable $deliveredAt): void
+    {
+        if (!$this->canBeDelivered()) {
+            throw new \DomainException('Seule une commande expédiée peut être livrée.');
+        }
+
+        $this->status = OrderStatus::Delivered;
+        $this->deliveredAt = $deliveredAt;
+    }
+
+    /**
+     * Seule une commande en attente de paiement peut être annulée :
+     * annuler une commande payée demanderait un remboursement (voir ADR 0007).
+     */
+    public function canBeCancelled(): bool
+    {
+        return $this->status === OrderStatus::Pending;
+    }
+
+    public function cancel(\DateTimeImmutable $cancelledAt): void
+    {
+        if (!$this->canBeCancelled()) {
+            throw new \DomainException('Seule une commande en attente de paiement peut être annulée.');
+        }
+
+        $this->status = OrderStatus::Cancelled;
+        $this->cancelledAt = $cancelledAt;
     }
 }

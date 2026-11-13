@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Exception\InsufficientStockException;
 use App\Model\Cart;
 use App\Model\ShippingAddress;
+use App\Repository\OrderRepository;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -18,6 +19,7 @@ final class OrderService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ProductRepository $productRepository,
+        private readonly OrderRepository $orderRepository,
     ) {
     }
 
@@ -62,6 +64,62 @@ final class OrderService
 
             return $order;
         });
+    }
+
+    /**
+     * Annule une commande en attente de paiement et remet en stock les produits commandés,
+     * en une seule transaction : tout réussit, ou rien ne change.
+     *
+     * Ne dépend ni de la requête ni de l'utilisateur connecté : elle peut être appelée par
+     * l'administration, par le client ou par une tâche automatique. C'est à l'appelant
+     * de vérifier qui a le droit d'annuler.
+     *
+     * @throws \DomainException si la commande ne peut pas (ou plus) être annulée
+     */
+    public function cancel(Order $order): void
+    {
+        // Vérification avant la transaction : un refus « normal » ne touche pas à la base
+        if (!$order->canBeCancelled()) {
+            throw new \DomainException('Seule une commande en attente de paiement peut être annulée.');
+        }
+
+        $this->entityManager->wrapInTransaction(function () use ($order): void {
+            // Verrou sur la commande : deux annulations simultanées ne remettent pas le stock deux fois.
+            // La relecture peut révéler un statut changé entre-temps : cancel() lève alors l'exception.
+            $this->orderRepository->lockForUpdate($order);
+            $order->cancel(new \DateTimeImmutable());
+
+            foreach ($order->getItems() as $item) {
+                $product = $item->getProduct();
+
+                // Produit supprimé du catalogue depuis la commande : rien à remettre en stock
+                if ($product === null) {
+                    continue;
+                }
+
+                // Même verrou que placeOrder() : aucune autre commande ne modifie ce stock en même temps
+                $this->productRepository->lockForUpdate($product);
+                $product->increaseStock((int) $item->getQuantity());
+            }
+        });
+    }
+
+    /**
+     * @throws \DomainException si la commande n'est pas payée
+     */
+    public function ship(Order $order): void
+    {
+        $order->markAsShipped(new \DateTimeImmutable());
+        $this->entityManager->flush();
+    }
+
+    /**
+     * @throws \DomainException si la commande n'est pas expédiée
+     */
+    public function deliver(Order $order): void
+    {
+        $order->markAsDelivered(new \DateTimeImmutable());
+        $this->entityManager->flush();
     }
 
     private function generateReference(): string
