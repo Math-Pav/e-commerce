@@ -52,6 +52,9 @@ erDiagram
         string shipping_city
         datetime created_at
         datetime paid_at
+        datetime shipped_at
+        datetime delivered_at
+        datetime cancelled_at
     }
     ORDER_ITEM {
         int id PK
@@ -120,8 +123,19 @@ erDiagram
 | shipping_city | string(100) | obligatoire, copie |
 | created_at | datetime_immutable | obligatoire |
 | paid_at | datetime_immutable | facultatif (vide tant que non payée) |
+| shipped_at | datetime_immutable | facultatif (vide tant que non expédiée) |
+| delivered_at | datetime_immutable | facultatif (vide tant que non livrée) |
+| cancelled_at | datetime_immutable | facultatif (vide sauf si annulée) |
 
 États (`OrderStatus`) : `pending` (en attente de paiement), `paid` (payée), `shipped` (expédiée), `delivered` (livrée), `cancelled` (annulée).
+
+Transitions autorisées (méthodes de `Order`, voir ADR 0007) :
+
+```
+pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped ──markAsDelivered()──▶ delivered
+   │
+   └──cancel()──▶ cancelled   (le stock est remis par OrderService::cancel())
+```
 
 ### OrderItem (`order_item`)
 
