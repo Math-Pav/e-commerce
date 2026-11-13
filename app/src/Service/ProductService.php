@@ -8,7 +8,6 @@ use App\Entity\Product;
 use App\Model\ProductData;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Symfony\Component\String\Slugger\SluggerInterface;
 
 /**
  * Gestion des produits depuis l'administration : création, modification, mise en ligne.
@@ -18,13 +17,13 @@ final class ProductService
     // Slug de secours quand le nom ne contient aucun caractère utilisable (ex. « !!! »)
     private const FALLBACK_SLUG = 'produit';
 
-    // La colonne slug fait 170 caractères : on garde de la place pour un suffixe « -2 », « -3 »…
-    private const MAX_BASE_SLUG_LENGTH = 160;
+    // Longueur de la colonne product.slug
+    private const SLUG_MAX_LENGTH = 170;
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ProductRepository $productRepository,
-        private readonly SluggerInterface $slugger,
+        private readonly SlugGenerator $slugGenerator,
     ) {
     }
 
@@ -35,7 +34,13 @@ final class ProductService
     {
         $product = new Product();
         $this->applyData($product, $data);
-        $product->setSlug($this->generateUniqueSlug($data->name));
+        // isSlugTaken(...) : syntaxe « callable de première classe », on passe la méthode sans l'appeler
+        $product->setSlug($this->slugGenerator->generateUnique(
+            $data->name,
+            $this->productRepository->isSlugTaken(...),
+            self::SLUG_MAX_LENGTH,
+            self::FALLBACK_SLUG,
+        ));
 
         $this->entityManager->persist($product);
         $this->entityManager->flush();
@@ -81,27 +86,5 @@ final class ProductService
             ->setPrice($data->price)
             ->setStock($data->stock)
             ->setDescription($data->description);
-    }
-
-    /**
-     * « Mug à café » → « mug-a-cafe », puis « mug-a-cafe-2 », « mug-a-cafe-3 »… si le slug est déjà pris.
-     */
-    private function generateUniqueSlug(string $name): string
-    {
-        $baseSlug = $this->slugger->slug($name)->lower()->truncate(self::MAX_BASE_SLUG_LENGTH)->trimEnd('-')->toString();
-
-        if ($baseSlug === '') {
-            $baseSlug = self::FALLBACK_SLUG;
-        }
-
-        $slug = $baseSlug;
-        $suffix = 2;
-
-        while ($this->productRepository->isSlugTaken($slug)) {
-            $slug = sprintf('%s-%d', $baseSlug, $suffix);
-            ++$suffix;
-        }
-
-        return $slug;
     }
 }
