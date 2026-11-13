@@ -43,7 +43,7 @@ erDiagram
     }
     ORDERS {
         int id PK
-        int user_id FK
+        int customer_id FK
         string reference UK
         string status
         int total_amount
@@ -125,7 +125,7 @@ La recherche (`LIKE '%…%'` sur `name` et `description`) ne peut pas utiliser d
 | Colonne | Type | Contraintes |
 |---|---|---|
 | id | integer | clé primaire |
-| user_id | integer | clé étrangère → user, obligatoire |
+| customer_id | integer | clé étrangère → user, obligatoire |
 | reference | string(20) | obligatoire, unique (ex. `CMD-2026-00042`) |
 | status | string(20) | obligatoire, valeurs de l'enum `OrderStatus` |
 | total_amount | integer | obligatoire, en centimes |
@@ -165,7 +165,7 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 | Relation | Question 1 | Question 2 | Type | Clé étrangère |
 |---|---|---|---|---|
 | Category ↔ Product | Une catégorie a combien de produits ? Plusieurs | Un produit a combien de catégories ? Une | un-à-plusieurs | `product.category_id` |
-| User ↔ Order | Un utilisateur a combien de commandes ? Plusieurs | Une commande a combien d'utilisateurs ? Un | un-à-plusieurs | `orders.user_id` |
+| User ↔ Order | Un utilisateur a combien de commandes ? Plusieurs | Une commande a combien d'utilisateurs ? Un | un-à-plusieurs | `orders.customer_id` |
 | Order ↔ OrderItem | Une commande a combien de lignes ? Plusieurs (au moins une) | Une ligne appartient à combien de commandes ? Une | un-à-plusieurs | `order_item.order_id` |
 | Product ↔ OrderItem | Un produit apparaît dans combien de lignes ? Plusieurs | Une ligne concerne combien de produits ? Un (ou aucun s'il a été supprimé) | un-à-plusieurs | `order_item.product_id` |
 
