@@ -1,0 +1,6 @@
+{{ form_start(categoryForm, {attr: {class: 'form'}}) }}
+    {{ form_row(categoryForm.name) }}
+    <button type="submit" class="btn btn--primary">{{ button_label }}</button>
+{{ form_end(categoryForm) }}
+
+<a href="{{ path('admin_category_index') }}" class="back-link">← Retour à la liste des catégories</a>

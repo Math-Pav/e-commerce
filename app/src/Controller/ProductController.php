@@ -26,7 +26,8 @@ final class ProductController extends AbstractController
 
         return $this->render('product/index.html.twig', [
             'products' => $productRepository->findActive($currentCategory),
-            'categories' => $categoryRepository->findBy([], ['name' => 'ASC']),
+            // Seules les catégories ayant au moins un produit actif apparaissent dans les filtres
+            'categories' => $categoryRepository->findWithActiveProducts(),
             'currentCategory' => $currentCategory,
         ]);
     }
