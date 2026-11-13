@@ -112,9 +112,9 @@ La recherche (`LIKE '%…%'` sur `name` et `description`) ne peut pas utiliser d
 | password | string(255) | obligatoire, **hash** du mot de passe |
 | first_name | string(50) | obligatoire |
 | last_name | string(50) | obligatoire |
-| phone | string(20) | facultatif |
-| address | string(255) | facultatif |
-| postal_code | string(10) | facultatif |
+| phone | string(20) | facultatif ; modifiable dans « Mon compte » |
+| address | string(255) | facultatif ; modifiable dans « Mon compte » ou enregistrée depuis la commande (ADR 0013) |
+| postal_code | string(10) | facultatif ; 5 chiffres, mêmes règles que l'adresse de livraison |
 | city | string(100) | facultatif |
 | created_at | datetime_immutable | obligatoire |
 
@@ -174,7 +174,7 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 - **Prix en centimes (`integer`)** : évite les erreurs d'arrondi des nombres à virgule.
 - **Copies dans `orders` et `order_item`** (adresse, nom du produit, prix) : une commande est un document historique, elle ne doit pas changer si le produit, son prix ou l'adresse du client changent ensuite.
 - **`total_amount` stocké** plutôt que recalculé : il fige le montant réellement facturé.
-- **Adresse dans `user`** : suffisant pour le MVP. Une entité `Address` séparée sera envisagée si l'on veut plusieurs adresses par client.
+- **Adresse dans `user`** : une seule adresse par client, qui préremplit l'adresse de livraison (ADR 0013). Suffisant pour le MVP. Une entité `Address` séparée sera envisagée si l'on veut plusieurs adresses par client.
 - **Une catégorie ne peut être supprimée que si elle ne contient aucun produit** (même désactivé) : `product.category_id` est obligatoire.
 - **Pas d'entité `Cart`** : le panier est stocké en session pour le MVP.
 - **Photo des produits : seul le nom du fichier est en base** : l'image elle-même est un fichier sur disque (`public/uploads/products/`), servi directement par Nginx.
