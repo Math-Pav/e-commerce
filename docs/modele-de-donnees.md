@@ -10,6 +10,7 @@ erDiagram
     USER ||--o{ ORDERS : passe
     ORDERS ||--|{ ORDER_ITEM : contient
     PRODUCT |o--o{ ORDER_ITEM : "référencé par"
+    PROMO_CODE |o--o{ ORDERS : "utilisé par"
 
     CATEGORY {
         int id PK
@@ -46,7 +47,11 @@ erDiagram
         int customer_id FK
         string reference UK
         string status
+        int subtotal_amount
+        int discount_amount
         int total_amount
+        string discount_code
+        int promo_code_id FK
         string shipping_full_name
         string shipping_address
         string shipping_postal_code
@@ -56,6 +61,18 @@ erDiagram
         datetime shipped_at
         datetime delivered_at
         datetime cancelled_at
+    }
+    PROMO_CODE {
+        int id PK
+        string code UK
+        string discount_type
+        int value
+        datetime starts_at
+        datetime ends_at
+        int max_usages
+        int usage_count
+        int minimum_amount
+        bool is_active
     }
     ORDER_ITEM {
         int id PK
@@ -128,7 +145,11 @@ La recherche (`LIKE '%…%'` sur `name` et `description`) ne peut pas utiliser d
 | customer_id | integer | clé étrangère → user, obligatoire |
 | reference | string(20) | obligatoire, unique (ex. `CMD-2026-00042`) |
 | status | string(20) | obligatoire, valeurs de l'enum `OrderStatus` |
-| total_amount | integer | obligatoire, en centimes |
+| subtotal_amount | integer | obligatoire, en centimes, somme des lignes avant remise |
+| discount_amount | integer | obligatoire, défaut 0, en centimes, copie de la remise au moment de la commande |
+| total_amount | integer | obligatoire, en centimes, sous-total − remise (montant facturé) |
+| discount_code | string(30) | facultatif, copie du code promo utilisé (ADR 0016) |
+| promo_code_id | integer | clé étrangère → promo_code, facultatif (`SET NULL`) ; sert à rendre l'utilisation à l'annulation |
 | shipping_full_name | string(100) | obligatoire, copie au moment de la commande |
 | shipping_address | string(255) | obligatoire, copie |
 | shipping_postal_code | string(10) | obligatoire, copie |
@@ -149,6 +170,21 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
    └──cancel()──▶ cancelled   (le stock est remis par OrderService::cancel())
 ```
 
+### PromoCode (`promo_code`)
+
+| Colonne | Type | Contraintes |
+|---|---|---|
+| id | integer | clé primaire |
+| code | string(30) | obligatoire, unique, en majuscules |
+| discount_type | string(20) | obligatoire, valeurs de l'enum `DiscountType` (`percentage`, `fixed_amount`) |
+| value | integer | obligatoire ; pourcentage entier (1 à 100) ou montant en centimes |
+| starts_at | datetime_immutable | facultatif |
+| ends_at | datetime_immutable | facultatif |
+| max_usages | integer | facultatif ; vide = illimité |
+| usage_count | integer | obligatoire, défaut 0 ; commandes non annulées qui l'ont utilisé |
+| minimum_amount | integer | facultatif, en centimes |
+| is_active | boolean | obligatoire, défaut `true` |
+
 ### OrderItem (`order_item`)
 
 | Colonne | Type | Contraintes |
@@ -167,6 +203,7 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 | Category ↔ Product | Une catégorie a combien de produits ? Plusieurs | Un produit a combien de catégories ? Une | un-à-plusieurs | `product.category_id` |
 | User ↔ Order | Un utilisateur a combien de commandes ? Plusieurs | Une commande a combien d'utilisateurs ? Un | un-à-plusieurs | `orders.customer_id` |
 | Order ↔ OrderItem | Une commande a combien de lignes ? Plusieurs (au moins une) | Une ligne appartient à combien de commandes ? Une | un-à-plusieurs | `order_item.order_id` |
+| PromoCode ↔ Order | Un code est utilisé par combien de commandes ? Plusieurs | Une commande utilise combien de codes ? Zéro ou un | un-à-plusieurs | `orders.promo_code_id` |
 | Product ↔ OrderItem | Un produit apparaît dans combien de lignes ? Plusieurs | Une ligne concerne combien de produits ? Un (ou aucun s'il a été supprimé) | un-à-plusieurs | `order_item.product_id` |
 
 ## Décisions
@@ -174,6 +211,7 @@ pending ──markAsPaid()──▶ paid ──markAsShipped()──▶ shipped 
 - **Prix en centimes (`integer`)** : évite les erreurs d'arrondi des nombres à virgule.
 - **Copies dans `orders` et `order_item`** (adresse, nom du produit, prix) : une commande est un document historique, elle ne doit pas changer si le produit, son prix ou l'adresse du client changent ensuite.
 - **`total_amount` stocké** plutôt que recalculé : il fige le montant réellement facturé.
+- **Remise copiée dans `orders`** (code, montant) : modifier ou désactiver un code ne change pas les commandes passées (ADR 0016).
 - **Adresse dans `user`** : une seule adresse par client, qui préremplit l'adresse de livraison (ADR 0013). Suffisant pour le MVP. Une entité `Address` séparée sera envisagée si l'on veut plusieurs adresses par client.
 - **Une catégorie ne peut être supprimée que si elle ne contient aucun produit** (même désactivé) : `product.category_id` est obligatoire.
 - **Pas d'entité `Cart`** : le panier est stocké en session pour le MVP.
