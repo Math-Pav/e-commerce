@@ -10,6 +10,7 @@ erDiagram
     PRODUCT ||--|{ PRODUCT_VARIANT : "décliné en"
     PRODUCT_VARIANT |o--o{ ORDER_ITEM : "référencée par"
     USER ||--o{ ORDERS : passe
+    USER ||--o{ API_TOKEN : possède
     ORDERS ||--|{ ORDER_ITEM : contient
     PRODUCT |o--o{ ORDER_ITEM : "référencé par"
     PROMO_CODE |o--o{ ORDERS : "utilisé par"
@@ -53,6 +54,16 @@ erDiagram
         string postal_code
         string city
         datetime created_at
+    }
+    API_TOKEN {
+        int id PK
+        int customer_id FK
+        string name
+        string token_hash UK
+        string token_prefix
+        datetime created_at
+        datetime last_used_at
+        datetime expires_at
     }
     ORDERS {
         int id PK
@@ -193,6 +204,23 @@ La recherche (`LIKE '%…%'` sur `name` et `description`) ne peut pas utiliser d
 | postal_code | string(10) | facultatif ; 5 chiffres, mêmes règles que l'adresse de livraison |
 | city | string(100) | facultatif |
 | created_at | datetime_immutable | obligatoire |
+
+### ApiToken (`api_token`)
+
+Jeton d'accès personnel à l'API (`/api/v1/me`, ADR 0021). Le jeton en clair n'est jamais enregistré. Révoquer un jeton supprime la ligne.
+
+| Colonne | Type | Contraintes |
+|---|---|---|
+| id | integer | clé primaire |
+| customer_id | integer | clé étrangère → user, obligatoire (`CASCADE` si le client est supprimé) |
+| name | string(50) | obligatoire, nom choisi par le client (« Mon téléphone ») |
+| token_hash | string(64) | obligatoire, unique ; empreinte SHA-256 (hexadécimal) du jeton, sert à le retrouver |
+| token_prefix | string(8) | obligatoire ; 8 premiers caractères du jeton, affichés pour le reconnaître |
+| created_at | datetime_immutable | obligatoire |
+| last_used_at | datetime_immutable | facultatif ; mise à jour à chaque appel authentifié |
+| expires_at | datetime_immutable | obligatoire ; création + 90 jours |
+
+Règle : 5 jetons non expirés au plus par client.
 
 ### Order (`orders`)
 

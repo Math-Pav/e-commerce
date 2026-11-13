@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Order;
+use App\Entity\User;
 use App\Enum\OrderStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\DBAL\ArrayParameterType;
@@ -42,6 +43,25 @@ class OrderRepository extends ServiceEntityRepository
         }
 
         return $queryBuilder->getQuery()->getResult();
+    }
+
+    /**
+     * Les commandes d'un client avec leurs lignes, les plus récentes en premier (API « mes commandes »).
+     * La jointure charge les lignes dans la même requête : pas de requête supplémentaire par commande (N+1).
+     *
+     * @return list<Order>
+     */
+    public function findByCustomerWithItems(User $customer): array
+    {
+        return $this->createQueryBuilder('o')
+            ->addSelect('i')
+            ->leftJoin('o.items', 'i')
+            ->where('o.customer = :customer')
+            ->setParameter('customer', $customer)
+            ->orderBy('o.createdAt', 'DESC')
+            ->addOrderBy('o.id', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**

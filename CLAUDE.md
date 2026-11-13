@@ -56,6 +56,7 @@ Structure Symfony standard, organisée en couches :
 - `src/EventListener/` : écouteurs d'événements (Doctrine, noyau), ex. invalidation du cache.
 - `src/Api/` : API REST du catalogue : lecture des paramètres et objets de sortie (`Output/`) qui fixent le contrat JSON ; on n'y sérialise jamais une entité directement (ADR 0020). Contrôleurs dans `src/Controller/Api/`.
 - `src/Validator/` : contraintes de validation réutilisables (contraintes composées partagées par plusieurs DTO, ex. `PostalCode`).
+- `src/Security/` : classes branchées sur le système de sécurité de Symfony (authentification de l'API par jeton d'accès, voir `docs/adr/0021-jetons-acces-api.md`).
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
 
 Principes :

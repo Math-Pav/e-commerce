@@ -37,4 +37,12 @@
             {{ form_end(passwordForm) }}
         </section>
     </div>
+
+    <div class="callout">
+        <div>
+            <p class="callout__title">Accès à l'API</p>
+            <p class="callout__text">Créez un jeton pour consulter vos commandes depuis une application.</p>
+        </div>
+        <a href="{{ path('account_api_token_index') }}" class="btn btn--secondary">Gérer mes jetons d'accès</a>
+    </div>
 {% endblock %}

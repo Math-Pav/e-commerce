@@ -14,6 +14,16 @@ security:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+        # API « mes commandes » (ADR 0021) : jeton personnel dans l'en-tête Authorization: Bearer,
+        # sans session ni cookie (stateless). Déclaré avant main, qui n'a pas de pattern et prend toutes les adresses.
+        api_me:
+            pattern: ^/api/v1/me(/|$)
+            stateless: true
+            provider: app_user_provider
+            access_token:
+                token_handler: App\Security\ApiAccessTokenHandler
+                failure_handler: App\Security\ApiAuthenticationHandler
+            entry_point: App\Security\ApiAuthenticationHandler
         main:
             lazy: true
             provider: app_user_provider
@@ -33,6 +43,7 @@ security:
     # Filet de sécurité global : toute adresse commençant par /admin exige ROLE_ADMIN
     access_control:
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/api/v1/me(/|$), roles: ROLE_USER }
 
 # En test, hachage volontairement faible pour que les tests restent rapides
 when@test:
