@@ -56,6 +56,11 @@ class ProductRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function isSlugTaken(string $slug): bool
+    {
+        return $this->count(['slug' => $slug]) > 0;
+    }
+
     /**
      * Verrouille la ligne du produit jusqu'à la fin de la transaction et relit ses données à jour.
      * Doit être appelée à l'intérieur d'une transaction.
