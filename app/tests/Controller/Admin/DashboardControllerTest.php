@@ -11,6 +11,7 @@ use App\Repository\ProductVariantRepository;
 use App\Repository\UserRepository;
 use App\Service\OrderService;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Doctrine\Middleware\Debug\DebugDataHolder;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
@@ -74,6 +75,39 @@ final class DashboardControllerTest extends WebTestCase
         self::assertSelectorTextContains('.bar-chart__data tbody tr:last-child', '29,80 €');
     }
 
+    public function testSecondDisplayReadsStatisticsFromCache(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'admin@example.com');
+
+        $client->request('GET', '/admin');
+        self::assertResponseIsSuccessful();
+        self::assertGreaterThan(0, $this->countAggregationQueries($client));
+
+        // Le noyau redémarre entre deux requêtes : seul le cache (fichiers) relie les deux affichages
+        $client->request('GET', '/admin');
+        self::assertResponseIsSuccessful();
+        self::assertSame(0, $this->countAggregationQueries($client));
+    }
+
+    public function testRevenueIsUpToDateAfterPayment(): void
+    {
+        $client = static::createClient();
+        $this->deleteAllOrders();
+        $this->logIn($client, 'admin@example.com');
+
+        $client->request('GET', '/admin');
+        self::assertSelectorTextContains('.stat-grid', 'Aucune vente');
+
+        // Commande passée puis payée après la mise en cache : l'écouteur Doctrine invalide le tableau de bord
+        $this->placeOrder(quantity: 2, paid: true);     // 2 × 14,90 € = 29,80 €
+        $client->request('GET', '/admin');
+
+        self::assertSelectorTextContains('.stat-grid', '29,80 €');
+        self::assertSelectorTextContains('.bar-chart__data tbody tr:last-child', '29,80 €');
+        self::assertSelectorTextContains('[aria-labelledby="best-sellers-title"] tbody', 'Mug noir mat');
+    }
+
     public function testAdminSeesProductsToRestock(): void
     {
         $client = static::createClient();
@@ -129,6 +163,20 @@ final class DashboardControllerTest extends WebTestCase
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
         $entityManager->createQuery('DELETE FROM App\Entity\OrderItem')->execute();
         $entityManager->createQuery('DELETE FROM App\Entity\Order')->execute();
+    }
+
+    /**
+     * Requêtes d'agrégation (SUM, COUNT … GROUP BY) de la dernière requête HTTP du client.
+     */
+    private function countAggregationQueries(KernelBrowser $client): int
+    {
+        $debugData = $client->getContainer()->get('doctrine.debug_data_holder');
+        self::assertInstanceOf(DebugDataHolder::class, $debugData);
+
+        return count(array_filter(
+            $debugData->getData()['default'] ?? [],
+            static fn (array $query): bool => 1 === preg_match('/\bSUM\(|\bGROUP BY\b/i', (string) $query['sql']),
+        ));
     }
 
     private function logIn(KernelBrowser $client, string $email): void

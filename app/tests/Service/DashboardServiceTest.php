@@ -15,6 +15,8 @@ use App\Repository\UserRepository;
 use App\Service\DashboardService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Cache\Adapter\NullAdapter;
+use Symfony\Component\Cache\Adapter\TagAwareAdapter;
 
 /**
  * Test d'intégration : les commandes sont créées dans la base de test, puis chaque indicateur
@@ -34,7 +36,12 @@ final class DashboardServiceTest extends KernelTestCase
         $container = static::getContainer();
 
         $this->entityManager = $container->get(EntityManagerInterface::class);
-        $this->dashboardService = new DashboardService($container->get(OrderRepository::class));
+        // Sans cache (NullAdapter) : ces tests portent sur les calculs ; le cache est testé dans DashboardControllerTest
+        $this->dashboardService = new DashboardService(
+            $container->get(OrderRepository::class),
+            $container->get(OrderItemRepository::class),
+            new TagAwareAdapter(new NullAdapter()),
+        );
 
         // On part d'une base sans commande pour connaître exactement les montants attendus
         $this->entityManager->createQuery('DELETE FROM App\Entity\OrderItem')->execute();

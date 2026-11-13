@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Repository\OrderItemRepository;
 use App\Repository\ProductVariantRepository;
 use App\Service\DashboardService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,7 +21,6 @@ final class DashboardController extends AbstractController
     #[Route('/admin', name: 'admin_dashboard', methods: ['GET'])]
     public function index(
         DashboardService $dashboardService,
-        OrderItemRepository $orderItemRepository,
         ProductVariantRepository $variantRepository,
     ): Response {
         $now = new \DateTimeImmutable();
@@ -31,7 +29,8 @@ final class DashboardController extends AbstractController
             'summary' => $dashboardService->getSalesSummary($now),
             'ordersByStatus' => $dashboardService->countOrdersByStatus(),
             'dailyRevenue' => $dashboardService->getDailyRevenue($now, self::DAILY_REVENUE_DAYS),
-            'bestSellers' => $orderItemRepository->findBestSellingProducts(self::BEST_SELLERS_LIMIT),
+            'bestSellers' => $dashboardService->getBestSellingProducts(self::BEST_SELLERS_LIMIT),
+            // Pas en cache : la liste change à chaque commande et dans l'administration des variantes (ADR 0019)
             'lowStockVariants' => $variantRepository->findOutOfStockOrLowStock(),
         ]);
     }
