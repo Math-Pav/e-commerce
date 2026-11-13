@@ -194,6 +194,7 @@ final class AccountControllerTest extends WebTestCase
         $this->logIn($client, 'client@example.com');
         $this->submitPasswordChange($client, 'password', 'nouveauMotDePasse1', 'nouveauMotDePasse1');
         $currentCookie = $client->getCookieJar()->get('MOCKSESSID');
+        self::assertNotNull($currentCookie);
         self::assertNotSame($otherDeviceCookie->getValue(), $currentCookie->getValue());
 
         // Retour sur le premier appareil : son jeton contient l'ancien hash, il est déconnecté
@@ -286,7 +287,10 @@ final class AccountControllerTest extends WebTestCase
         // Vide le cache de Doctrine pour relire les valeurs réellement enregistrées en base
         static::getContainer()->get(EntityManagerInterface::class)->clear();
 
-        return static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
+        $user = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
+        self::assertNotNull($user);
+
+        return $user;
     }
 
     private function logIn(KernelBrowser $client, string $email): void

@@ -24,6 +24,6 @@ final readonly class Cart
 
     public function isEmpty(): bool
     {
-        return $this->lines === [];
+        return [] === $this->lines;
     }
 }

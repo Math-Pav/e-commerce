@@ -14,7 +14,7 @@ final class RegistrationControllerTest extends WebTestCase
     {
         $client = static::createClient();
         // E-mail unique à chaque exécution, pour ne pas entrer en conflit avec les exécutions précédentes
-        $email = 'lea.' . uniqid() . '@example.com';
+        $email = 'lea.'.uniqid().'@example.com';
 
         $this->submitRegistration($client, $email, 'motdepasse123', 'motdepasse123');
 
@@ -31,13 +31,14 @@ final class RegistrationControllerTest extends WebTestCase
     public function testRegistrationSendsWelcomeEmail(): void
     {
         $client = static::createClient();
-        $email = 'lea.' . uniqid() . '@example.com';
+        $email = 'lea.'.uniqid().'@example.com';
 
         $this->submitRegistration($client, $email, 'motdepasse123', 'motdepasse123');
 
         // Vérification avant followRedirect() : chaque nouvelle requête vide la liste des e-mails collectés
         self::assertEmailCount(1);
         $message = self::getMailerMessage();
+        self::assertNotNull($message);
         self::assertEmailAddressContains($message, 'To', $email);
         self::assertEmailAddressContains($message, 'From', 'boutique@atelier-papier.test');
         self::assertEmailSubjectContains($message, 'Bienvenue chez Atelier Papier');
@@ -62,7 +63,7 @@ final class RegistrationControllerTest extends WebTestCase
     {
         $client = static::createClient();
 
-        $this->submitRegistration($client, 'lea.' . uniqid() . '@example.com', 'motdepasse123', 'autrechose456');
+        $this->submitRegistration($client, 'lea.'.uniqid().'@example.com', 'motdepasse123', 'autrechose456');
 
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('body', 'Les deux mots de passe ne correspondent pas.');
@@ -73,7 +74,7 @@ final class RegistrationControllerTest extends WebTestCase
         $client = static::createClient();
 
         // Length(max: 50) sur le prénom n'a pas de message personnalisé : c'est le message par défaut de Symfony
-        $this->submitRegistration($client, 'lea.' . uniqid() . '@example.com', 'motdepasse123', 'motdepasse123', str_repeat('a', 51));
+        $this->submitRegistration($client, 'lea.'.uniqid().'@example.com', 'motdepasse123', 'motdepasse123', str_repeat('a', 51));
 
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('body', 'Cette chaîne est trop longue. Elle doit contenir au maximum 50 caractères.');

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Validator\Constraints as Assert;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 // Les backticks protègent le nom "user", qui est un mot-clé dans certains moteurs SQL
 #[ORM\Entity(repositoryClass: UserRepository::class)]
@@ -90,7 +90,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->email;
+        // Symfony exige un identifiant non vide (contrat de UserInterface)
+        if (null === $this->email || '' === $this->email) {
+            throw new \LogicException('Un utilisateur sans e-mail ne peut pas être identifié.');
+        }
+
+        return $this->email;
     }
 
     /**

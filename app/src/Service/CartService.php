@@ -34,20 +34,20 @@ final class CartService
         }
 
         $quantities = $this->getQuantities();
-        $newQuantity = ($quantities[$product->getId()] ?? 0) + $quantity;
+        $newQuantity = ($quantities[$this->productId($product)] ?? 0) + $quantity;
 
         if ($newQuantity > $product->getStock()) {
             throw new InsufficientStockException($product);
         }
 
-        $quantities[$product->getId()] = $newQuantity;
+        $quantities[$this->productId($product)] = $newQuantity;
         $this->saveQuantities($quantities);
     }
 
     public function remove(Product $product): void
     {
         $quantities = $this->getQuantities();
-        unset($quantities[$product->getId()]);
+        unset($quantities[$this->productId($product)]);
         $this->saveQuantities($quantities);
     }
 
@@ -71,7 +71,7 @@ final class CartService
     {
         $quantities = $this->getQuantities();
 
-        if ($quantities === []) {
+        if ([] === $quantities) {
             return new Cart([]);
         }
 
@@ -82,11 +82,19 @@ final class CartService
         ]);
 
         $lines = array_map(
-            static fn (Product $product): CartLine => new CartLine($product, $quantities[$product->getId()]),
+            fn (Product $product): CartLine => new CartLine($product, $quantities[$this->productId($product)]),
             $products,
         );
 
-        return new Cart(array_values($lines));
+        return new Cart($lines);
+    }
+
+    /**
+     * L'identifiant sert de clé dans la session : seul un produit déjà enregistré en a un.
+     */
+    private function productId(Product $product): int
+    {
+        return $product->getId() ?? throw new \LogicException('Seul un produit enregistré peut être mis dans le panier.');
     }
 
     /**
@@ -104,4 +112,4 @@ final class CartService
     {
         $this->requestStack->getSession()->set(self::SESSION_KEY, $quantities);
     }
-}
+}

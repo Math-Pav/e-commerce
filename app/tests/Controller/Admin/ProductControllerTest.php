@@ -12,6 +12,8 @@ use App\Tests\Util\TestFiles;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Field\ChoiceFormField;
+use Symfony\Component\DomCrawler\Field\FileFormField;
 
 final class ProductControllerTest extends WebTestCase
 {
@@ -366,6 +368,7 @@ final class ProductControllerTest extends WebTestCase
         $client = static::createClient();
         $this->logIn($client, 'admin@example.com');
         $id = $this->findProduct('mug-noir-mat')->getId();
+        self::assertNotNull($id);
 
         $this->submitEditForm($client, $id, $this->files->png());
         $firstImage = (string) $this->findProduct('mug-noir-mat')->getImageFilename();
@@ -385,13 +388,16 @@ final class ProductControllerTest extends WebTestCase
         $client = static::createClient();
         $this->logIn($client, 'admin@example.com');
         $id = $this->findProduct('mug-noir-mat')->getId();
+        self::assertNotNull($id);
         $this->submitEditForm($client, $id, $this->files->png());
         $image = (string) $this->findProduct('mug-noir-mat')->getImageFilename();
 
         $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
         self::assertSelectorExists(sprintf('figure img[src="/uploads/products/%s"]', $image));
         $form = $crawler->selectButton('Enregistrer les modifications')->form();
-        $form['product[removeImage]']->tick();
+        $removeImageField = $form['product[removeImage]'];
+        self::assertInstanceOf(ChoiceFormField::class, $removeImageField);
+        $removeImageField->tick();
         $client->submit($form);
 
         self::assertResponseRedirects('/admin/produits');
@@ -418,7 +424,9 @@ final class ProductControllerTest extends WebTestCase
     {
         $crawler = $client->request('GET', sprintf('/admin/produits/%d/modifier', $id));
         $form = $crawler->selectButton('Enregistrer les modifications')->form();
-        $form['product[image]']->upload($imagePath);
+        $imageField = $form['product[image]'];
+        self::assertInstanceOf(FileFormField::class, $imageField);
+        $imageField->upload($imagePath);
         $client->submit($form);
     }
 
@@ -435,6 +443,7 @@ final class ProductControllerTest extends WebTestCase
     private function submitCreationForm(KernelBrowser $client, string $name, string $price, ?string $imagePath = null): void
     {
         $category = static::getContainer()->get(CategoryRepository::class)->findOneBy(['slug' => 'mugs-et-tasses']);
+        self::assertNotNull($category);
 
         $crawler = $client->request('GET', '/admin/produits/nouveau');
         self::assertResponseIsSuccessful();
@@ -446,8 +455,10 @@ final class ProductControllerTest extends WebTestCase
             'product[stock]' => '7',
             'product[description]' => 'Un mug de test.',
         ]);
-        if ($imagePath !== null) {
-            $form['product[image]']->upload($imagePath);
+        if (null !== $imagePath) {
+            $imageField = $form['product[image]'];
+            self::assertInstanceOf(FileFormField::class, $imageField);
+            $imageField->upload($imagePath);
         }
         $client->submit($form);
     }
@@ -467,6 +478,7 @@ final class ProductControllerTest extends WebTestCase
     private function logIn(KernelBrowser $client, string $email): void
     {
         $user = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => $email]);
+        self::assertNotNull($user);
         $client->loginUser($user);
     }
 }

@@ -126,6 +126,15 @@ final class CartServiceTest extends TestCase
         self::assertTrue($this->cartService->getCart()->isEmpty());
     }
 
+    public function testUnsavedProductCannotBeAdded(): void
+    {
+        $unsaved = (new Product())->setName('Brouillon')->setPrice(100)->setStock(10);
+
+        $this->expectException(\LogicException::class);
+
+        $this->cartService->add($unsaved);
+    }
+
     private function createProduct(int $id, string $name, int $price, int $stock): Product
     {
         $product = (new Product())
@@ -173,4 +182,4 @@ final class CartServiceTest extends TestCase
         self::assertSame($this->pen, $lines[0]->product);
         self::assertSame(3, $this->cartService->getItemCount());
     }
-}
+}

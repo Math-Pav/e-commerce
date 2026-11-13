@@ -18,7 +18,7 @@ final class RegistrationController extends AbstractController
     #[Route('/inscription', name: 'app_register', methods: ['GET', 'POST'])]
     public function register(Request $request, RegistrationService $registrationService, Security $security): Response
     {
-        if ($this->getUser() !== null) {
+        if (null !== $this->getUser()) {
             return $this->redirectToRoute('product_index');
         }
 

@@ -1,0 +1,17 @@
+# Analyse statique (voir docs/adr/0014-analyse-statique-et-formatage.md).
+# Lancer avec : composer stan
+parameters:
+    level: 8
+    paths:
+        - src/
+        - tests/
+    # Extension Symfony : lit le conteneur compilé pour connaître le type des services
+    # (container->get(), getParameter()...). Le fichier est généré par cache:warmup.
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+    # Extension Doctrine : lit le mapping des entités pour typer les repositories et le DQL.
+    doctrine:
+        objectManagerLoader: tests/object-manager.php
+        # Autorise le modèle généré par make:entity : propriété « ?string $name = null »
+        # sur une colonne NOT NULL (la valeur n'est nulle qu'avant le premier enregistrement).
+        allowNullablePropertyForRequiredField: true

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\Product;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
-use Doctrine\Persistence\ManagerRegistry;
-use Doctrine\DBAL\LockMode;
 use App\Entity\Category;
+use App\Entity\Product;
 use App\Enum\CatalogSort;
 use App\Model\CatalogQuery;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
+use Doctrine\Persistence\ManagerRegistry;
 
 /**
  * @extends ServiceEntityRepository<Product>
@@ -49,18 +49,18 @@ class ProductRepository extends ServiceEntityRepository
             ->setFirstResult(($query->page - 1) * $pageSize)
             ->setMaxResults($pageSize);
 
-        if ($category !== null) {
+        if (null !== $category) {
             $queryBuilder
                 ->andWhere('p.category = :category')
                 ->setParameter('category', $category);
         }
 
-        if ($query->search !== null) {
+        if (null !== $query->search) {
             // Le terme est un paramètre de requête, jamais concaténé dans le SQL.
             // ESCAPE '!' : le caractère d'échappement utilisé par escapeLike().
             $queryBuilder
                 ->andWhere("(p.name LIKE :search ESCAPE '!' OR p.description LIKE :search ESCAPE '!')")
-                ->setParameter('search', '%' . $this->escapeLike($query->search) . '%');
+                ->setParameter('search', '%'.$this->escapeLike($query->search).'%');
         }
 
         $this->applySort($queryBuilder, $query->sort);

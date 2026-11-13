@@ -32,7 +32,7 @@ final class SlugGenerator
             ->trimEnd('-')
             ->toString();
 
-        if ($baseSlug === '') {
+        if ('' === $baseSlug) {
             $baseSlug = $fallback;
         }
 

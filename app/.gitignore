@@ -22,3 +22,8 @@
 ###> photos des produits (fichiers envoyés depuis l'administration) ###
 /public/uploads/
 ###< photos des produits ###
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###

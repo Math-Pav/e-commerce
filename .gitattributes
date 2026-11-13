@@ -1,0 +1,3 @@
+# Fins de ligne : LF dans le dépôt et dans les fichiers de travail, quel que soit l'éditeur
+# (même convention que app/.editorconfig ; voir docs/adr/0014-analyse-statique-et-formatage.md).
+* text=auto eol=lf

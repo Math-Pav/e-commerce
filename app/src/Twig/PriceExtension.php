@@ -21,6 +21,6 @@ final class PriceExtension extends AbstractExtension
 
     public function formatPrice(int $cents): string
     {
-        return number_format($cents / 100, 2, ',', ' ') . ' €';
+        return number_format($cents / 100, 2, ',', ' ').' €';
     }
 }

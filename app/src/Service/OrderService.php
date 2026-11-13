@@ -58,8 +58,8 @@ final class OrderService
                 $order->addItem(
                     (new OrderItem())
                         ->setProduct($product)
-                        ->setProductName($product->getName())
-                        ->setUnitPrice($product->getPrice())
+                        ->setProductName($product->getName() ?? throw new \LogicException('Produit sans nom.'))
+                        ->setUnitPrice($product->getPrice() ?? throw new \LogicException('Produit sans prix.'))
                         ->setQuantity($line->quantity),
                 );
             }
@@ -107,7 +107,7 @@ final class OrderService
                 $product = $item->getProduct();
 
                 // Produit supprimé du catalogue depuis la commande : rien à remettre en stock
-                if ($product === null) {
+                if (null === $product) {
                     continue;
                 }
 

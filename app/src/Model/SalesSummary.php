@@ -22,7 +22,7 @@ final readonly class SalesSummary
      */
     public function getAverageOrderValue(): ?int
     {
-        if ($this->orderCount === 0) {
+        if (0 === $this->orderCount) {
             return null;
         }
 

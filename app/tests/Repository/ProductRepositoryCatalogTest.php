@@ -123,7 +123,7 @@ final class ProductRepositoryCatalogTest extends KernelTestCase
     public function testPaginatesWithReducedPageSize(): void
     {
         foreach (['A', 'B', 'C', 'D', 'E'] as $name) {
-            $this->createProduct('Produit ' . $name);
+            $this->createProduct('Produit '.$name);
         }
         $this->entityManager->flush();
 
@@ -155,13 +155,13 @@ final class ProductRepositoryCatalogTest extends KernelTestCase
     ): Product {
         $product = (new Product())
             ->setName($name)
-            ->setSlug('test-' . bin2hex(random_bytes(6)))
+            ->setSlug('test-'.bin2hex(random_bytes(6)))
             ->setPrice($price)
             ->setDescription($description)
             ->setIsActive($active)
             ->setCategory($this->category);
 
-        if ($createdAt !== null) {
+        if (null !== $createdAt) {
             // createdAt n'a pas de setter (fixée à la création) : on la force pour le test du tri « nouveautés »
             (new \ReflectionProperty(Product::class, 'createdAt'))->setValue($product, new \DateTimeImmutable($createdAt));
         }

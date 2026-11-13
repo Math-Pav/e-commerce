@@ -232,7 +232,7 @@ class Order
 
     public function canBePaid(): bool
     {
-        return $this->status === OrderStatus::Pending;
+        return OrderStatus::Pending === $this->status;
     }
 
     public function markAsPaid(\DateTimeImmutable $paidAt): void
@@ -247,7 +247,7 @@ class Order
 
     public function canBeShipped(): bool
     {
-        return $this->status === OrderStatus::Paid;
+        return OrderStatus::Paid === $this->status;
     }
 
     public function markAsShipped(\DateTimeImmutable $shippedAt): void
@@ -262,7 +262,7 @@ class Order
 
     public function canBeDelivered(): bool
     {
-        return $this->status === OrderStatus::Shipped;
+        return OrderStatus::Shipped === $this->status;
     }
 
     public function markAsDelivered(\DateTimeImmutable $deliveredAt): void
@@ -281,7 +281,7 @@ class Order
      */
     public function canBeCancelled(): bool
     {
-        return $this->status === OrderStatus::Pending;
+        return OrderStatus::Pending === $this->status;
     }
 
     public function cancel(\DateTimeImmutable $cancelledAt): void

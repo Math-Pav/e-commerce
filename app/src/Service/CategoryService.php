@@ -68,12 +68,7 @@ final class CategoryService
         $productCount = $this->productRepository->count(['category' => $category]);
 
         if ($productCount > 0) {
-            throw new \DomainException(sprintf(
-                'Impossible de supprimer la catégorie « %s » : elle contient encore %d produit%s. Changez-les de catégorie avant de la supprimer.',
-                $category->getName(),
-                $productCount,
-                $productCount > 1 ? 's' : '',
-            ));
+            throw new \DomainException(sprintf('Impossible de supprimer la catégorie « %s » : elle contient encore %d produit%s. Changez-les de catégorie avant de la supprimer.', $category->getName(), $productCount, $productCount > 1 ? 's' : ''));
         }
 
         $this->entityManager->remove($category);

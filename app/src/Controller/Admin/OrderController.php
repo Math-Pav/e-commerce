@@ -32,7 +32,7 @@ final class OrderController extends AbstractController
     public function index(#[MapQueryParameter('statut')] ?string $statusValue = null): Response
     {
         // Un statut inconnu dans l'URL est ignoré : on affiche toutes les commandes
-        $currentStatus = $statusValue !== null ? OrderStatus::tryFrom($statusValue) : null;
+        $currentStatus = null !== $statusValue ? OrderStatus::tryFrom($statusValue) : null;
 
         return $this->render('admin/order/index.html.twig', [
             'orders' => $this->orderRepository->findAllWithCustomer($currentStatus),
@@ -101,7 +101,7 @@ final class OrderController extends AbstractController
     {
         $order = $this->orderRepository->findOneWithDetails($reference);
 
-        if ($order === null) {
+        if (null === $order) {
             throw $this->createNotFoundException('Commande introuvable.');
         }
 

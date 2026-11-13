@@ -159,6 +159,7 @@ final class DashboardServiceTest extends KernelTestCase
 
         foreach ($quantities as $slug => $quantity) {
             $product = static::getContainer()->get(ProductRepository::class)->findOneBy(['slug' => $slug]);
+            self::assertNotNull($product);
             $order->addItem((new OrderItem())
                 ->setProduct($product)
                 ->setProductName((string) $product->getName())
@@ -167,17 +168,17 @@ final class DashboardServiceTest extends KernelTestCase
         }
         $order->recalculateTotal();
 
-        if ($parisPaidAt !== null) {
+        if (null !== $parisPaidAt) {
             $paidAt = $this->parisTimeToStorage($parisPaidAt);
             $order->markAsPaid($paidAt);
-            if ($status === OrderStatus::Shipped || $status === OrderStatus::Delivered) {
+            if (OrderStatus::Shipped === $status || OrderStatus::Delivered === $status) {
                 $order->markAsShipped($paidAt);
             }
-            if ($status === OrderStatus::Delivered) {
+            if (OrderStatus::Delivered === $status) {
                 $order->markAsDelivered($paidAt);
             }
         }
-        if ($status === OrderStatus::Cancelled) {
+        if (OrderStatus::Cancelled === $status) {
             $order->cancel(new \DateTimeImmutable());
         }
 
@@ -201,6 +202,9 @@ final class DashboardServiceTest extends KernelTestCase
 
     private function findCustomer(): User
     {
-        return static::getContainer()->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        $customer = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        self::assertNotNull($customer);
+
+        return $customer;
     }
 }

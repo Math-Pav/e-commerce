@@ -67,14 +67,14 @@ final class SlugGeneratorTest extends TestCase
         $slug = $this->generate($text, [str_repeat('a', 40)], maxLength: 50);
 
         // 50 caractères de colonne - 10 réservés au suffixe = 40, plus « -2 »
-        self::assertSame(str_repeat('a', 40) . '-2', $slug);
+        self::assertSame(str_repeat('a', 40).'-2', $slug);
         self::assertLessThanOrEqual(50, strlen($slug));
     }
 
     public function testDoesNotEndWithDashAfterTruncation(): void
     {
         // La coupure à 40 caractères tombe juste après un tiret : il est retiré
-        $slug = $this->generate(str_repeat('a', 39) . ' bbbbb', maxLength: 50);
+        $slug = $this->generate(str_repeat('a', 39).' bbbbb', maxLength: 50);
 
         self::assertSame(str_repeat('a', 39), $slug);
     }
