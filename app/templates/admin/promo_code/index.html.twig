@@ -13,7 +13,7 @@
     {% endembed %}
 
     {% if promoCodes is empty %}
-        {% include 'components/_empty_state.html.twig' with {message: 'Aucun code promo pour le moment.', action: {url: path('admin_promo_code_new'), label: 'Créer un code promo'}} %}
+        {% include 'components/_empty_state.html.twig' with {message: 'Aucun code promo pour le moment.', action: {url: path('admin_promo_code_new'), label: 'Nouveau code promo'}} %}
     {% else %}
         {% embed 'components/_table.html.twig' with {columns: [
             {label: 'Code'},

@@ -13,7 +13,7 @@
     {% endembed %}
 
     {% if products is empty %}
-        {% include 'components/_empty_state.html.twig' with {message: 'Aucun produit pour le moment.', action: {url: path('admin_product_new'), label: 'Créer un produit'}} %}
+        {% include 'components/_empty_state.html.twig' with {message: 'Aucun produit pour le moment.', action: {url: path('admin_product_new'), label: 'Nouveau produit'}} %}
     {% else %}
         {% embed 'components/_table.html.twig' with {columns: [
             {label: 'Produit'},

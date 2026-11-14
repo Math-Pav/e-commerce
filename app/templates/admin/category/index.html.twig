@@ -13,7 +13,7 @@
     {% endembed %}
 
     {% if rows is empty %}
-        {% include 'components/_empty_state.html.twig' with {message: 'Aucune catégorie pour le moment.', action: {url: path('admin_category_new'), label: 'Créer une catégorie'}} %}
+        {% include 'components/_empty_state.html.twig' with {message: 'Aucune catégorie pour le moment.', action: {url: path('admin_category_new'), label: 'Nouvelle catégorie'}} %}
     {% else %}
         {% embed 'components/_table.html.twig' with {columns: [
             {label: 'Catégorie'},

@@ -17,7 +17,7 @@
         <div class="callout">
             <div>
                 <p class="callout__title">Il ne reste plus qu'à régler votre commande</p>
-                <p class="callout__text">Vos articles sont réservés en attendant le paiement. Vous pouvez encore annuler la commande.</p>
+                <p class="callout__text">Vos articles sont réservés en attendant le paiement. Vous pouvez encore annuler la commande ; l'annulation est définitive.</p>
             </div>
             {% if order.canBeCancelled %}
                 <form method="post" action="{{ path('order_cancel', {reference: order.reference}) }}">

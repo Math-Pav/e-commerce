@@ -14,9 +14,10 @@ final class InsufficientStockException extends \DomainException
     public function __construct(public readonly ProductVariant $variant)
     {
         parent::__construct(sprintf(
-            'Stock insuffisant pour « %s » : %d disponible(s).',
+            'Stock insuffisant pour « %s » : %d disponible%s.',
             $variant->getName(),
             $variant->getStock(),
+            $variant->getStock() > 1 ? 's' : '',
         ));
     }
 }

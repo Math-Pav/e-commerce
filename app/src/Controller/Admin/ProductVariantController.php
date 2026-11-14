@@ -44,7 +44,7 @@ final class ProductVariantController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $variant = $this->variantService->create($product, $data);
-            $this->addFlash('success', sprintf('La variante « %s » a été ajoutée.', $variant->getName()));
+            $this->addFlash('success', sprintf('La variante « %s » a été créée.', $variant->getName()));
 
             return $this->redirectToRoute('admin_product_variant_index', ['id' => $product->getId()]);
         }

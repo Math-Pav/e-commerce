@@ -433,7 +433,7 @@ final class OrderControllerTest extends WebTestCase
         $this->logIn($client, 'client@example.com');
         $this->addToCart($client, 'mug-noir-mat', 2);
         $client->request('GET', '/panier');
-        $client->submitForm('Appliquer', ['code' => 'MOINS5']);
+        $client->submitForm('Appliquer le code', ['code' => 'MOINS5']);
 
         $this->submitCheckout($client, '69001');
 
