@@ -1,6 +1,6 @@
 /* ==========================================================================
    Atelier Papier : feuille de style principale
-   1. Jetons de design   2. Base   3. Mise en page   4. Composants   5. Pages
+   1. Jetons de design   2. Base   3. Mise en page   4. Composants   5. Pages   6. Petits écrans
    ========================================================================== */
 
 /* 1. Jetons de design ---------------------------------------------------- */
@@ -248,6 +248,10 @@ svg { flex: none; }
 .section-title { font-size: var(--text-2xl); font-weight: 700; }
 .back-link { align-self: flex-start; display: inline-flex; align-items: center; min-height: var(--tap-target); font-size: var(--text-md); color: var(--color-muted); }
 
+/* En-tête de page (components/_page_header.html.twig) : titre à gauche, actions à droite */
+.page-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.page-toolbar > .page-header { flex: 1 1 320px; min-width: 0; }
+
 .btn {
     display: inline-flex;
     align-items: center;
@@ -301,6 +305,7 @@ svg { flex: none; }
 .badge--success { background: var(--color-success-bg); color: var(--color-success); }
 .badge--warning { background: var(--color-warning-bg); color: var(--color-warning); }
 .badge--danger { background: var(--color-danger-bg); color: var(--color-danger); }
+.badge--neutral { background: var(--color-surface); color: var(--color-muted); }
 
 .flash { padding: 14px 18px; border-radius: var(--radius-md); font-size: var(--text-md); font-weight: 500; }
 .flash--success { background: var(--color-success-bg); color: var(--color-success); }
@@ -408,6 +413,7 @@ a.summary-row__label { display: inline-flex; align-items: center; min-height: va
 .table tbody tr, .table tfoot tr { border-top: 1px solid var(--color-border); }
 .table tfoot { background: var(--color-surface); }
 .table .num { text-align: right; }
+.table__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 /* Lien seul dans une cellule : zone cliquable de 44 px ; la marge négative garde la hauteur de la ligne */
 .table td a:not(.btn) { display: inline-flex; align-items: center; min-height: var(--tap-target); margin: -11px 0; }
 
@@ -433,6 +439,19 @@ a.summary-row__label { display: inline-flex; align-items: center; min-height: va
 .input:focus, .form input:focus { outline: 2px solid var(--color-accent); outline-offset: 1px; border-color: var(--color-accent); }
 .input--quantity { width: 120px; }
 .form ul { list-style: none; margin: 0; padding: 0; color: var(--color-danger); font-size: var(--text-sm); font-weight: 500; }
+.form select, .form textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+}
+.form select { height: 50px; }
+.form textarea { resize: vertical; line-height: 1.5; }
+.form select:focus, .form textarea:focus { outline: 2px solid var(--color-accent); outline-offset: 1px; border-color: var(--color-accent); }
 
 /* 5. Pages --------------------------------------------------------------- */
 .product-detail { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 48px; }
@@ -470,8 +489,6 @@ a.summary-row__label { display: inline-flex; align-items: center; min-height: va
 .steps__item[aria-current="step"] .steps__number { border-color: transparent; background: var(--color-accent); color: var(--color-text-inverse); }
 .steps__separator { width: 40px; height: 1px; background: var(--color-border-strong); }
 
-.order-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px; }
-.order-meta { margin-top: 10px; font-size: var(--text-md); color: var(--color-muted); }
 .callout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 24px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); }
 .callout__title { font-size: var(--text-lg); font-weight: 600; }
 .callout__text { font-size: var(--text-md); color: var(--color-muted); }
@@ -494,6 +511,7 @@ a.summary-row__label { display: inline-flex; align-items: center; min-height: va
 .auth-card__footer { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; border-top: 1px solid var(--color-border); font-size: var(--text-md); text-align: center; color: var(--color-muted); }
 
 /* Administration --------------------------------------------------------- */
+.admin-form { max-width: 640px; display: flex; flex-direction: column; gap: 24px; }
 .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--color-border); }
 .tabs__link {
     margin-bottom: -1px;
@@ -507,55 +525,10 @@ a.summary-row__label { display: inline-flex; align-items: center; min-height: va
 .tabs__link:hover { color: var(--color-text); }
 .tabs__link[aria-current="page"] { color: var(--color-text); border-bottom-color: var(--color-accent); font-weight: 600; }
 
-.page-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
-.page-toolbar > .page-header { flex: 1 1 320px; min-width: 0; }
-
-.badge--neutral { background: var(--color-surface); color: var(--color-muted); }
 .stock { font-weight: 600; }
 .stock--low { color: var(--color-warning); }
 .stock--out { color: var(--color-danger); }
 
-/* Petits écrans ---------------------------------------------------------- */
-/* Repères à vérifier : 375 px de large, aucun défilement horizontal de la page.
-   Seuls les tableaux et le graphique défilent, dans leur propre cadre. */
-@media (max-width: 640px) {
-    :root { --gutter: 16px; }
-    .site-main { padding: 24px 0 48px; }
-    .page-title { font-size: var(--text-4xl); }
-    .page-title--xl { font-size: var(--text-5xl); }
-
-    /* En-tête sur deux lignes : le logo, puis la navigation sur toute la largeur */
-    .site-header__inner { gap: 8px; padding-top: 12px; padding-bottom: 12px; }
-    .site-nav { width: 100%; justify-content: space-between; gap: 4px; }
-    .site-nav__link { padding: 12px 10px; }
-    .account-menu__name { max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cart-link { margin-left: 0; padding: 10px 14px; }
-    /* Le mot « Panier » reste lu par les lecteurs d'écran ; seule l'icône (et le nombre d'articles) s'affiche */
-    .cart-link__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-
-    .tabs__link { padding: 12px; }
-    .auth-card { padding: 24px; }
-    .callout > form, .callout .btn { width: 100%; }
-    .table th, .table td { padding: 12px 14px; }
-    .steps__separator { width: 16px; }
-}
-
-/* Administration : formulaire produit et actions du tableau --------------- */
-.admin-form { max-width: 640px; display: flex; flex-direction: column; gap: 24px; }
-.form select, .form textarea {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-family: var(--font-body);
-    font-size: var(--text-base);
-}
-.form select { height: 50px; }
-.form textarea { resize: vertical; line-height: 1.5; }
-.form select:focus, .form textarea:focus { outline: 2px solid var(--color-accent); outline-offset: 1px; border-color: var(--color-accent); }
-.table__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 
 /* Administration : tableau de bord ---------------------------------------- */
 .dashboard-section { display: flex; flex-direction: column; gap: 16px; }
@@ -640,3 +613,28 @@ code { overflow-wrap: anywhere; }
 .variant-choice__option input { width: 20px; height: 20px; accent-color: var(--color-accent); }
 .variant-choice__label { flex: 1 1 auto; font-weight: 600; }
 .variant-choice__price { font-weight: 700; }
+
+/* 6. Petits écrans -------------------------------------------------------  */
+/* Repères à vérifier : 375 px de large, aucun défilement horizontal de la page.
+   Seuls les tableaux et le graphique défilent, dans leur propre cadre. */
+@media (max-width: 640px) {
+    :root { --gutter: 16px; }
+    .site-main { padding: 24px 0 48px; }
+    .page-title { font-size: var(--text-4xl); }
+    .page-title--xl { font-size: var(--text-5xl); }
+
+    /* En-tête sur deux lignes : le logo, puis la navigation sur toute la largeur */
+    .site-header__inner { gap: 8px; padding-top: 12px; padding-bottom: 12px; }
+    .site-nav { width: 100%; justify-content: space-between; gap: 4px; }
+    .site-nav__link { padding: 12px 10px; }
+    .account-menu__name { max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cart-link { margin-left: 0; padding: 10px 14px; }
+    /* Le mot « Panier » reste lu par les lecteurs d'écran ; seule l'icône (et le nombre d'articles) s'affiche */
+    .cart-link__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    .tabs__link { padding: 12px; }
+    .auth-card { padding: 24px; }
+    .callout > form, .callout .btn { width: 100%; }
+    .table th, .table td { padding: 12px 14px; }
+    .steps__separator { width: 16px; }
+}
