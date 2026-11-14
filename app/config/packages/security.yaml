@@ -32,6 +32,11 @@ security:
                 check_path: app_login
                 enable_csrf: true
                 default_target_path: product_index
+            # Contre la force brute (A-04) : 5 échecs au plus en 15 minutes par e-mail et adresse IP
+            # (et une limite plus large par IP seule). Compteurs stockés dans le cache applicatif (RateLimiter).
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
             logout:
                 path: app_logout
                 target: product_index

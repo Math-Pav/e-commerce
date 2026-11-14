@@ -94,6 +94,7 @@ Principes :
 ## Sécurité
 
 - Mots de passe hachés via le système de sécurité de Symfony. Jamais en clair.
+- Connexion limitée à 5 échecs en 15 minutes par e-mail et adresse IP (`login_throttling` du pare-feu `main`, constat A-04 de `docs/audit.md`).
 - Protection CSRF active sur tous les formulaires.
 - Toute entrée utilisateur est validée (contraintes de validation Symfony).
 - Accès contrôlés par rôles (`ROLE_USER`, `ROLE_ADMIN`) et vérification qu'un utilisateur n'accède qu'à ses propres commandes.
