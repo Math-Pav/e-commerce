@@ -7,7 +7,15 @@
         Votre commande <strong>{{ order.reference }}</strong> d'un montant de
         <strong>{{ order.totalAmount|price }}</strong> a été annulée le {{ order.cancelledAt|date('d/m/Y à H:i') }}.
     </p>
-    <p style="margin:0;">Elle n'avait pas été payée : aucun montant ne vous a été débité.</p>
+    {% if expired|default(false) %}
+        <p style="margin:0 0 12px;">
+            Elle a été annulée automatiquement, faute de paiement dans le délai prévu après sa validation.
+            Les articles ont été remis en vente et, si vous aviez utilisé un code promo, il est de nouveau disponible.
+        </p>
+        <p style="margin:0;">Aucun montant ne vous a été débité. Vous pouvez repasser commande à tout moment.</p>
+    {% else %}
+        <p style="margin:0;">Elle n'avait pas été payée : aucun montant ne vous a été débité.</p>
+    {% endif %}
 
     {% include 'emails/_button.html.twig' with {url: url('order_show', {reference: order.reference}), label: 'Voir la commande'} only %}
 {% endblock %}

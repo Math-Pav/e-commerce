@@ -97,16 +97,57 @@ final class OrderService
     }
 
     /**
-     * Annule une commande en attente de paiement et remet en stock les variantes commandées,
-     * en une seule transaction : tout réussit, ou rien ne change.
+     * Annulation demandée par le client ou par l'administration.
      *
-     * Ne dépend ni de la requête ni de l'utilisateur connecté : elle peut être appelée par
-     * l'administration, par le client ou par une tâche automatique. C'est à l'appelant
+     * Ne dépend ni de la requête ni de l'utilisateur connecté : c'est à l'appelant
      * de vérifier qui a le droit d'annuler.
      *
      * @throws \DomainException si la commande ne peut pas (ou plus) être annulée
      */
     public function cancel(Order $order): void
+    {
+        $this->cancelPendingOrder($order);
+        $this->customerMailer->sendOrderCancellation($order);
+    }
+
+    /**
+     * Annulation automatique d'une commande restée trop longtemps sans paiement
+     * (commande console app:orders:cancel-expired, voir docs/adr/0024-annulation-automatique-des-commandes.md).
+     * Même logique que cancel() ; seul l'e-mail explique la raison au client.
+     *
+     * @throws \DomainException si la commande ne peut pas (ou plus) être annulée
+     */
+    public function cancelExpired(Order $order): void
+    {
+        $this->cancelPendingOrder($order);
+        $this->customerMailer->sendExpiredOrderCancellation($order);
+    }
+
+    /**
+     * @throws \DomainException si la commande n'est pas payée
+     */
+    public function ship(Order $order): void
+    {
+        $order->markAsShipped(new \DateTimeImmutable());
+        $this->entityManager->flush();
+    }
+
+    /**
+     * @throws \DomainException si la commande n'est pas expédiée
+     */
+    public function deliver(Order $order): void
+    {
+        $order->markAsDelivered(new \DateTimeImmutable());
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Annule une commande en attente de paiement et remet en stock les variantes commandées,
+     * en une seule transaction : tout réussit, ou rien ne change.
+     *
+     * @throws \DomainException si la commande ne peut pas (ou plus) être annulée
+     */
+    private function cancelPendingOrder(Order $order): void
     {
         // Vérification avant la transaction : un refus « normal » ne touche pas à la base
         if (!$order->canBeCancelled()) {
@@ -114,7 +155,8 @@ final class OrderService
         }
 
         $this->entityManager->wrapInTransaction(function () use ($order): void {
-            // Verrou sur la commande : deux annulations simultanées ne remettent pas le stock deux fois.
+            // Verrou sur la commande : deux annulations simultanées ne remettent pas le stock deux fois,
+            // et un paiement simultané attend (PaymentService prend le même verrou avant de débiter).
             // La relecture peut révéler un statut changé entre-temps : cancel() lève alors l'exception.
             $this->orderRepository->lockForUpdate($order);
             $order->cancel(new \DateTimeImmutable());
@@ -139,26 +181,6 @@ final class OrderService
                 $promoCode->decrementUsage();
             }
         });
-
-        $this->customerMailer->sendOrderCancellation($order);
-    }
-
-    /**
-     * @throws \DomainException si la commande n'est pas payée
-     */
-    public function ship(Order $order): void
-    {
-        $order->markAsShipped(new \DateTimeImmutable());
-        $this->entityManager->flush();
-    }
-
-    /**
-     * @throws \DomainException si la commande n'est pas expédiée
-     */
-    public function deliver(Order $order): void
-    {
-        $order->markAsDelivered(new \DateTimeImmutable());
-        $this->entityManager->flush();
     }
 
     /**

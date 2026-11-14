@@ -21,6 +21,9 @@ parameters:
     app.invoice.seller_vat_number: 'FR40123456789'
     # Taux de TVA appliqué à tous les produits, en pourcentage entier (les prix du site sont TTC)
     app.invoice.vat_rate: 20
+    # Délai, en minutes, après lequel une commande non payée est annulée automatiquement
+    # par la commande console app:orders:cancel-expired (ADR 0024)
+    app.order.payment_delay_minutes: 60
 
 services:
     # default configuration for services in *this* file

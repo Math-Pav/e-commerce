@@ -42,7 +42,7 @@ Toutes les commandes PHP, Composer et Symfony s'exécutent **dans le conteneur**
 
 ## Périmètre du MVP
 
-Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, variantes de produits (couleur, format… : stock et prix facultatif par variante), inscription/connexion, espace « Mon compte » (profil, adresse, changement de mot de passe), panier, codes promo (un par commande, voir `docs/adr/0016-codes-promo.md`), commande, annulation par le client, paiement **simulé**, facture PDF de chaque commande payée (`docs/adr/0018-factures.md`), historique des commandes, e-mails clients, administration (tableau de bord, produits et leurs variantes, commandes, catégories, codes promo), API REST du catalogue en lecture seule (`/api/v1`, `docs/api.md`, `docs/adr/0020-api-catalogue.md`).
+Inclus : catégories, catalogue (recherche simple, tri, pagination), fiche produit avec photo, variantes de produits (couleur, format… : stock et prix facultatif par variante), inscription/connexion, espace « Mon compte » (profil, adresse, changement de mot de passe), panier, codes promo (un par commande, voir `docs/adr/0016-codes-promo.md`), commande, annulation par le client, annulation automatique des commandes non payées après 1 heure (`app:orders:cancel-expired`, ADR 0024), paiement **simulé**, facture PDF de chaque commande payée (`docs/adr/0018-factures.md`), historique des commandes, e-mails clients, administration (tableau de bord, produits et leurs variantes, commandes, catégories, codes promo), API REST du catalogue en lecture seule (`/api/v1`, `docs/api.md`, `docs/adr/0020-api-catalogue.md`).
 
 Hors périmètre pour l'instant (ne pas implémenter sans demande explicite) : recherche avancée (plein texte, facettes), avis, e-mails pour l'administrateur, envoi asynchrone (Messenger), vrai paiement, avoirs.
 
@@ -58,6 +58,7 @@ Structure Symfony standard, organisée en couches :
 - `src/EventListener/` : écouteurs d'événements (Doctrine, noyau), ex. invalidation du cache.
 - `src/Api/` : API REST du catalogue : lecture des paramètres et objets de sortie (`Output/`) qui fixent le contrat JSON ; on n'y sérialise jamais une entité directement (ADR 0020). Contrôleurs dans `src/Controller/Api/`.
 - `src/Validator/` : contraintes de validation réutilisables (contraintes composées partagées par plusieurs DTO, ex. `PostalCode`).
+- `src/Command/` : commandes console lancées par le cron du serveur (annulation automatique des commandes non payées, voir `docs/adr/0024-annulation-automatique-des-commandes.md`). Comme un contrôleur, elles délèguent la logique métier aux services.
 - `src/Security/` : classes branchées sur le système de sécurité de Symfony (authentification de l'API par jeton d'accès, voir `docs/adr/0021-jetons-acces-api.md`).
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
 - `templates/bundles/TwigBundle/Exception/` : pages d'erreur du site (`error404`, `error403`, `error` pour les autres codes), en français. Symfony ne les affiche que sans le mode débogage (production) ; en développement, on les prévisualise sur `/_error/404`.

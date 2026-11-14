@@ -183,6 +183,28 @@ class OrderRepository extends ServiceEntityRepository
     }
 
     /**
+     * Identifiants des commandes toujours en attente de paiement, créées avant la date donnée
+     * (annulation automatique, ADR 0024). Des identifiants plutôt que des entités : la commande console
+     * recharge chaque commande juste avant de l'annuler, même après une réinitialisation de l'EntityManager.
+     *
+     * @return list<int>
+     */
+    public function findExpiredPendingIds(\DateTimeImmutable $createdBefore): array
+    {
+        $ids = $this->createQueryBuilder('o')
+            ->select('o.id')
+            ->where('o.status = :status')
+            ->andWhere('o.createdAt < :createdBefore')
+            ->setParameter('status', OrderStatus::Pending)
+            ->setParameter('createdBefore', self::toStorageTimezone($createdBefore))
+            ->orderBy('o.id', 'ASC')
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        return array_values(array_map(intval(...), $ids));
+    }
+
+    /**
      * Doctrine enregistre une date telle quelle, sans tenir compte de son fuseau :
      * une date de comparaison doit donc être exprimée dans le fuseau de stockage (celui de PHP).
      */

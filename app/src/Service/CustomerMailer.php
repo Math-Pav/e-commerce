@@ -53,10 +53,21 @@ final class CustomerMailer
 
     public function sendOrderCancellation(Order $order): void
     {
-        $this->sendForOrder($order, 'Annulation de votre commande %s', 'order_cancellation');
+        $this->sendForOrder($order, 'Annulation de votre commande %s', 'order_cancellation', context: ['expired' => false]);
     }
 
-    private function sendForOrder(Order $order, string $subjectFormat, string $template, ?Invoice $invoice = null): void
+    /**
+     * Même e-mail que l'annulation, avec un texte qui explique l'annulation automatique faute de paiement.
+     */
+    public function sendExpiredOrderCancellation(Order $order): void
+    {
+        $this->sendForOrder($order, 'Annulation de votre commande %s', 'order_cancellation', context: ['expired' => true]);
+    }
+
+    /**
+     * @param array<string, mixed> $context variables propres au template, en plus de la commande et de la facture
+     */
+    private function sendForOrder(Order $order, string $subjectFormat, string $template, ?Invoice $invoice = null, array $context = []): void
     {
         $customer = $order->getCustomer();
 
@@ -64,7 +75,7 @@ final class CustomerMailer
             throw new \LogicException('Une commande sans client ne peut pas donner lieu à un e-mail.');
         }
 
-        $email = $this->createEmail($customer, sprintf($subjectFormat, $order->getReference()), $template, ['order' => $order, 'invoice' => $invoice]);
+        $email = $this->createEmail($customer, sprintf($subjectFormat, $order->getReference()), $template, ['order' => $order, 'invoice' => $invoice] + $context);
 
         if (null !== $invoice) {
             $email->attach($this->invoicePdfGenerator->generate($invoice), $invoice->getFilename(), 'application/pdf');
