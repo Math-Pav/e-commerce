@@ -1,0 +1,10 @@
+{# Contenu commun des pages d'erreur (A-03) : affichées en production uniquement, à la place de la page anglaise de Symfony #}
+<div class="page-header">
+    <p class="eyebrow">Erreur {{ status_code }}</p>
+    <h1 class="page-title">{{ heading }}</h1>
+</div>
+
+<div class="empty-state">
+    <p>{{ message }}</p>
+    <a href="{{ path('product_index') }}" class="btn btn--primary">Retour au catalogue</a>
+</div>

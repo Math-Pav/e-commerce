@@ -1,0 +1,10 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accès refusé{% endblock %}
+
+{% block body %}
+    {% include '@Twig/Exception/_error_page.html.twig' with {
+        heading: 'Accès refusé',
+        message: 'Vous n\'avez pas l\'autorisation d\'accéder à cette page, ou le formulaire a expiré. Revenez à la page précédente, rechargez-la, puis réessayez.',
+    } %}
+{% endblock %}

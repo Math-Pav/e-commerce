@@ -60,6 +60,7 @@ Structure Symfony standard, organisée en couches :
 - `src/Validator/` : contraintes de validation réutilisables (contraintes composées partagées par plusieurs DTO, ex. `PostalCode`).
 - `src/Security/` : classes branchées sur le système de sécurité de Symfony (authentification de l'API par jeton d'accès, voir `docs/adr/0021-jetons-acces-api.md`).
 - `templates/` : vues Twig. Pas de logique métier dans les templates.
+- `templates/bundles/TwigBundle/Exception/` : pages d'erreur du site (`error404`, `error403`, `error` pour les autres codes), en français. Symfony ne les affiche que sans le mode débogage (production) ; en développement, on les prévisualise sur `/_error/404`.
 
 Principes :
 

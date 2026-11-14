@@ -1,0 +1,11 @@
+{# Page générique : toutes les erreurs sans page dédiée (500, 405…) #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Erreur{% endblock %}
+
+{% block body %}
+    {% include '@Twig/Exception/_error_page.html.twig' with {
+        heading: 'Une erreur est survenue',
+        message: 'La page n\'a pas pu s\'afficher. Réessayez dans quelques instants ; si le problème persiste, revenez plus tard.',
+    } %}
+{% endblock %}
