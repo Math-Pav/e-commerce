@@ -1,0 +1,39 @@
+# Fichiers exclus du contexte de construction de docker/prod/Dockerfile.
+# Docker lit automatiquement "<nom du Dockerfile>.dockerignore" placé à côté du Dockerfile.
+# Le contexte étant la racine du dépôt, on exclut tout ce qui ne doit pas entrer dans l'image.
+
+# Dépôt Git, documentation, outillage
+.git
+.github
+.claude
+docs
+**/.idea
+**/.vscode
+
+# Dépendances et fichiers générés : reconstruits dans l'image
+app/vendor
+app/var
+app/public/assets
+app/public/bundles
+app/assets/vendor
+
+# Données locales : photos envoyées en développement
+app/public/uploads
+
+# Secrets et réglages locaux : ne doivent JAMAIS entrer dans une image
+app/.env.local
+app/.env.local.php
+app/.env.*.local
+app/config/secrets/*/*.decrypt.private.php
+
+# Fichiers inutiles en production (tests, outils d'analyse, caches de développement)
+app/tests
+app/.env.dev
+app/.env.test
+app/.phpunit.cache
+app/phpunit.dist.xml
+app/phpstan.dist.neon
+app/.php-cs-fixer.dist.php
+app/.php-cs-fixer.cache
+app/compose.yaml
+app/compose.override.yaml

@@ -1,0 +1,99 @@
+# Environnement de PRODUCTION (voir docs/deploiement.md). Le développement utilise toujours compose.yaml.
+#
+# Aucun secret n'est écrit ici : chaque ${VARIABLE} est lue dans l'environnement au moment du lancement,
+# en général depuis un fichier situé HORS du dépôt :
+#   docker compose -f compose.prod.yaml --env-file /chemin/hors/du/depot/prod.env up -d
+# Modèle de ce fichier : docker/prod/prod.env.example.
+# La syntaxe ${VARIABLE:?message} arrête le lancement si la variable manque (pas de valeur par défaut dangereuse).
+#
+# Différences avec compose.yaml : ni Adminer ni Mailpit, pas de code monté depuis l'hôte (il est dans l'image),
+# base de données non exposée, redémarrage automatique, vérifications de santé et journaux limités en taille.
+
+name: ecommerce-prod
+
+# Rotation des journaux Docker : au plus 5 fichiers de 10 Mo par conteneur (sinon le disque finit plein).
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  # PHP-FPM : l'application, construite avec docker/prod/Dockerfile (étape "php")
+  php:
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+      target: php
+    image: ecommerce-php:prod
+    restart: unless-stopped
+    environment:
+      APP_SECRET: ${APP_SECRET:?APP_SECRET est obligatoire (voir docs/deploiement.md)}
+      # Un mot de passe contenant des caractères spéciaux (@ : / ? #) doit être encodé pour une URL.
+      DATABASE_URL: "mysql://${DB_USER:-app}:${DB_PASSWORD:?DB_PASSWORD est obligatoire}@database:3306/${DB_NAME:-ecommerce}?serverVersion=11.4.0-MariaDB&charset=utf8mb4"
+      MAILER_DSN: ${MAILER_DSN:?MAILER_DSN est obligatoire (serveur SMTP réel)}
+      # Adresse publique du site : sert aux liens absolus des e-mails envoyés hors requête HTTP.
+      DEFAULT_URI: ${DEFAULT_URI:?DEFAULT_URI est obligatoire (ex. https://www.exemple.fr)}
+      # Adresse IP du proxy HTTPS placé devant Nginx (vide = aucun proxy de confiance).
+      SYMFONY_TRUSTED_PROXIES: ${SYMFONY_TRUSTED_PROXIES:-}
+    volumes:
+      - uploads:/var/www/html/public/uploads
+    depends_on:
+      database:
+        condition: service_healthy
+    # PHP-FPM est en bonne santé s'il accepte les connexions sur son port 9000.
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *logging
+
+  # Nginx : seul service exposé. Construit avec la même recette (étape "nginx") pour contenir les ressources compilées.
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+      target: nginx
+    image: ecommerce-nginx:prod
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - uploads:/var/www/html/public/uploads:ro
+    depends_on:
+      php:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+
+  # MariaDB : aucun port publié, joignable uniquement par les autres conteneurs.
+  database:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD est obligatoire}
+      MARIADB_DATABASE: ${DB_NAME:-ecommerce}
+      MARIADB_USER: ${DB_USER:-app}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD est obligatoire}
+    volumes:
+      - db_data:/var/lib/mysql
+    # Script fourni par l'image MariaDB : la base accepte les connexions et InnoDB est prêt.
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: *logging
+
+# Volumes nommés, préfixés par le nom du projet (ecommerce-prod_db_data…) : distincts de ceux du développement.
+volumes:
+  db_data:
+  # Photos des produits, partagées entre PHP (écriture) et Nginx (lecture)
+  uploads:
