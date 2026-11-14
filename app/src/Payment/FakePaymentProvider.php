@@ -7,17 +7,20 @@ namespace App\Payment;
 use App\Entity\Order;
 
 /**
- * Fournisseur de paiement simulé, pour le développement.
- * Il refuse les paiements au-delà d'un plafond fictif, pour pouvoir tester un refus à la main.
+ * Fournisseur de paiement simulé (voir docs/adr/0003-paiement-simule.md).
+ *
+ * Il accepte tous les paiements, sauf une commande dont le total vaut exactement 9 999,99 € :
+ * ce montant de test, sur le modèle des numéros de carte de test des vrais prestataires,
+ * permet de reproduire un refus à la main sans jamais bloquer une commande normale.
  */
 final class FakePaymentProvider implements PaymentProviderInterface
 {
-    private const MAX_AMOUNT = 10000; // 100,00 €
+    public const DECLINED_AMOUNT = 999999; // 9 999,99 €
 
     public function charge(Order $order): PaymentResult
     {
-        if ($order->getTotalAmount() > self::MAX_AMOUNT) {
-            return PaymentResult::failure('plafond de paiement dépassé (simulation au-delà de 100 €).');
+        if (self::DECLINED_AMOUNT === $order->getTotalAmount()) {
+            return PaymentResult::failure('refus simulé (montant de test de 9 999,99 €).');
         }
 
         return PaymentResult::success();

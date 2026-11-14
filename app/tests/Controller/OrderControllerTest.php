@@ -319,14 +319,33 @@ final class OrderControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    /**
+     * A-02 : le paiement simulé refusait toute commande de plus de 100 €.
+     */
+    public function testOrderAboveFormerLimitCanBePaid(): void
+    {
+        $client = static::createClient();
+        $this->logIn($client, 'client@example.com');
+        // 8 × 12,90 € = 103,20 €
+        $orderUrl = $this->placeOrder($client, 'mug-blanc-classique', 8);
+        $client->request('GET', $orderUrl);
+
+        $client->submitForm('Payer la commande');
+
+        self::assertSame(OrderStatus::Paid, $this->findOrderStatus($orderUrl));
+    }
+
     public function testDeclinedPaymentKeepsOrderPending(): void
     {
         $client = static::createClient();
         $this->logIn($client, 'client@example.com');
-        // 8 × 12,90 € = 103,20 € : au-dessus du plafond du fournisseur simulé
-        $this->addToCart($client, 'mug-blanc-classique', 8);
-        $this->submitCheckout($client, '69001');
-        $client->followRedirect();
+        $orderUrl = $this->placeOrder($client, 'mug-blanc-classique', 1);
+        // Seul le montant de test (9 999,99 €) est refusé par le paiement simulé : on l'impose en base
+        static::getContainer()->get(EntityManagerInterface::class)->getConnection()->executeStatement(
+            'UPDATE orders SET total_amount = 999999 WHERE reference = :reference',
+            ['reference' => basename($orderUrl)],
+        );
+        $client->request('GET', $orderUrl);
 
         $client->submitForm('Payer la commande');
 
