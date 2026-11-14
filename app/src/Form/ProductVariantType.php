@@ -6,7 +6,10 @@ namespace App\Form;
 
 use App\Model\ProductVariantData;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\CallbackTransformer;
+use Symfony\Component\Form\Exception\TransformationFailedException;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -54,7 +57,25 @@ final class ProductVariantType extends AbstractType
             ->add('isActive', CheckboxType::class, [
                 'label' => 'Active (proposée aux clients)',
                 'required' => false,
-            ]);
+            ])
+            // Version lue à l'ouverture : permet de détecter une modification faite entre-temps (ADR 0023)
+            ->add('version', HiddenType::class);
+
+        // Un champ caché transporte du texte : on le reconvertit en entier pour le DTO
+        $builder->get('version')->addModelTransformer(new CallbackTransformer(
+            static fn (?int $version): string => null === $version ? '' : (string) $version,
+            static function (?string $version): ?int {
+                if (null === $version || '' === $version) {
+                    return null;
+                }
+
+                if (!ctype_digit($version)) {
+                    throw new TransformationFailedException('Version invalide.');
+                }
+
+                return (int) $version;
+            },
+        ));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

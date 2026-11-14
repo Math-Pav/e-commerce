@@ -9,6 +9,7 @@ use App\Entity\ProductVariant;
 use App\Form\ProductVariantType;
 use App\Model\ProductVariantData;
 use App\Service\ProductVariantService;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -62,7 +63,15 @@ final class ProductVariantController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->variantService->update($variant, $data);
+            try {
+                $this->variantService->update($variant, $data);
+            } catch (OptimisticLockException) {
+                // On recharge le formulaire avec les valeurs à jour plutôt que de réafficher les anciennes
+                $this->addFlash('error', sprintf('La variante « %s » a été modifiée pendant votre saisie (une vente, par exemple) : rien n\'a été enregistré. Vérifiez les valeurs actuelles, puis enregistrez à nouveau.', $variant->getName()));
+
+                return $this->redirectToRoute('admin_product_variant_edit', ['id' => $variant->getId()]);
+            }
+
             $this->addFlash('success', sprintf('La variante « %s » a été modifiée.', $variant->getName()));
 
             return $this->redirectToProduct($variant);

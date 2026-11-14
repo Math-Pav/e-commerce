@@ -45,9 +45,20 @@ class ProductVariant
     #[ORM\Column(options: ['default' => true])]
     private bool $isActive = true;
 
+    // Verrouillage optimiste (ADR 0023) : Doctrine incrémente ce numéro à chaque modification
+    // et refuse d'enregistrer une variante modifiée entre-temps par quelqu'un d'autre.
+    #[ORM\Version]
+    #[ORM\Column(type: 'integer', options: ['default' => 1])]
+    private int $version = 1;
+
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
     }
 
     public function getProduct(): ?Product

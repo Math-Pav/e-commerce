@@ -186,6 +186,7 @@ Déclinaison d'un produit (couleur, format…). Un produit sans déclinaison a u
 | price | integer | facultatif, en centimes, ≥ 0 ; vide = prix du produit |
 | stock | integer | obligatoire, défaut 0, ≥ 0 |
 | is_active | boolean | obligatoire, défaut `true` ; `false` = plus proposée aux clients |
+| version | integer | obligatoire, défaut 1 ; incrémentée par Doctrine à chaque modification (verrouillage optimiste du formulaire d'administration, ADR 0023) |
 
 La recherche (`LIKE '%…%'` sur `name` et `description`) ne peut pas utiliser d'index : voir ADR 0011.
 

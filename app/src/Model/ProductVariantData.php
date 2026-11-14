@@ -44,6 +44,9 @@ final class ProductVariantData
 
     public bool $isActive = true;
 
+    // Version de la variante lue à l'ouverture du formulaire, null à la création (ADR 0023)
+    public ?int $version = null;
+
     public static function forProduct(Product $product): self
     {
         $data = new self();
@@ -62,6 +65,7 @@ final class ProductVariantData
         $data->price = $variant->getPrice();
         $data->stock = $variant->getStock();
         $data->isActive = $variant->isActive();
+        $data->version = $variant->getVersion();
 
         return $data;
     }
