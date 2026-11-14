@@ -22,7 +22,7 @@
             {% if order.canBeCancelled %}
                 <form method="post" action="{{ path('order_cancel', {reference: order.reference}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('cancel-order') }}">
-                    <button type="submit" class="btn btn--secondary btn--lg">Annuler la commande</button>
+                    <button type="submit" class="btn btn--danger btn--lg">Annuler la commande</button>
                 </form>
             {% endif %}
             {% if order.canBePaid %}

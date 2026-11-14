@@ -40,7 +40,7 @@
             </div>
             <form method="post" action="{{ path('admin_order_cancel', {reference: order.reference}) }}">
                 <input type="hidden" name="_token" value="{{ csrf }}">
-                <button type="submit" class="btn btn--secondary">Annuler la commande</button>
+                <button type="submit" class="btn btn--danger">Annuler la commande</button>
             </form>
         {% else %}
             <p class="callout__text">Aucune action possible : cette commande est {{ order.status.label|lower }}.</p>
