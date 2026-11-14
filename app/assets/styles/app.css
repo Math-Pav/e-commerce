@@ -629,6 +629,8 @@ code { overflow-wrap: anywhere; }
     .site-nav__link { padding: 12px 10px; }
     .account-menu__name { max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .cart-link { margin-left: 0; padding: 10px 14px; }
+    /* « Créer un compte » quitte l'en-tête : la navigation tient sur une ligne, l'inscription reste proposée sur la page de connexion */
+    .site-nav__register { display: none; }
     /* Le mot « Panier » reste lu par les lecteurs d'écran ; seule l'icône (et le nombre d'articles) s'affiche */
     .cart-link__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 

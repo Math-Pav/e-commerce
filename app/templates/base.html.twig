@@ -48,8 +48,9 @@
                                 </ul>
                             </details>
                         {% else %}
-                            {# « Créer un compte » est proposé sur la page de connexion : l'en-tête reste court pour un nouveau visiteur #}
                             <a href="{{ path('app_login') }}" class="site-nav__link" aria-current="{{ route == 'app_login' ? 'page' : 'false' }}">Se connecter</a>
+                            {# Bouton discret sur grand écran ; masqué sous 640 px (CSS), où la page de connexion propose l'inscription #}
+                            <a href="{{ path('app_register') }}" class="btn btn--secondary site-nav__register" aria-current="{{ route == 'app_register' ? 'page' : 'false' }}">Créer un compte</a>
                         {% endif %}
                         <a href="{{ path('cart_show') }}" class="cart-link" aria-current="{{ route == 'cart_show' ? 'page' : 'false' }}">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>

@@ -28,6 +28,29 @@ final class RegistrationControllerTest extends WebTestCase
         self::assertNotSame('motdepasse123', $user->getPassword(), 'Le mot de passe ne doit jamais être stocké en clair.');
     }
 
+    public function testHeaderOffersRegistrationToVisitors(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/produits');
+
+        // Le lien est dans le HTML à toutes les tailles d'écran ; seul le CSS le masque sous 640 px
+        self::assertSelectorExists('.site-nav a.site-nav__register[href="/inscription"]');
+        self::assertSelectorTextContains('.site-nav__register', 'Créer un compte');
+    }
+
+    public function testHeaderHidesRegistrationFromLoggedInUsers(): void
+    {
+        $client = static::createClient();
+        $user = static::getContainer()->get(UserRepository::class)->findOneBy(['email' => 'client@example.com']);
+        self::assertNotNull($user);
+        $client->loginUser($user);
+
+        $client->request('GET', '/produits');
+
+        self::assertSelectorNotExists('.site-nav__register');
+    }
+
     public function testRegistrationSendsWelcomeEmail(): void
     {
         $client = static::createClient();

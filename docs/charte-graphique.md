@@ -67,6 +67,7 @@ Un lien qui mène à une autre page reste un `<a href>` ; une action qui modifie
 
 ### Navigation
 - `.site-nav` et `.account-menu` (menu du compte en `<details>`, sans JavaScript), `.cart-link`.
+- Visiteur non connecté : « Se connecter » (lien) puis « Créer un compte » (`.btn.btn--secondary.site-nav__register`, bouton discret : l'inscription est secondaire par rapport au catalogue). Ce bouton est masqué sous 640 px ; sur mobile, l'inscription se fait par le bouton pleine largeur de la page de connexion.
 - `.tabs` : onglets de l'administration ; `.chips` / `.chip` : filtres ; `.breadcrumb` : fil d'Ariane ; `.pagination`.
 - L'élément actif porte `aria-current="page"` (le style en dépend).
 
@@ -101,6 +102,6 @@ Un lien qui mène à une autre page reste un `<a href>` ; une action qui modifie
 
 - Aucune page ne défile horizontalement ; seuls les tableaux et le graphique défilent dans leur cadre.
 - Toute zone cliquable isolée mesure au moins `--tap-target` (44 px) de haut ; les liens à l'intérieur d'une phrase font exception.
-- Sous 640 px : marge latérale de 16 px, en-tête sur deux lignes (logo, puis navigation), libellé « Panier » masqué visuellement (lu par les lecteurs d'écran), boutons des encadrés en pleine largeur.
+- Sous 640 px : marge latérale de 16 px, en-tête sur deux lignes (logo, puis navigation), libellé « Panier » masqué visuellement (lu par les lecteurs d'écran), bouton « Créer un compte » retiré de l'en-tête (`display: none`, sans JavaScript) pour que la navigation tienne sur une seule ligne à 375 px, boutons des encadrés en pleine largeur.
 - Les textes sans point de coupure (références de commande, adresses e-mail, `<code>`) sont coupés avec `overflow-wrap: anywhere`.
 - Focus visible sur tout élément interactif (`:focus-visible`) ; ne jamais le supprimer.
