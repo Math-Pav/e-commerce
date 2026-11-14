@@ -22,7 +22,10 @@
         </li>
     </ol>
 
-    <h1 class="page-title">Finaliser ma commande</h1>
+    {% include 'components/_page_header.html.twig' with {
+        back: {url: path('cart_show'), label: 'Retour au panier'},
+        title: 'Finaliser ma commande',
+    } %}
 
     <div class="layout-split">
         <div class="layout-split__main">
@@ -42,8 +45,6 @@
                 </div>
                 <button type="submit" class="btn btn--primary btn--lg btn--block">Valider la commande</button>
             {{ form_end(checkoutForm) }}
-
-            <a href="{{ path('cart_show') }}" class="back-link">← Modifier mon panier</a>
         </div>
 
         <aside class="layout-split__aside panel" aria-label="Récapitulatif">

@@ -3,66 +3,59 @@
 {% block title %}Codes promo · Administration{% endblock %}
 
 {% block admin_content %}
-    <div class="page-toolbar">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Codes promo</h1>
-        </div>
-        <div class="toolbar">
-            <p class="toolbar__count">{{ promoCodes|length }} code{{ promoCodes|length > 1 ? 's' }}</p>
-            <a href="{{ path('admin_promo_code_new') }}" class="btn btn--primary">Nouveau code promo</a>
-        </div>
-    </div>
+    {% embed 'components/_page_header.html.twig' with {eyebrow: 'Administration', title: 'Codes promo'} %}
+        {% block actions %}
+            <div class="toolbar">
+                <p class="toolbar__count">{{ promoCodes|length }} code{{ promoCodes|length > 1 ? 's' }}</p>
+                <a href="{{ path('admin_promo_code_new') }}" class="btn btn--primary">Nouveau code promo</a>
+            </div>
+        {% endblock %}
+    {% endembed %}
 
     {% if promoCodes is empty %}
-        <p class="empty-state">Aucun code promo pour le moment.</p>
+        {% include 'components/_empty_state.html.twig' with {message: 'Aucun code promo pour le moment.', action: {url: path('admin_promo_code_new'), label: 'Créer un code promo'}} %}
     {% else %}
-        <div class="table-wrapper">
-            <table class="table">
-                <thead>
+        {% embed 'components/_table.html.twig' with {columns: [
+            {label: 'Code'},
+            {label: 'Remise', num: true},
+            {label: 'Validité'},
+            {label: 'Minimum', num: true},
+            {label: 'Utilisations', num: true},
+            {label: 'Statut'},
+            {label: 'Actions', hidden: true},
+        ]} %}
+            {% block body %}
+                {% for promoCode in promoCodes %}
                     <tr>
-                        <th scope="col">Code</th>
-                        <th scope="col" class="num">Remise</th>
-                        <th scope="col">Validité</th>
-                        <th scope="col" class="num">Minimum</th>
-                        <th scope="col" class="num">Utilisations</th>
-                        <th scope="col">Statut</th>
-                        <th scope="col"><span class="visually-hidden">Actions</span></th>
+                        <td><code>{{ promoCode.code }}</code></td>
+                        <td class="num">{{ promoCode.discountType.value == 'percentage' ? promoCode.value ~ ' %' : promoCode.value|price }}</td>
+                        <td>
+                            {% if promoCode.startsAt %}Du {{ promoCode.startsAt|date('d/m/Y à H:i') }}{% endif %}
+                            {% if promoCode.endsAt %}{{ promoCode.startsAt ? 'au' : "Jusqu'au" }} {{ promoCode.endsAt|date('d/m/Y à H:i') }}{% endif %}
+                            {% if not promoCode.startsAt and not promoCode.endsAt %}Sans limite{% endif %}
+                        </td>
+                        <td class="num">{{ promoCode.minimumAmount is null ? '—' : promoCode.minimumAmount|price }}</td>
+                        <td class="num">{{ promoCode.usageCount }}{% if promoCode.maxUsages %} / {{ promoCode.maxUsages }}{% endif %}</td>
+                        <td>
+                            {% if promoCode.active %}
+                                <span class="badge badge--success">Actif</span>
+                            {% else %}
+                                <span class="badge badge--neutral">Désactivé</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="table__actions">
+                                <a href="{{ path('admin_promo_code_edit', {id: promoCode.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ promoCode.code }}</span></a>
+                                {% set status_action = promoCode.active ? 'deactivate' : 'activate' %}
+                                <form method="post" action="{{ path('admin_promo_code_' ~ status_action, {id: promoCode.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('promo-code-status') }}">
+                                    <button type="submit" class="btn btn--secondary">{{ promoCode.active ? 'Désactiver' : 'Activer' }}<span class="visually-hidden"> {{ promoCode.code }}</span></button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    {% for promoCode in promoCodes %}
-                        <tr>
-                            <td><code>{{ promoCode.code }}</code></td>
-                            <td class="num">{{ promoCode.discountType.value == 'percentage' ? promoCode.value ~ ' %' : promoCode.value|price }}</td>
-                            <td>
-                                {% if promoCode.startsAt %}Du {{ promoCode.startsAt|date('d/m/Y H:i') }}{% endif %}
-                                {% if promoCode.endsAt %}{{ promoCode.startsAt ? 'au' : "Jusqu'au" }} {{ promoCode.endsAt|date('d/m/Y H:i') }}{% endif %}
-                                {% if not promoCode.startsAt and not promoCode.endsAt %}Sans limite{% endif %}
-                            </td>
-                            <td class="num">{{ promoCode.minimumAmount is null ? '—' : promoCode.minimumAmount|price }}</td>
-                            <td class="num">{{ promoCode.usageCount }}{% if promoCode.maxUsages %} / {{ promoCode.maxUsages }}{% endif %}</td>
-                            <td>
-                                {% if promoCode.active %}
-                                    <span class="badge badge--success">Actif</span>
-                                {% else %}
-                                    <span class="badge badge--neutral">Désactivé</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="table__actions">
-                                    <a href="{{ path('admin_promo_code_edit', {id: promoCode.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ promoCode.code }}</span></a>
-                                    {% set status_action = promoCode.active ? 'deactivate' : 'activate' %}
-                                    <form method="post" action="{{ path('admin_promo_code_' ~ status_action, {id: promoCode.id}) }}">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('promo-code-status') }}">
-                                        <button type="submit" class="btn btn--secondary">{{ promoCode.active ? 'Désactiver' : 'Activer' }}<span class="visually-hidden"> {{ promoCode.code }}</span></button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                {% endfor %}
+            {% endblock %}
+        {% endembed %}
     {% endif %}
 {% endblock %}

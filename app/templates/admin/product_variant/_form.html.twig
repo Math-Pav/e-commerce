@@ -8,5 +8,3 @@
     {{ form_row(variantForm.isActive) }}
     <button type="submit" class="btn btn--primary">{{ button_label }}</button>
 {{ form_end(variantForm) }}
-
-<a href="{{ path('admin_product_variant_index', {id: product.id}) }}" class="back-link">← Retour aux variantes de {{ product.name }}</a>

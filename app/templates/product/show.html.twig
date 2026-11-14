@@ -15,10 +15,7 @@
         {% include 'product/_image.html.twig' with {product: product, large: true} %}
 
         <div class="product-detail__info">
-            <div class="page-header">
-                <p class="eyebrow">{{ product.category.name }}</p>
-                <h1 class="page-title">{{ product.name }}</h1>
-            </div>
+            {% include 'components/_page_header.html.twig' with {eyebrow: product.category.name, title: product.name} %}
 
             {# Variante présélectionnée : la première en stock. Sans choix, c'est la seule variante proposée. #}
             {% set selected_variant = product.firstVariantInStock %}
@@ -76,8 +73,6 @@
                     </button>
                 </form>
             {% endif %}
-
-            <a href="{{ path('product_index') }}" class="back-link">← Retour au catalogue</a>
         </div>
     </div>
 {% endblock %}

@@ -4,12 +4,13 @@
 
 {% block admin_content %}
     <div class="admin-form">
-        <div class="page-header">
-            <p class="eyebrow">Administration · {{ variant.product.name }}</p>
-            <h1 class="page-title">Modifier la variante</h1>
-            <p class="lead">Prix du produit : {{ variant.product.price|price }}. Les commandes déjà passées gardent leur libellé et leur prix.</p>
-        </div>
+        {% include 'components/_page_header.html.twig' with {
+            back: {url: path('admin_product_variant_index', {id: variant.product.id}), label: 'Retour aux variantes de ' ~ variant.product.name},
+            eyebrow: 'Administration · ' ~ variant.product.name,
+            title: 'Modifier la variante',
+            lead: 'Prix du produit : ' ~ variant.product.price|price ~ '. Les commandes déjà passées gardent leur libellé et leur prix.',
+        } %}
 
-        {% include 'admin/product_variant/_form.html.twig' with {button_label: 'Enregistrer les modifications', product: variant.product} %}
+        {% include 'admin/product_variant/_form.html.twig' with {button_label: 'Enregistrer les modifications'} %}
     </div>
 {% endblock %}

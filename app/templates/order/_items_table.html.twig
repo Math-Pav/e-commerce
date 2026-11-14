@@ -1,0 +1,47 @@
+{#
+    Lignes d'une commande avec sous-total, remise et total : page client et page d'administration.
+    Paramètres : order ; with_images (vignette du produit, côté client).
+#}
+{% embed 'components/_table.html.twig' with {columns: [
+    {label: 'Produit'},
+    {label: 'Prix unitaire', num: true},
+    {label: 'Quantité', num: true},
+    {label: 'Sous-total', num: true},
+]} %}
+    {% block body %}
+        {% for item in order.items %}
+            <tr>
+                <td>
+                    <span class="table__product">
+                        {# Le produit peut avoir été supprimé depuis la commande : seul son nom (copié) reste #}
+                        {% if with_images|default(false) and item.product %}
+                            {% include 'product/_image.html.twig' with {product: item.product, thumb: true} %}
+                        {% endif %}
+                        {{ item.displayName }}
+                    </span>
+                </td>
+                <td class="num">{{ item.unitPrice|price }}</td>
+                <td class="num">{{ item.quantity }}</td>
+                <td class="num">{{ item.subtotal|price }}</td>
+            </tr>
+        {% endfor %}
+    {% endblock %}
+    {% block foot %}
+        <tfoot>
+            {% if order.discountCode %}
+                <tr>
+                    <th scope="row" colspan="3" class="num">Sous-total</th>
+                    <td class="num">{{ order.subtotalAmount|price }}</td>
+                </tr>
+                <tr>
+                    <th scope="row" colspan="3" class="num">Remise ({{ order.discountCode }})</th>
+                    <td class="num">− {{ order.discountAmount|price }}</td>
+                </tr>
+            {% endif %}
+            <tr>
+                <th scope="row" colspan="3" class="num">Total</th>
+                <td class="num price">{{ order.totalAmount|price }}</td>
+            </tr>
+        </tfoot>
+    {% endblock %}
+{% endembed %}

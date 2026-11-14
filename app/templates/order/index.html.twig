@@ -3,35 +3,27 @@
 {% block title %}Mes commandes{% endblock %}
 
 {% block body %}
-    <h1 class="page-title">Mes commandes</h1>
+    {% include 'components/_page_header.html.twig' with {title: 'Mes commandes'} %}
 
     {% if orders is empty %}
-        <div class="empty-state">
-            <p>Vous n'avez pas encore passé de commande.</p>
-            <a href="{{ path('product_index') }}" class="btn btn--primary">Découvrir le catalogue</a>
-        </div>
+        {% include 'components/_empty_state.html.twig' with {message: 'Vous n\'avez pas encore passé de commande.', action: {url: path('product_index'), label: 'Découvrir le catalogue'}} %}
     {% else %}
-        <div class="table-wrapper">
-            <table class="table">
-                <thead>
+        {% embed 'components/_table.html.twig' with {columns: [
+            {label: 'Référence'},
+            {label: 'Date'},
+            {label: 'Statut'},
+            {label: 'Total', num: true},
+        ]} %}
+            {% block body %}
+                {% for order in orders %}
                     <tr>
-                        <th scope="col">Référence</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Statut</th>
-                        <th scope="col" class="num">Total</th>
+                        <td><a href="{{ path('order_show', {reference: order.reference}) }}">{{ order.reference }}</a></td>
+                        <td>{{ order.createdAt|date('d/m/Y') }}</td>
+                        <td>{% include 'order/_status_badge.html.twig' with {status: order.status} %}</td>
+                        <td class="num">{{ order.totalAmount|price }}</td>
                     </tr>
-                </thead>
-                <tbody>
-                    {% for order in orders %}
-                        <tr>
-                            <td><a href="{{ path('order_show', {reference: order.reference}) }}">{{ order.reference }}</a></td>
-                            <td>{{ order.createdAt|date('d/m/Y') }}</td>
-                            <td>{% include 'order/_status_badge.html.twig' with {status: order.status} %}</td>
-                            <td class="num">{{ order.totalAmount|price }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                {% endfor %}
+            {% endblock %}
+        {% endembed %}
     {% endif %}
 {% endblock %}

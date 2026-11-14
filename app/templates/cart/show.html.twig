@@ -3,13 +3,10 @@
 {% block title %}Mon panier{% endblock %}
 
 {% block body %}
-    <h1 class="page-title">Mon panier</h1>
+    {% include 'components/_page_header.html.twig' with {title: 'Mon panier'} %}
 
     {% if cart.empty %}
-        <div class="empty-state">
-            <p>Votre panier est vide.</p>
-            <a href="{{ path('product_index') }}" class="btn btn--primary">Découvrir le catalogue</a>
-        </div>
+        {% include 'components/_empty_state.html.twig' with {message: 'Votre panier est vide.', action: {url: path('product_index'), label: 'Découvrir le catalogue'}} %}
     {% else %}
         <div class="layout-split">
             <div class="layout-split__main">
@@ -61,7 +58,7 @@
                     <span class="summary-total__amount">{{ cart.total|price }}</span>
                 </div>
                 <a href="{{ path('order_checkout') }}" class="btn btn--primary btn--block">Passer commande</a>
-                <a href="{{ path('product_index') }}" class="back-link">Continuer mes achats</a>
+                <a href="{{ path('product_index') }}" class="back-link">← Retour au catalogue</a>
             </aside>
         </div>
     {% endif %}

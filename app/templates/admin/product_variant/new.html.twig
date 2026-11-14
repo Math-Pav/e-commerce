@@ -4,12 +4,13 @@
 
 {% block admin_content %}
     <div class="admin-form">
-        <div class="page-header">
-            <p class="eyebrow">Administration · {{ product.name }}</p>
-            <h1 class="page-title">Nouvelle variante</h1>
-            <p class="lead">Prix du produit : {{ product.price|price }}.</p>
-        </div>
+        {% include 'components/_page_header.html.twig' with {
+            back: {url: path('admin_product_variant_index', {id: product.id}), label: 'Retour aux variantes de ' ~ product.name},
+            eyebrow: 'Administration · ' ~ product.name,
+            title: 'Nouvelle variante',
+            lead: 'Prix du produit : ' ~ product.price|price ~ '. Une variante sans prix propre utilise ce prix.',
+        } %}
 
-        {% include 'admin/product_variant/_form.html.twig' with {button_label: 'Ajouter la variante'} %}
+        {% include 'admin/product_variant/_form.html.twig' with {button_label: 'Créer la variante'} %}
     </div>
 {% endblock %}

@@ -4,10 +4,7 @@
 
 {% block body %}
     <div class="auth-card">
-        <div class="page-header">
-            <h1 class="page-title">Connexion</h1>
-            <p class="lead">Connectez-vous pour passer commande et suivre vos achats.</p>
-        </div>
+        {% include 'components/_page_header.html.twig' with {title: 'Connexion', lead: 'Connectez-vous pour passer commande et suivre vos achats.'} %}
 
         {% if error %}
             {# Message fourni par Symfony selon la cause de l'échec, traduit via le domaine « security » #}

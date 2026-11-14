@@ -1,15 +1,19 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}Renommer {{ category.name }} · Administration{% endblock %}
+{% block title %}Modifier {{ category.name }} · Administration{% endblock %}
 
 {% block admin_content %}
     <div class="admin-form">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Renommer la catégorie</h1>
-            <p class="lead">Adresse du filtre : <code>/produits?categorie={{ category.slug }}</code> (elle ne change pas si le nom change).</p>
-        </div>
+        {% embed 'components/_page_header.html.twig' with {
+            back: {url: path('admin_category_index'), label: 'Retour aux catégories'},
+            eyebrow: 'Administration',
+            title: 'Modifier la catégorie',
+        } %}
+            {% block lead %}
+                <p class="lead">Adresse du filtre : <code>/produits?categorie={{ category.slug }}</code> (elle ne change pas si le nom change).</p>
+            {% endblock %}
+        {% endembed %}
 
-        {% include 'admin/category/_form.html.twig' with {button_label: 'Enregistrer le nouveau nom'} %}
+        {% include 'admin/category/_form.html.twig' with {button_label: 'Enregistrer les modifications'} %}
     </div>
 {% endblock %}

@@ -1,0 +1,10 @@
+{#
+    État vide : une liste sans élément, une recherche sans résultat, une page d'erreur.
+    Paramètres : message (obligatoire), action (facultatif) : { url, label }, le bouton qui permet d'en sortir.
+#}
+<div class="empty-state">
+    <p>{{ message }}</p>
+    {% if action is defined and action %}
+        <a href="{{ action.url }}" class="btn btn--primary">{{ action.label }}</a>
+    {% endif %}
+</div>

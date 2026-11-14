@@ -3,35 +3,33 @@
 {% block title %}Produits · Administration{% endblock %}
 
 {% block admin_content %}
-    <div class="page-toolbar">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Produits</h1>
-        </div>
-        <div class="toolbar">
-            <p class="toolbar__count">{{ products|length }} produit{{ products|length > 1 ? 's' }}</p>
-            <a href="{{ path('admin_product_new') }}" class="btn btn--primary">Nouveau produit</a>
-        </div>
-    </div>
+    {% embed 'components/_page_header.html.twig' with {eyebrow: 'Administration', title: 'Produits'} %}
+        {% block actions %}
+            <div class="toolbar">
+                <p class="toolbar__count">{{ products|length }} produit{{ products|length > 1 ? 's' }}</p>
+                <a href="{{ path('admin_product_new') }}" class="btn btn--primary">Nouveau produit</a>
+            </div>
+        {% endblock %}
+    {% endembed %}
 
-    <div class="table-wrapper">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th scope="col">Produit</th>
-                    <th scope="col">Catégorie</th>
-                    <th scope="col" class="num">Prix</th>
-                    <th scope="col" class="num">Stock</th>
-                    <th scope="col">Statut</th>
-                    <th scope="col"><span class="visually-hidden">Actions</span></th>
-                </tr>
-            </thead>
-            <tbody>
+    {% if products is empty %}
+        {% include 'components/_empty_state.html.twig' with {message: 'Aucun produit pour le moment.', action: {url: path('admin_product_new'), label: 'Créer un produit'}} %}
+    {% else %}
+        {% embed 'components/_table.html.twig' with {columns: [
+            {label: 'Produit'},
+            {label: 'Catégorie'},
+            {label: 'Prix', num: true},
+            {label: 'Stock', num: true},
+            {label: 'Statut'},
+            {label: 'Actions', hidden: true},
+        ]} %}
+            {% block body %}
                 {% for product in products %}
                     <tr>
                         <td><strong>{{ product.name }}</strong></td>
                         <td>{{ product.category.name }}</td>
-                        <td class="num">{{ product.price|price }}</td>
+                        {# Prix des variantes, comme dans le catalogue (A-13) #}
+                        <td class="num">{{ product.hasVariedPrices ? 'À partir de ' }}{{ product.fromPrice|price }}</td>
                         <td class="num">
                             {# Stock total des variantes actives ; le détail par variante est dans « Variantes » #}
                             {% if not product.inStock %}
@@ -42,7 +40,7 @@
                         </td>
                         <td>
                             {% if product.active %}
-                                <span class="badge badge--success">En ligne</span>
+                                <span class="badge badge--success">Actif</span>
                             {% else %}
                                 <span class="badge badge--neutral">Désactivé</span>
                             {% endif %}
@@ -60,7 +58,7 @@
                         </td>
                     </tr>
                 {% endfor %}
-            </tbody>
-        </table>
-    </div>
+            {% endblock %}
+        {% endembed %}
+    {% endif %}
 {% endblock %}

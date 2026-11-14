@@ -3,12 +3,7 @@
 {% block title %}Commandes · Administration{% endblock %}
 
 {% block admin_content %}
-    <div class="page-toolbar">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Commandes</h1>
-        </div>
-    </div>
+    {% include 'components/_page_header.html.twig' with {eyebrow: 'Administration', title: 'Commandes'} %}
 
     <div class="toolbar">
         <nav class="chips" aria-label="Filtrer par statut">
@@ -21,31 +16,30 @@
     </div>
 
     {% if orders is empty %}
-        <p class="empty-state">Aucune commande{{ currentStatus ? ' avec ce statut' }}.</p>
+        {% if currentStatus %}
+            {% include 'components/_empty_state.html.twig' with {message: 'Aucune commande avec ce statut.', action: {url: path('admin_order_index'), label: 'Voir toutes les commandes'}} %}
+        {% else %}
+            {% include 'components/_empty_state.html.twig' with {message: 'Aucune commande pour le moment.'} %}
+        {% endif %}
     {% else %}
-        <div class="table-wrapper">
-            <table class="table">
-                <thead>
+        {% embed 'components/_table.html.twig' with {columns: [
+            {label: 'Référence'},
+            {label: 'Date'},
+            {label: 'Client'},
+            {label: 'Statut'},
+            {label: 'Total', num: true},
+        ]} %}
+            {% block body %}
+                {% for order in orders %}
                     <tr>
-                        <th scope="col">Référence</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Client</th>
-                        <th scope="col">Statut</th>
-                        <th scope="col" class="num">Total</th>
+                        <td><a href="{{ path('admin_order_show', {reference: order.reference}) }}">{{ order.reference }}</a></td>
+                        <td>{{ order.createdAt|date('d/m/Y à H:i') }}</td>
+                        <td>{{ order.customer.firstName }} {{ order.customer.lastName }}</td>
+                        <td>{% include 'order/_status_badge.html.twig' with {status: order.status} %}</td>
+                        <td class="num">{{ order.totalAmount|price }}</td>
                     </tr>
-                </thead>
-                <tbody>
-                    {% for order in orders %}
-                        <tr>
-                            <td><a href="{{ path('admin_order_show', {reference: order.reference}) }}">{{ order.reference }}</a></td>
-                            <td>{{ order.createdAt|date('d/m/Y à H:i') }}</td>
-                            <td>{{ order.customer.firstName }} {{ order.customer.lastName }}</td>
-                            <td>{% include 'order/_status_badge.html.twig' with {status: order.status} %}</td>
-                            <td class="num">{{ order.totalAmount|price }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                {% endfor %}
+            {% endblock %}
+        {% endembed %}
     {% endif %}
 {% endblock %}

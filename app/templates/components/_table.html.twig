@@ -1,0 +1,31 @@
+{#
+    Tableau de données, toujours dans .table-wrapper : sur un petit écran, c'est le tableau qui défile, pas la page.
+    S'utilise avec embed. Paramètres :
+      - columns : liste de { label, num (aligné à droite, pour les nombres), hidden (libellé lu par les seuls lecteurs d'écran) }
+      - caption : titre du tableau pour les lecteurs d'écran (facultatif)
+    Blocs : « body » (les lignes <tr>) et « foot » (un <tfoot> complet, facultatif).
+#}
+<div class="table-wrapper">
+    <table class="table">
+        {% if caption is defined and caption %}
+            <caption class="visually-hidden">{{ caption }}</caption>
+        {% endif %}
+        <thead>
+            <tr>
+                {% for column in columns %}
+                    <th scope="col"{{ (column.num ?? false) ? ' class="num"' }}>
+                        {%- if column.hidden ?? false -%}
+                            <span class="visually-hidden">{{ column.label }}</span>
+                        {%- else -%}
+                            {{ column.label }}
+                        {%- endif -%}
+                    </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% block body %}{% endblock %}
+        </tbody>
+        {% block foot %}{% endblock %}
+    </table>
+</div>

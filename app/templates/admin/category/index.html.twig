@@ -3,51 +3,44 @@
 {% block title %}Catégories · Administration{% endblock %}
 
 {% block admin_content %}
-    <div class="page-toolbar">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Catégories</h1>
-        </div>
-        <div class="toolbar">
-            <p class="toolbar__count">{{ rows|length }} catégorie{{ rows|length > 1 ? 's' }}</p>
-            <a href="{{ path('admin_category_new') }}" class="btn btn--primary">Nouvelle catégorie</a>
-        </div>
-    </div>
+    {% embed 'components/_page_header.html.twig' with {eyebrow: 'Administration', title: 'Catégories'} %}
+        {% block actions %}
+            <div class="toolbar">
+                <p class="toolbar__count">{{ rows|length }} catégorie{{ rows|length > 1 ? 's' }}</p>
+                <a href="{{ path('admin_category_new') }}" class="btn btn--primary">Nouvelle catégorie</a>
+            </div>
+        {% endblock %}
+    {% endembed %}
 
     {% if rows is empty %}
-        <p class="empty-state">Aucune catégorie pour le moment.</p>
+        {% include 'components/_empty_state.html.twig' with {message: 'Aucune catégorie pour le moment.', action: {url: path('admin_category_new'), label: 'Créer une catégorie'}} %}
     {% else %}
-        <div class="table-wrapper">
-            <table class="table">
-                <thead>
+        {% embed 'components/_table.html.twig' with {columns: [
+            {label: 'Catégorie'},
+            {label: 'Adresse'},
+            {label: 'Produits', num: true},
+            {label: 'Actions', hidden: true},
+        ]} %}
+            {% block body %}
+                {% for row in rows %}
+                    {% set category = row.category %}
                     <tr>
-                        <th scope="col">Catégorie</th>
-                        <th scope="col">Adresse</th>
-                        <th scope="col" class="num">Produits</th>
-                        <th scope="col"><span class="visually-hidden">Actions</span></th>
+                        <td><strong>{{ category.name }}</strong></td>
+                        <td><code>{{ category.slug }}</code></td>
+                        <td class="num">{{ row.productCount }}</td>
+                        <td>
+                            <div class="table__actions">
+                                <a href="{{ path('admin_category_edit', {id: category.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ category.name }}</span></a>
+                                {# Le bouton reste visible si la catégorie n'est pas vide : le refus est expliqué par un message #}
+                                <form method="post" action="{{ path('admin_category_delete', {id: category.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('category-delete') }}">
+                                    <button type="submit" class="btn btn--danger">Supprimer<span class="visually-hidden"> {{ category.name }}</span></button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    {% for row in rows %}
-                        {% set category = row.category %}
-                        <tr>
-                            <td><strong>{{ category.name }}</strong></td>
-                            <td><code>{{ category.slug }}</code></td>
-                            <td class="num">{{ row.productCount }}</td>
-                            <td>
-                                <div class="table__actions">
-                                    <a href="{{ path('admin_category_edit', {id: category.id}) }}" class="btn btn--secondary">Renommer<span class="visually-hidden"> {{ category.name }}</span></a>
-                                    {# Le bouton reste visible si la catégorie n'est pas vide : le refus est expliqué par un message #}
-                                    <form method="post" action="{{ path('admin_category_delete', {id: category.id}) }}">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('category-delete') }}">
-                                        <button type="submit" class="btn btn--secondary">Supprimer<span class="visually-hidden"> {{ category.name }}</span></button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                {% endfor %}
+            {% endblock %}
+        {% endembed %}
     {% endif %}
 {% endblock %}

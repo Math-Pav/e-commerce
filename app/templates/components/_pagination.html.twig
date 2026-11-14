@@ -1,0 +1,29 @@
+{#
+    Pagination : liens simples, utilisables sans JavaScript ; chaque page a sa propre adresse.
+    Paramètres :
+      - pagination : objet App\Model\Pagination
+      - route : nom de la route ; route_params : paramètres de la première page (filtres, tri…)
+      - label : nom de la navigation pour les lecteurs d'écran (ex. « Pagination du catalogue »)
+    La page 1 n'a pas de paramètre « page » : son adresse reste celle de la liste.
+#}
+{% if pagination.lastPage > 1 %}
+    <nav class="pagination" aria-label="{{ label }}">
+        <ul class="pagination__list">
+            {% if pagination.hasPrevious %}
+                <li><a href="{{ path(route, pagination.currentPage - 1 > 1 ? route_params|merge({page: pagination.currentPage - 1}) : route_params) }}" class="pagination__link" rel="prev">Page précédente</a></li>
+            {% endif %}
+            {% for page in pagination.pages %}
+                <li>
+                    {% if page is null %}
+                        <span class="pagination__ellipsis" aria-hidden="true">…</span>
+                    {% else %}
+                        <a href="{{ path(route, page > 1 ? route_params|merge({page: page}) : route_params) }}" class="pagination__link" aria-current="{{ page == pagination.currentPage ? 'page' : 'false' }}"><span class="visually-hidden">Page </span>{{ page }}</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            {% if pagination.hasNext %}
+                <li><a href="{{ path(route, route_params|merge({page: pagination.currentPage + 1})) }}" class="pagination__link" rel="next">Page suivante</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}
