@@ -27,7 +27,9 @@ final class AccountControllerTest extends WebTestCase
         $this->logIn($client, 'client@example.com');
 
         $client->request('GET', '/produits');
-        $client->clickLink('Camille');
+        // Le prénom ouvre le menu du compte (<details>) ; le lien « Mon compte » est dans ce menu
+        self::assertSelectorTextContains('nav summary', 'Camille');
+        $client->clickLink('Mon compte');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Mon compte');

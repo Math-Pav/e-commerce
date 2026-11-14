@@ -144,7 +144,42 @@ svg { flex: none; }
 }
 .site-nav__link:hover { color: var(--color-text); background: var(--color-surface); }
 .site-nav__link[aria-current="page"] { color: var(--color-text); font-weight: 600; }
-.site-nav__user { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: var(--text-md); font-weight: 500; }
+
+/* Menu du compte : un <details> que le navigateur ouvre et ferme lui-même, sans JavaScript */
+.account-menu { position: relative; }
+.account-menu__toggle { display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap-target); padding: 7px 12px; color: var(--color-text); list-style: none; cursor: pointer; }
+.account-menu__toggle::-webkit-details-marker { display: none; }
+.account-menu[open] .account-menu__toggle { background: var(--color-surface); }
+.account-menu[open] .account-menu__chevron { transform: rotate(180deg); }
+.account-menu__list {
+    position: absolute;
+    z-index: 10;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 220px;
+    max-width: calc(100vw - 2 * var(--gutter));
+    margin: 0;
+    padding: 8px;
+    list-style: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-raised);
+}
+.account-menu__link {
+    display: flex;
+    align-items: center;
+    min-height: var(--tap-target);
+    padding: 0 12px;
+    border-radius: var(--radius-xs);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    font-weight: 500;
+    text-decoration: none;
+}
+.account-menu__link:hover { background: var(--color-surface); color: var(--color-text); }
+.account-menu__link[aria-current="page"] { color: var(--color-accent); font-weight: 600; }
+.account-menu__separator { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-border); }
 
 .avatar {
     width: 30px;
@@ -456,8 +491,7 @@ a.summary-row__label { display: inline-flex; align-items: center; min-height: va
     flex-direction: column;
     gap: 24px;
 }
-.auth-card__footer { padding-top: 24px; border-top: 1px solid var(--color-border); font-size: var(--text-md); text-align: center; color: var(--color-muted); }
-.auth-card__footer a { display: inline-flex; align-items: center; min-height: var(--tap-target); }
+.auth-card__footer { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; border-top: 1px solid var(--color-border); font-size: var(--text-md); text-align: center; color: var(--color-muted); }
 
 /* Administration --------------------------------------------------------- */
 .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--color-border); }
@@ -482,11 +516,28 @@ a.summary-row__label { display: inline-flex; align-items: center; min-height: va
 .stock--out { color: var(--color-danger); }
 
 /* Petits écrans ---------------------------------------------------------- */
+/* Repères à vérifier : 375 px de large, aucun défilement horizontal de la page.
+   Seuls les tableaux et le graphique défilent, dans leur propre cadre. */
 @media (max-width: 640px) {
+    :root { --gutter: 16px; }
+    .site-main { padding: 24px 0 48px; }
     .page-title { font-size: var(--text-4xl); }
     .page-title--xl { font-size: var(--text-5xl); }
-    .cart-link { margin-left: 0; }
+
+    /* En-tête sur deux lignes : le logo, puis la navigation sur toute la largeur */
+    .site-header__inner { gap: 8px; padding-top: 12px; padding-bottom: 12px; }
+    .site-nav { width: 100%; justify-content: space-between; gap: 4px; }
+    .site-nav__link { padding: 12px 10px; }
+    .account-menu__name { max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cart-link { margin-left: 0; padding: 10px 14px; }
+    /* Le mot « Panier » reste lu par les lecteurs d'écran ; seule l'icône (et le nombre d'articles) s'affiche */
+    .cart-link__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    .tabs__link { padding: 12px; }
     .auth-card { padding: 24px; }
+    .callout > form, .callout .btn { width: 100%; }
+    .table th, .table td { padding: 12px 14px; }
+    .steps__separator { width: 16px; }
 }
 
 /* Administration : formulaire produit et actions du tableau --------------- */

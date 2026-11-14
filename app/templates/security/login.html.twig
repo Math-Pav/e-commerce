@@ -26,6 +26,9 @@
             <button type="submit" class="btn btn--primary btn--block">Se connecter</button>
         </form>
 
-        <p class="auth-card__footer">Pas encore de compte ? <a href="{{ path('app_register') }}">Créer un compte</a></p>
+        <div class="auth-card__footer">
+            <p>Pas encore de compte ?</p>
+            <a href="{{ path('app_register') }}" class="btn btn--secondary btn--block">Créer un compte</a>
+        </div>
     </div>
 {% endblock %}
