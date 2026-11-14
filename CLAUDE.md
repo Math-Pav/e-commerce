@@ -26,13 +26,15 @@ Instructions permanentes pour Claude sur ce projet. À lire avant toute interven
 - **PHPUnit** pour les tests
 - **PHPStan** (niveau 8, extensions Symfony et Doctrine) pour l'analyse statique et **PHP-CS-Fixer** (règles `@Symfony`) pour le formatage, en dépendances de développement (voir `docs/adr/0014-analyse-statique-et-formatage.md`)
 - **Docker Compose** pour l'environnement local (php, nginx, database, adminer, mailpit : interface sur http://localhost:8025)
+- Configuration de **production** prête mais non déployée : `compose.prod.yaml` + `docker/prod/Dockerfile` multi-étapes (sans dépendances de développement, OPcache, utilisateur non root)
 - **Git** pour le versionnement
 
 ## Organisation du dépôt
 
 - `app/` : l'application Symfony
-- `docker/` : configuration des conteneurs (Dockerfile PHP, configuration Nginx)
-- `compose.yaml` : définition des services
+- `docker/` : configuration des conteneurs (Dockerfile PHP, configuration Nginx) ; `docker/prod/` : image et réglages de production
+- `compose.yaml` : définition des services de développement
+- `compose.prod.yaml` : services de production (image construite, secrets fournis par l'environnement), voir `docs/deploiement.md` et `docs/adr/0022-configuration-de-production.md`
 - `docs/` : documentation technique et décisions (`docs/adr/`)
 
 Toutes les commandes PHP, Composer et Symfony s'exécutent **dans le conteneur** :
