@@ -1,33 +1,65 @@
 /* ==========================================================================
    Atelier Papier : feuille de style principale
+   Direction visuelle « papeterie d'atelier » (ADR 0024) : papier crème, encre, vert sapin et terre cuite.
    1. Jetons de design   2. Base   3. Mise en page   4. Composants   5. Pages   6. Petits écrans
    ========================================================================== */
 
 /* 1. Jetons de design ---------------------------------------------------- */
 :root {
-    --color-bg: #ffffff;
-    --color-surface: #f5f6f8;
-    --color-text: #15181d;
-    --color-text-soft: #3d434c;
-    --color-muted: #5b6370;
-    --color-border: #e3e5e8;
-    --color-border-strong: #c9ced5;
-    --color-accent: #2343d6;
-    --color-accent-hover: #1a33a8;
-    --color-success: #1e6b3e;
-    --color-success-bg: #e7f5ec;
-    --color-warning: #7a4a00;
-    --color-warning-bg: #fff3dc;
-    --color-danger: #b42318;
-    --color-danger-bg: #fdecea;
-    --tint-mugs: #eef1fd;
-    --tint-carnets: #eef5ef;
-    --tint-stylos: #f7f1eb;
+    /* Papier et encre : fond crème, panneaux couleur kraft, cartes blanches */
+    --color-bg: #faf6ef;
+    --color-surface: #f2ebdf;
+    --color-surface-raised: #ffffff;
+    --color-text: #1c1a17;
+    --color-text-soft: #47413a;
+    --color-muted: #6a6158;
     /* Texte posé sur un fond foncé ou coloré (bouton principal, élément sélectionné) */
     --color-text-inverse: #ffffff;
 
-    --font-body: 'Inter', system-ui, sans-serif;
-    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --color-border: #e6ddcf;
+    --color-border-strong: #c9bca8;
+    /* Contour des champs : contraste de 3:1 au moins avec le fond (WCAG 1.4.11) */
+    --color-field-border: #8f8473;
+
+    /* Vert sapin : liens, bouton principal, élément actif */
+    --color-accent: #1f4a3a;
+    --color-accent-hover: #163829;
+    --color-accent-soft: #dfe9e1;
+    /* Terre cuite : surtitres, mises en avant, anneau de focus */
+    --color-highlight: #b04a26;
+    --color-highlight-soft: #f6e4da;
+    --color-focus: #b04a26;
+
+    /* Sections foncées (bandeau d'accueil, pied de page) */
+    --color-dark: #1f4a3a;
+    --color-ink: #1c1a17;
+    --color-on-dark: #faf6ef;
+    --color-on-dark-soft: #c7d8cf;
+    --color-on-dark-accent: #e9b872;
+    --color-on-ink-soft: #b8ad9c;
+    --color-on-dark-line: rgba(250, 246, 239, 0.14);
+
+    --color-success: #23683f;
+    --color-success-bg: #e4f1e7;
+    --color-warning: #8a5300;
+    --color-warning-bg: #fbefd6;
+    --color-danger: #b3261e;
+    --color-danger-bg: #fbe7e4;
+
+    /* Teintes des catégories : fond des visuels de remplacement, puis couleur de leur dessin */
+    --tint-mugs: #f3e3d6;
+    --tint-carnets: #dfe9e1;
+    --tint-stylos: #e2e6ef;
+    --tint-default: #efe7da;
+    --tint-mugs-ink: #9a4a2b;
+    --tint-carnets-ink: #2f5e4b;
+    --tint-stylos-ink: #3b4a7a;
+    --tint-default-ink: #6a6158;
+
+    /* Polices système : aucun fichier à télécharger, aucune ressource externe (ADR 0024).
+       Titres : un serif « de livre » ; texte : la police d'interface du système. */
+    --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', 'Liberation Sans', Arial, sans-serif;
+    --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', 'URW Palladio L', P052, Georgia, serif;
 
     /* Tailles de texte : de la mention discrète au grand titre */
     --text-2xs: 12px;
@@ -37,54 +69,72 @@
     --text-base: 16px;
     --text-lg: 17px;
     --text-xl: 18px;
-    --text-2xl: 20px;
-    --text-3xl: 28px;
+    --text-2xl: 21px;
+    --text-3xl: 26px;
     --text-4xl: 32px;
-    --text-5xl: 36px;
-    --text-6xl: 40px;
-    --text-7xl: 48px;
+    --text-5xl: 38px;
+    --text-6xl: 44px;
+    --text-7xl: 52px;
+    --text-8xl: 60px;
 
-    --radius-xs: 8px;
-    --radius-sm: 10px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
+    --radius-xs: 6px;
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
     --radius-xl: 20px;
     --radius-pill: 999px;
 
-    --shadow-raised: 0 8px 24px rgba(21, 24, 29, 0.06);
+    /* Ombres chaudes (teintées d'encre), du léger relief à la carte survolée */
+    --shadow-sm: 0 1px 2px rgba(28, 26, 23, 0.06), 0 1px 1px rgba(28, 26, 23, 0.04);
+    --shadow-raised: 0 14px 32px -14px rgba(28, 26, 23, 0.28), 0 2px 6px rgba(28, 26, 23, 0.05);
+
+    /* Micro-transitions : courtes et sobres, supprimées si l'utilisateur réduit les animations */
+    --transition: 160ms ease;
 
     /* Zone cliquable minimale d'un lien ou d'un bouton (recommandation WCAG 2.5.5) */
     --tap-target: 44px;
-    --container: 1120px;
+    --container: 1200px;
     /* Marge latérale de la page : réduite sur les petits écrans */
-    --gutter: 24px;
+    --gutter: 32px;
 }
 
 /* 2. Base ---------------------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; }
 
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
 body {
     margin: 0;
     font-family: var(--font-body);
     font-size: var(--text-base);
-    line-height: 1.5;
+    line-height: 1.55;
     color: var(--color-text);
     background: var(--color-bg);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3 {
     margin: 0;
     font-family: var(--font-display);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
 }
 
 p { margin: 0; }
-a { color: var(--color-accent); }
-a:hover { color: var(--color-accent-hover); }
-:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+img { max-width: 100%; }
+a { color: var(--color-accent); text-underline-offset: 0.18em; text-decoration-thickness: 1px; transition: color var(--transition); }
+a:hover { color: var(--color-highlight); }
+:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
 svg { flex: none; }
+::selection { background: var(--color-accent-soft); color: var(--color-text); }
+
+/* Respect du réglage « réduire les animations » du système : aucune transition */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
 
 /* Texte lu par les lecteurs d'écran, mais invisible à l'écran */
 .visually-hidden {
@@ -99,71 +149,111 @@ svg { flex: none; }
     border: 0;
 }
 
+/* Lien d'évitement : invisible jusqu'à ce qu'il reçoive le focus au clavier */
+.skip-link {
+    position: absolute;
+    z-index: 100;
+    top: 8px;
+    left: 8px;
+    padding: 12px 18px;
+    border-radius: var(--radius-sm);
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
+    font-weight: 600;
+    transform: translateY(-200%);
+}
+.skip-link:focus { transform: none; color: var(--color-text-inverse); }
+
 /* 3. Mise en page -------------------------------------------------------- */
 .container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
 .site { min-height: 100vh; display: flex; flex-direction: column; }
-.site-main { flex: 1; padding: 40px 0 64px; }
-.site-main > .container { display: flex; flex-direction: column; gap: 28px; }
+.site-main { flex: 1; padding: 48px 0 80px; }
+.site-main > .container { display: flex; flex-direction: column; gap: 32px; }
 
-.site-header { background: var(--color-bg); border-bottom: 1px solid var(--color-border); }
+/* Bandeau d'information au-dessus de l'en-tête */
+.announcement { background: var(--color-ink); color: var(--color-on-dark); font-size: var(--text-xs); }
+.announcement__inner { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 36px; padding-top: 6px; padding-bottom: 6px; text-align: center; }
+.announcement svg { color: var(--color-on-dark-accent); }
+
+.site-header { position: relative; z-index: 20; background: var(--color-bg); border-bottom: 1px solid var(--color-border); }
 .site-header__inner {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding-top: 16px;
-    padding-bottom: 16px;
+    padding-top: 18px;
+    padding-bottom: 18px;
 }
 
-.logo { display: flex; align-items: center; gap: 10px; color: var(--color-text); text-decoration: none; }
+.logo { display: flex; align-items: center; gap: 12px; min-height: var(--tap-target); color: var(--color-text); text-decoration: none; }
 .logo:hover { color: var(--color-text); }
 .logo__mark {
-    width: 32px;
-    height: 32px;
+    position: relative;
+    width: 38px;
+    height: 38px;
     border-radius: var(--radius-xs);
     background: var(--color-accent);
-    color: var(--color-text-inverse);
+    color: var(--color-on-dark);
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
-    font-size: var(--text-lg);
+    font-size: var(--text-2xl);
+    font-style: italic;
     font-weight: 700;
+    box-shadow: var(--shadow-sm);
 }
+/* Coin replié en terre cuite : la « feuille » du logo */
+.logo__mark::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-style: solid;
+    border-width: 0 12px 12px 0;
+    border-color: transparent var(--color-bg) var(--color-highlight) transparent;
+}
+.logo__text { display: flex; flex-direction: column; line-height: 1.1; }
 .logo__name { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; letter-spacing: -0.01em; }
+.logo__tagline { font-size: var(--text-2xs); color: var(--color-muted); letter-spacing: 0.06em; text-transform: uppercase; }
 
 .site-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .site-nav__link {
-    padding: 12px 14px;
-    border-radius: var(--radius-xs);
-    color: var(--color-muted);
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target);
+    padding: 0 14px;
+    border-radius: var(--radius-pill);
+    color: var(--color-text-soft);
     font-size: var(--text-md);
     font-weight: 500;
     text-decoration: none;
+    transition: color var(--transition), background-color var(--transition);
 }
 .site-nav__link:hover { color: var(--color-text); background: var(--color-surface); }
-.site-nav__link[aria-current="page"] { color: var(--color-text); font-weight: 600; }
+.site-nav__link[aria-current="page"] { color: var(--color-accent); font-weight: 650; }
 
 /* Menu du compte : un <details> que le navigateur ouvre et ferme lui-même, sans JavaScript */
 .account-menu { position: relative; }
-.account-menu__toggle { display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap-target); padding: 7px 12px; color: var(--color-text); list-style: none; cursor: pointer; }
+.account-menu__toggle { gap: 8px; padding: 0 10px 0 6px; color: var(--color-text); list-style: none; cursor: pointer; }
 .account-menu__toggle::-webkit-details-marker { display: none; }
 .account-menu[open] .account-menu__toggle { background: var(--color-surface); }
+.account-menu__chevron { transition: transform var(--transition); }
 .account-menu[open] .account-menu__chevron { transform: rotate(180deg); }
 .account-menu__list {
     position: absolute;
-    z-index: 10;
-    top: calc(100% + 6px);
+    z-index: 30;
+    top: calc(100% + 8px);
     right: 0;
-    min-width: 220px;
+    min-width: 230px;
     max-width: calc(100vw - 2 * var(--gutter));
     margin: 0;
     padding: 8px;
     list-style: none;
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-bg);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
     box-shadow: var(--shadow-raised);
 }
 .account-menu__link {
@@ -171,22 +261,22 @@ svg { flex: none; }
     align-items: center;
     min-height: var(--tap-target);
     padding: 0 12px;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     color: var(--color-text);
     font-size: var(--text-md);
     font-weight: 500;
     text-decoration: none;
 }
 .account-menu__link:hover { background: var(--color-surface); color: var(--color-text); }
-.account-menu__link[aria-current="page"] { color: var(--color-accent); font-weight: 600; }
+.account-menu__link[aria-current="page"] { color: var(--color-accent); font-weight: 650; background: var(--color-accent-soft); }
 .account-menu__separator { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--color-border); }
 
 .avatar {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: var(--radius-pill);
-    background: var(--tint-mugs);
-    color: var(--color-accent);
+    background: var(--color-highlight-soft);
+    color: var(--color-highlight);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -195,48 +285,53 @@ svg { flex: none; }
 }
 
 .cart-link {
-    margin-left: 8px;
+    margin-left: 6px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
     min-height: var(--tap-target);
-    padding: 10px 16px;
-    border: 1px solid var(--color-border);
+    padding: 0 18px;
     border-radius: var(--radius-pill);
-    color: var(--color-text);
+    background: var(--color-accent);
+    color: var(--color-text-inverse);
     font-size: var(--text-md);
     font-weight: 600;
     text-decoration: none;
+    transition: background-color var(--transition);
 }
-.cart-link:hover, .cart-link[aria-current="page"] { color: var(--color-text); border-color: var(--color-text); }
+.cart-link:hover, .cart-link[aria-current="page"] { color: var(--color-text-inverse); background: var(--color-accent-hover); }
 .cart-link__count {
     min-width: 22px;
     height: 22px;
     padding: 0 6px;
     border-radius: var(--radius-pill);
-    background: var(--color-accent);
-    color: var(--color-text-inverse);
+    background: var(--color-on-dark-accent);
+    color: var(--color-ink);
     font-size: var(--text-2xs);
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
 }
 
-.site-footer { background: var(--color-surface); border-top: 1px solid var(--color-border); }
-.site-footer__inner {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 12px;
-    padding-top: 28px;
-    padding-bottom: 28px;
-    font-size: var(--text-sm);
-    color: var(--color-muted);
-}
+/* Pied de page : encre foncée, colonnes de liens existants uniquement */
+.site-footer { --color-focus: var(--color-on-dark-accent); background: var(--color-ink); color: var(--color-on-dark); }
+.site-footer__inner { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 32px 40px; padding-top: 56px; padding-bottom: 40px; }
+.site-footer__brand { display: flex; flex-direction: column; gap: 12px; }
+.site-footer__brand .logo, .site-footer__brand .logo:hover { color: var(--color-on-dark); }
+.site-footer__brand .logo__tagline { color: var(--color-on-ink-soft); }
+.site-footer__text { max-width: 320px; font-size: var(--text-sm); color: var(--color-on-ink-soft); }
+.site-footer__title { margin-bottom: 8px; font-family: var(--font-body); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-on-dark-accent); }
+.site-footer__list { margin: 0; padding: 0; list-style: none; }
+.site-footer__link { display: inline-flex; align-items: center; min-height: var(--tap-target); color: var(--color-on-dark); font-size: var(--text-md); text-decoration: none; }
+.site-footer__link:hover { color: var(--color-on-dark-accent); text-decoration: underline; }
+.site-footer__facts { display: flex; flex-direction: column; gap: 10px; padding-top: 10px; font-size: var(--text-sm); color: var(--color-on-ink-soft); }
+.site-footer__bottom { border-top: 1px solid var(--color-on-dark-line); }
+.site-footer__bottom-inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-top: 20px; padding-bottom: 24px; font-size: var(--text-xs); color: var(--color-on-ink-soft); }
 
-.layout-split { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 32px; }
+.layout-split { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 40px; }
 .layout-split__main { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
-.layout-split__aside { flex: 1 1 300px; min-width: 0; }
+.layout-split__aside { flex: 1 1 320px; min-width: 0; }
 
 /* 4. Composants ---------------------------------------------------------- */
 .page-header { display: flex; flex-direction: column; gap: 12px; }
@@ -617,18 +712,23 @@ code { overflow-wrap: anywhere; }
 /* 6. Petits écrans -------------------------------------------------------  */
 /* Repères à vérifier : 375 px de large, aucun défilement horizontal de la page.
    Seuls les tableaux et le graphique défilent, dans leur propre cadre. */
+@media (max-width: 900px) {
+    :root { --gutter: 24px; }
+}
+
 @media (max-width: 640px) {
     :root { --gutter: 16px; }
-    .site-main { padding: 24px 0 48px; }
+    .site-main { padding: 28px 0 56px; }
+    .announcement { font-size: var(--text-2xs); }
     .page-title { font-size: var(--text-4xl); }
     .page-title--xl { font-size: var(--text-5xl); }
 
     /* En-tête sur deux lignes : le logo, puis la navigation sur toute la largeur */
     .site-header__inner { gap: 8px; padding-top: 12px; padding-bottom: 12px; }
     .site-nav { width: 100%; justify-content: space-between; gap: 4px; }
-    .site-nav__link { padding: 12px 10px; }
+    .site-nav__link { padding: 0 10px; }
     .account-menu__name { max-width: 7em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cart-link { margin-left: 0; padding: 10px 14px; }
+    .cart-link { margin-left: 0; padding: 0 16px; }
     /* « Créer un compte » quitte l'en-tête : la navigation tient sur une ligne, l'inscription reste proposée sur la page de connexion */
     .site-nav__register { display: none; }
     /* Le mot « Panier » reste lu par les lecteurs d'écran ; seule l'icône (et le nombre d'articles) s'affiche */
