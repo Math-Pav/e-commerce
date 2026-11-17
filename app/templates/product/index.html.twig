@@ -15,7 +15,7 @@
     } %}
 
     {# Formulaire en GET : il ne modifie rien, il construit seulement l'adresse de la page de résultats #}
-    <form method="get" action="{{ path('product_index') }}" class="catalog-filters" role="search" aria-label="Rechercher et trier le catalogue">
+    <form method="get" action="{{ path('product_index') }}" class="catalog-filters panel" role="search" aria-label="Rechercher et trier le catalogue">
         {% if currentCategory %}
             <input type="hidden" name="categorie" value="{{ currentCategory.slug }}">
         {% endif %}
