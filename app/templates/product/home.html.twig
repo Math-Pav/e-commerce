@@ -1,0 +1,108 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Papeterie et objets du quotidien{% endblock %}
+
+{% block body %}
+    {# Bandeau de mise en avant : le seul h1 de la page #}
+    <section class="hero" aria-labelledby="hero-title">
+        <div class="hero__content">
+            <p class="eyebrow">Papeterie &amp; objets du quotidien</p>
+            <h1 id="hero-title" class="hero__title">De beaux objets pour des journées bien remplies</h1>
+            <p class="hero__lead">Mugs, carnets et stylos choisis pour durer : de quoi écrire, noter et faire une pause, à prix doux.</p>
+            <div class="hero__actions">
+                <a href="{{ path('product_index') }}" class="btn btn--light btn--lg">Découvrir le catalogue</a>
+                <a href="{{ path('product_index', {tri: 'nouveautes'}) }}" class="btn btn--ghost-light btn--lg">Voir les nouveautés</a>
+            </div>
+        </div>
+        {# Illustration décorative : les visuels des trois univers, dessinés en SVG et CSS #}
+        <div class="hero__art" aria-hidden="true">
+            {% for slug in ['carnets', 'mugs-et-tasses', 'stylos'] %}
+                <div class="hero__tile hero__tile--{{ loop.index }}">
+                    {% include 'product/_visual.html.twig' with {category: {slug: slug}} only %}
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section aria-label="Bon à savoir">
+        <ul class="assurance assurance--band">
+            <li class="assurance__item">
+                <span class="assurance__icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3z"/><path d="M16 10h3l2 3v4h-5"/><circle cx="7" cy="18" r="1.5"/><circle cx="18" cy="18" r="1.5"/></svg></span>
+                <span><span class="assurance__title">Livraison en France</span><span class="assurance__text">Indiquez simplement votre adresse au moment de commander.</span></span>
+            </li>
+            <li class="assurance__item">
+                <span class="assurance__icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+                <span><span class="assurance__title">Paiement simulé</span><span class="assurance__text">Boutique de démonstration : aucune carte bancaire n'est demandée.</span></span>
+            </li>
+            <li class="assurance__item">
+                <span class="assurance__icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></span>
+                <span><span class="assurance__title">Annulation libre</span><span class="assurance__text">Tant qu'elle n'est pas payée, vous pouvez annuler votre commande.</span></span>
+            </li>
+            <li class="assurance__item">
+                <span class="assurance__icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4"/><path d="M9 13h6"/><path d="M9 17h6"/></svg></span>
+                <span><span class="assurance__title">Facture PDF</span><span class="assurance__text">Dans « Mes commandes », pour chaque commande payée.</span></span>
+            </li>
+        </ul>
+    </section>
+
+    {% if categories is not empty %}
+        <section class="home-section" aria-labelledby="categories-title">
+            <div class="section-heading">
+                <div class="section-heading__intro">
+                    <p class="eyebrow">Nos univers</p>
+                    <h2 id="categories-title" class="section-title">Trouvez votre bonheur</h2>
+                </div>
+            </div>
+            <ul class="category-grid">
+                {% for category in categories %}
+                    <li>
+                        <a href="{{ path('product_index', {categorie: category.slug}) }}" class="category-card">
+                            {% include 'product/_visual.html.twig' with {category: category} only %}
+                            <span class="category-card__body">
+                                <span class="category-card__name">{{ category.name }}</span>
+                                <span class="category-card__link">Voir les produits <span aria-hidden="true">→</span></span>
+                            </span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    <section class="home-section" aria-labelledby="latest-title">
+        <div class="section-heading">
+            <div class="section-heading__intro">
+                <p class="eyebrow">Fraîchement arrivés</p>
+                <h2 id="latest-title" class="section-title">Nouveautés</h2>
+            </div>
+            <a href="{{ path('product_index', {tri: 'nouveautes'}) }}" class="section-heading__link">Toutes les nouveautés <span aria-hidden="true">→</span></a>
+        </div>
+        {% if latestProducts is empty %}
+            {% include 'components/_empty_state.html.twig' with {message: 'Aucun produit pour le moment.'} only %}
+        {% else %}
+            <ul class="product-grid">
+                {% for product in latestProducts %}
+                    <li>
+                        {% include 'product/_card.html.twig' with {product: product} only %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+
+    <div class="callout">
+        {% if app.user %}
+            <div>
+                <p class="callout__title">Bon retour, {{ app.user.firstName }}</p>
+                <p class="callout__text">Suivez vos commandes et téléchargez vos factures depuis votre espace.</p>
+            </div>
+            <a href="{{ path('order_index') }}" class="btn btn--secondary">Voir mes commandes</a>
+        {% else %}
+            <div>
+                <p class="callout__title">Créez votre compte en une minute</p>
+                <p class="callout__text">Pour commander, suivre vos commandes et retrouver vos factures.</p>
+            </div>
+            <a href="{{ path('app_register') }}" class="btn btn--primary">Créer un compte</a>
+        {% endif %}
+    </div>
+{% endblock %}

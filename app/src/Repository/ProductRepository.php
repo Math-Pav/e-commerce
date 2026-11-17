@@ -76,6 +76,26 @@ class ProductRepository extends ServiceEntityRepository
     }
 
     /**
+     * Les derniers produits actifs ajoutés au catalogue (sélection de la page d'accueil), avec leur catégorie.
+     * L'identifiant départage les produits créés à la même seconde (fixtures, imports).
+     *
+     * @return list<Product>
+     */
+    public function findLatestActive(int $limit): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('c')
+            ->join('p.category', 'c')
+            ->where('p.isActive = :active')
+            ->setParameter('active', true)
+            ->orderBy('p.createdAt', 'DESC')
+            ->addOrderBy('p.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Charge en une seule requête les variantes de ces produits (déjà chargés), au lieu d'une requête
      * par produit au premier appel de getVariants() (problème N+1). Doctrine remplit alors leurs collections.
      *

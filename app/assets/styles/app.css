@@ -351,6 +351,11 @@ svg { flex: none; }
 .back-link:hover { color: var(--color-accent); text-decoration: underline; }
 .note { font-size: var(--text-xs); line-height: 1.5; color: var(--color-muted); }
 
+/* En-tête de section : surtitre et titre à gauche, lien « tout voir » à droite (accueil) */
+.section-heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+.section-heading__intro { display: flex; flex-direction: column; gap: 8px; }
+.section-heading__link { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap-target); font-weight: 600; }
+
 /* Boutons */
 .btn {
     display: inline-flex;
@@ -382,6 +387,12 @@ svg { flex: none; }
     font-size: var(--text-sm);
 }
 .btn--secondary:hover { color: var(--color-accent); border-color: var(--color-accent); background: var(--color-surface-raised); }
+/* Bouton clair, posé sur une section foncée (bandeau d'accueil) */
+.btn--light { background: var(--color-on-dark); color: var(--color-accent); }
+.btn--light:hover { background: var(--color-surface-raised); color: var(--color-accent-hover); box-shadow: var(--shadow-raised); }
+/* Bouton à contour clair sur une section foncée */
+.btn--ghost-light { border-color: var(--color-on-dark-soft); color: var(--color-on-dark); }
+.btn--ghost-light:hover { border-color: var(--color-on-dark); color: var(--color-on-dark); background: var(--color-on-dark-line); }
 /* Action définitive (annuler une commande, supprimer, révoquer) : même gabarit que .btn--secondary, en rouge */
 .btn--danger {
     min-height: var(--tap-target);
@@ -558,6 +569,15 @@ a.summary-row__label { display: inline-flex; align-items: center; min-height: va
     color: var(--color-text-soft);
 }
 
+/* Arguments de réassurance : icône, titre et phrase */
+.assurance { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px 24px; }
+.assurance__item { display: flex; align-items: flex-start; gap: 14px; }
+.assurance__icon { flex: none; width: 44px; height: 44px; border-radius: var(--radius-pill); background: var(--color-accent-soft); color: var(--color-accent); display: flex; align-items: center; justify-content: center; }
+.assurance__title { display: block; font-weight: 700; }
+.assurance__text { display: block; font-size: var(--text-sm); color: var(--color-text-soft); }
+/* Bande encadrée (accueil) */
+.assurance--band { padding: 24px 28px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-raised); }
+
 /* Tableaux de données */
 .table-wrapper { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-raised); }
 .table { width: 100%; min-width: 520px; border-collapse: collapse; font-size: var(--text-md); }
@@ -625,6 +645,65 @@ code { padding: 1px 6px; border-radius: var(--radius-xs); background: var(--colo
 .pagination__ellipsis { color: var(--color-muted); }
 
 /* 5. Pages --------------------------------------------------------------- */
+
+/* Accueil : bandeau de mise en avant, univers, nouveautés ------------------ */
+.hero {
+    --color-focus: var(--color-on-dark-accent);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 40px;
+    padding: 64px 56px;
+    border-radius: var(--radius-xl);
+    background: var(--color-dark);
+    color: var(--color-on-dark);
+}
+/* Grand cercle décoratif en fond, à droite */
+.hero::before {
+    content: '';
+    position: absolute;
+    right: -120px;
+    bottom: -160px;
+    width: 480px;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-pill);
+    background: var(--color-on-dark-line);
+}
+.hero__content { position: relative; flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.hero .eyebrow { color: var(--color-on-dark-accent); }
+.hero__title { font-size: var(--text-8xl); line-height: 1.04; }
+.hero__lead { max-width: 520px; font-size: var(--text-xl); line-height: 1.6; color: var(--color-on-dark-soft); }
+.hero__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+.hero__art { position: relative; flex: 1 1 300px; min-width: 0; max-width: 420px; height: 340px; margin: 0 auto; }
+.hero__tile { position: absolute; width: 58%; border-radius: var(--radius-lg); box-shadow: var(--shadow-raised); }
+.hero__tile .product-visual { border-radius: var(--radius-lg); }
+.hero__tile--1 { top: 0; left: 0; transform: rotate(-6deg); }
+.hero__tile--2 { top: 18%; right: 0; transform: rotate(5deg); }
+.hero__tile--3 { bottom: 0; left: 18%; width: 46%; transform: rotate(-2deg); }
+
+.home-section { display: flex; flex-direction: column; gap: 24px; padding-top: 16px; }
+
+.category-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+.category-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface-raised);
+    color: var(--color-text);
+    text-decoration: none;
+    transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+}
+.category-card:hover { color: var(--color-text); border-color: var(--color-border-strong); box-shadow: var(--shadow-raised); transform: translateY(-2px); }
+.category-card .product-visual { aspect-ratio: 16 / 10; border-radius: 0; }
+.category-card__body { display: flex; flex-direction: column; gap: 4px; padding: 18px 20px 20px; }
+.category-card__name { font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 700; }
+.category-card__link { font-size: var(--text-md); font-weight: 600; color: var(--color-accent); }
+
 .product-detail { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 48px; }
 .product-detail > .product-visual { flex: 1 1 420px; min-width: 0; }
 .product-detail__info { flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
@@ -760,6 +839,14 @@ code { padding: 1px 6px; border-radius: var(--radius-xs); background: var(--colo
     :root { --gutter: 16px; }
     .site-main { padding: 28px 0 56px; }
     .announcement { font-size: var(--text-2xs); }
+
+    /* Accueil : bandeau resserré, illustration plus petite sous le texte */
+    .hero { padding: 36px 24px; gap: 28px; }
+    .hero__title { font-size: var(--text-5xl); }
+    .hero__lead { font-size: var(--text-lg); }
+    .hero__actions .btn { width: 100%; }
+    .hero__art { height: 240px; }
+    .assurance--band { padding: 20px; }
     .page-title { font-size: var(--text-4xl); }
     .page-title--xl { font-size: var(--text-5xl); }
 

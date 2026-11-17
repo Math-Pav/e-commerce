@@ -159,6 +159,18 @@ final class ProductRepositoryCatalogTest extends KernelTestCase
         self::assertCount(0, $products);
     }
 
+    public function testLatestActiveProductsAreNewestFirstWithoutInactiveOnes(): void
+    {
+        // Dates futures : ces produits sont plus récents que ceux des fixtures
+        $this->createProduct('Ancien', createdAt: '2099-01-01');
+        $this->createProduct('Récent', createdAt: '2099-01-03');
+        $this->createProduct('Désactivé', active: false, createdAt: '2099-01-04');
+        $this->createProduct('Moyen', createdAt: '2099-01-02');
+        $this->entityManager->flush();
+
+        self::assertSame(['Récent', 'Moyen'], $this->namesOf($this->repository->findLatestActive(2)));
+    }
+
     /**
      * @param list<?int> $variantPrices prix propre de chaque variante (null = prix du produit)
      */

@@ -37,7 +37,7 @@
                         ce qui garde l'en-tête sur deux lignes au plus, même sur un téléphone de 375 px.
                     #}
                     <nav class="site-nav" aria-label="Navigation principale">
-                        <a href="{{ path('product_index') }}" class="site-nav__link" aria-current="{{ route starts with 'product' or route == 'home' ? 'page' : 'false' }}">Catalogue</a>
+                        <a href="{{ path('product_index') }}" class="site-nav__link" aria-current="{{ route starts with 'product' ? 'page' : 'false' }}">Catalogue</a>
                         {% if app.user %}
                             <details class="account-menu">
                                 <summary class="site-nav__link account-menu__toggle">
