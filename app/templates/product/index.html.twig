@@ -72,17 +72,7 @@
         <ul class="product-grid">
             {% for product in products %}
                 <li>
-                    <a href="{{ path('product_show', {slug: product.slug}) }}" class="product-card">
-                        <div class="product-card__visual">
-                            {% include 'product/_image.html.twig' with {product: product} %}
-                            {% if not product.inStock %}
-                                <span class="badge badge--danger product-card__badge">Rupture de stock</span>
-                            {% endif %}
-                        </div>
-                        <span class="product-card__category">{{ product.category.name }}</span>
-                        <span class="product-card__name">{{ product.name }}</span>
-                        <span class="product-card__price">{{ product.hasVariedPrices ? 'À partir de ' }}{{ product.fromPrice|price }}</span>
-                    </a>
+                    {% include 'product/_card.html.twig' with {product: product} only %}
                 </li>
             {% endfor %}
         </ul>
