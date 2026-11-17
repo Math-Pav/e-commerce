@@ -3,6 +3,9 @@
 {% block title %}Mon panier{% endblock %}
 
 {% block body %}
+    {% if not cart.empty %}
+        {% include 'components/_checkout_steps.html.twig' with {current: 1} only %}
+    {% endif %}
     {% include 'components/_page_header.html.twig' with {title: 'Mon panier'} %}
 
     {% if cart.empty %}
@@ -29,7 +32,7 @@
                 </ul>
             </div>
 
-            <aside class="layout-split__aside panel" aria-label="Récapitulatif">
+            <aside class="layout-split__aside panel summary-panel" aria-label="Récapitulatif">
                 <h2 class="section-title">Récapitulatif</h2>
                 <ul class="summary-list">
                     {% for line in cart.lines %}
@@ -57,7 +60,8 @@
                     <span class="summary-total__label">Total</span>
                     <span class="summary-total__amount">{{ cart.total|price }}</span>
                 </div>
-                <a href="{{ path('order_checkout') }}" class="btn btn--primary btn--block">Passer commande</a>
+                <a href="{{ path('order_checkout') }}" class="btn btn--primary btn--lg btn--block">Passer commande</a>
+                {% include 'cart/_assurance.html.twig' %}
                 <a href="{{ path('product_index') }}" class="back-link">← Retour au catalogue</a>
             </aside>
         </div>

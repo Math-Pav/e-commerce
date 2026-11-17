@@ -3,24 +3,7 @@
 {% block title %}Finaliser ma commande{% endblock %}
 
 {% block body %}
-    <ol class="steps" aria-label="Étapes de la commande">
-        <li class="steps__item steps__item--done">
-            <span class="steps__number">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
-            </span>
-            Panier
-        </li>
-        <li class="steps__separator" aria-hidden="true"></li>
-        <li class="steps__item" aria-current="step">
-            <span class="steps__number">2</span>
-            Livraison
-        </li>
-        <li class="steps__separator" aria-hidden="true"></li>
-        <li class="steps__item">
-            <span class="steps__number">3</span>
-            Paiement
-        </li>
-    </ol>
+    {% include 'components/_checkout_steps.html.twig' with {current: 2} only %}
 
     {% include 'components/_page_header.html.twig' with {
         back: {url: path('cart_show'), label: 'Retour au panier'},
@@ -28,7 +11,7 @@
     } %}
 
     <div class="layout-split">
-        <div class="layout-split__main">
+        <div class="layout-split__main form-card">
             <h2 class="section-title">Adresse de livraison</h2>
 
             {{ form_start(checkoutForm, {attr: {class: 'form'}}) }}
@@ -47,7 +30,7 @@
             {{ form_end(checkoutForm) }}
         </div>
 
-        <aside class="layout-split__aside panel" aria-label="Récapitulatif">
+        <aside class="layout-split__aside panel summary-panel" aria-label="Récapitulatif">
             <h2 class="section-title">Récapitulatif</h2>
             <ul class="summary-list">
                 {% for line in cart.lines %}
@@ -66,6 +49,7 @@
                 <span class="summary-total__amount">{{ cart.total|price }}</span>
             </div>
             <p class="note">Le paiement se fait à l'étape suivante, une fois la commande validée.</p>
+            {% include 'cart/_assurance.html.twig' %}
         </aside>
     </div>
 {% endblock %}

@@ -3,6 +3,9 @@
 {% block title %}Commande {{ order.reference }}{% endblock %}
 
 {% block body %}
+    {% if order.canBePaid %}
+        {% include 'components/_checkout_steps.html.twig' with {current: 3} only %}
+    {% endif %}
     {% embed 'components/_page_header.html.twig' with {
         back: {url: path('order_index'), label: 'Retour à mes commandes'},
         title: 'Commande ' ~ order.reference,
@@ -14,7 +17,7 @@
     {% endembed %}
 
     {% if order.canBePaid or order.canBeCancelled %}
-        <div class="callout">
+        <div class="callout callout--action">
             <div>
                 <p class="callout__title">Il ne reste plus qu'à régler votre commande</p>
                 <p class="callout__text">Vos articles sont réservés en attendant le paiement. Vous pouvez encore annuler la commande ; l'annulation est définitive.</p>
@@ -43,7 +46,7 @@
             {% include 'order/_items_table.html.twig' with {order: order, with_images: true} %}
         </section>
 
-        <aside class="layout-split__aside panel" aria-label="Livraison et facture">
+        <aside class="layout-split__aside panel summary-panel" aria-label="Livraison et facture">
             <h2 id="shipping-title" class="section-title">Livraison</h2>
             <address class="address">
                 {{ order.shippingFullName }}<br>

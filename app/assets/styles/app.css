@@ -716,33 +716,45 @@ code { padding: 1px 6px; border-radius: var(--radius-xs); background: var(--colo
 .add-to-cart__row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 16px; }
 .add-to-cart__submit { flex: 1 1 220px; }
 
-.cart-lines { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-border); }
-.cart-line { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--color-border); }
-.cart-line .product-visual { width: 88px; aspect-ratio: 1 / 1; }
-.cart-line .product-visual svg { width: 36px; height: 36px; }
-.cart-line__info { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.cart-line__name { display: inline-flex; align-items: center; min-height: var(--tap-target); font-size: var(--text-lg); font-weight: 600; color: var(--color-text); text-decoration: none; }
+/* Panier : une carte par ligne */
+.cart-lines { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.cart-line { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 20px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-raised); }
+.cart-line .product-visual { flex: none; width: 96px; }
+.cart-line__info { flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cart-line__name { display: inline-flex; align-items: center; min-height: var(--tap-target); font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; color: var(--color-text); text-decoration: none; }
+.cart-line__name:hover { color: var(--color-accent); text-decoration: underline; }
 .cart-line__unit, .cart-line__quantity { font-size: var(--text-sm); color: var(--color-muted); }
 .cart-line__quantity strong { color: var(--color-text); }
-.cart-line__subtotal { min-width: 96px; text-align: right; font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; }
+.cart-line__subtotal { min-width: 96px; text-align: right; font-size: var(--text-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: var(--text-md); color: var(--color-muted); }
+/* Récapitulatif (panier, tunnel, commande) : reste visible pendant le défilement sur grand écran */
+.summary-panel { position: sticky; top: 24px; background: var(--color-surface-raised); box-shadow: var(--shadow-sm); }
+/* Formulaire principal d'une étape du tunnel */
+.form-card { padding: 28px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-raised); }
+
+/* Étapes du tunnel de commande (components/_checkout_steps.html.twig) */
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; font-size: var(--text-md); color: var(--color-muted); }
 .steps__item { display: inline-flex; align-items: center; gap: 10px; font-weight: 500; }
 .steps__number {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     border: 1px solid var(--color-border-strong);
     border-radius: var(--radius-pill);
+    background: var(--color-surface-raised);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-size: var(--text-sm);
+    font-weight: 700;
 }
 .steps__item--done { color: var(--color-success); }
 .steps__item--done .steps__number { border-color: transparent; background: var(--color-success-bg); }
-.steps__item[aria-current="step"] { color: var(--color-text); font-weight: 600; }
+.steps__item[aria-current="step"] { color: var(--color-text); font-weight: 700; }
 .steps__item[aria-current="step"] .steps__number { border-color: transparent; background: var(--color-accent); color: var(--color-text-inverse); }
-.steps__separator { width: 40px; height: 1px; background: var(--color-border-strong); }
+.steps__separator { width: 48px; height: 2px; border-radius: var(--radius-pill); background: var(--color-border-strong); }
+
+/* Encadré qui attend une action du client (payer ou annuler une commande) */
+.callout--action { border-left-color: var(--color-accent); background: var(--color-accent-soft); }
 
 
 .auth-card {
@@ -858,6 +870,10 @@ code { padding: 1px 6px; border-radius: var(--radius-xs); background: var(--colo
     .product-detail__media { position: static; }
     .add-to-cart { padding: 18px; }
     .add-to-cart__submit { flex-basis: 100%; }
+    .summary-panel { position: static; }
+    .form-card { padding: 20px; }
+    .cart-line { gap: 12px 16px; padding: 12px; }
+    .cart-line .product-visual { width: 72px; }
     .hero__title { font-size: var(--text-5xl); }
     .hero__lead { font-size: var(--text-lg); }
     .hero__actions .btn { width: 100%; }
