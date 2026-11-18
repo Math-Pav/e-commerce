@@ -807,45 +807,55 @@ code { padding: 1px 6px; border-radius: var(--radius-xs); background: var(--colo
 .error-page__code { font-family: var(--font-display); font-size: var(--text-8xl); font-weight: 700; line-height: 1; color: var(--color-highlight); }
 .error-page__actions { display: flex; flex-wrap: wrap; gap: 12px; }
 
-/* Administration --------------------------------------------------------- */
-.admin-form { max-width: 640px; display: flex; flex-direction: column; gap: 24px; }
-.tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--color-border); }
+/* Administration : sobre, lisible, mêmes composants que le site ------------ */
+.admin-content { display: flex; flex-direction: column; gap: 32px; }
+.admin-form { max-width: 720px; display: flex; flex-direction: column; gap: 24px; }
+/* Le formulaire d'une page de création ou de modification, dans une carte */
+.admin-form > .form { padding: 28px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-raised); }
+
+/* Onglets : barre segmentée ; sur petit écran, c'est la barre qui défile, jamais la page */
+.tabs { display: flex; gap: 4px; padding: 4px; overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-pill); background: var(--color-surface); }
 .tabs__link {
-    margin-bottom: -1px;
-    padding: 12px 16px;
-    border-bottom: 2px solid transparent;
-    color: var(--color-muted);
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-target);
+    padding: 0 18px;
+    border-radius: var(--radius-pill);
+    color: var(--color-text-soft);
     font-size: var(--text-md);
     font-weight: 500;
+    white-space: nowrap;
     text-decoration: none;
+    transition: background-color var(--transition), color var(--transition);
 }
-.tabs__link:hover { color: var(--color-text); }
-.tabs__link[aria-current="page"] { color: var(--color-text); border-bottom-color: var(--color-accent); font-weight: 600; }
+.tabs__link:hover { color: var(--color-text); background: var(--color-surface-raised); }
+.tabs__link[aria-current="page"] { color: var(--color-text-inverse); background: var(--color-accent); font-weight: 600; }
+.tabs--admin { align-self: flex-start; max-width: 100%; }
 
 .stock { font-weight: 600; }
 .stock--low { color: var(--color-warning); }
 .stock--out { color: var(--color-danger); }
 
-
 /* Administration : tableau de bord ---------------------------------------- */
 .dashboard-section { display: flex; flex-direction: column; gap: 16px; }
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 0; }
-.stat { gap: 8px; }
-.stat__label { font-size: var(--text-md); color: var(--color-text-soft); }
-.stat__value { margin: 0; font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 700; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin: 0; }
+.stat { gap: 10px; border-top: 3px solid var(--color-accent); background: var(--color-surface-raised); }
+.stat__label { font-size: var(--text-sm); font-weight: 600; color: var(--color-text-soft); }
+.stat__value { margin: 0; font-family: var(--font-display); font-size: var(--text-4xl); font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* Graphique en barres en HTML, CSS et SVG */
 .bar-chart { margin: 0; display: flex; flex-direction: column; gap: 12px; }
 .bar-chart__scroll { overflow-x: auto; }
-.bar-chart__bars { min-width: 480px; height: 220px; display: flex; gap: 6px; padding: 16px; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.bar-chart__bars { min-width: 480px; height: 240px; display: flex; gap: 8px; padding: 20px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface-raised); }
 .bar-chart__column { flex: 1 1 0; display: flex; flex-direction: column; gap: 8px; }
 /* Chaque colonne est un SVG étiré (preserveAspectRatio="none") : la hauteur de la barre est un attribut du <rect> */
 .bar-chart__track { flex: 1 1 0; width: 100%; min-height: 0; border-bottom: 1px solid var(--color-border-strong); }
-.bar-chart__bar { fill: var(--color-accent); }
+.bar-chart__bar { fill: var(--color-accent); transition: fill var(--transition); }
+.bar-chart__column:hover .bar-chart__bar { fill: var(--color-highlight); }
 .bar-chart__label { font-size: var(--text-2xs); color: var(--color-muted); text-align: center; }
 .bar-chart__data .table-wrapper { margin-top: 12px; }
 .bar-chart__data summary { display: flex; align-items: center; min-height: var(--tap-target); cursor: pointer; font-size: var(--text-md); font-weight: 600; color: var(--color-accent); }
-
 
 /* Catalogue : recherche, tri et pagination (ADR 0011) --------------------- */
 .catalog-filters { flex-direction: row; flex-wrap: wrap; align-items: flex-end; gap: 16px 24px; padding: 20px 24px; }
@@ -929,7 +939,8 @@ code { padding: 1px 6px; border-radius: var(--radius-xs); background: var(--colo
     /* Le mot « Panier » reste lu par les lecteurs d'écran ; seule l'icône (et le nombre d'articles) s'affiche */
     .cart-link__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-    .tabs__link { padding: 12px; }
+    .tabs__link { padding: 0 14px; }
+    .admin-form > .form { padding: 20px; }
     .auth-card, .auth-aside { padding: 24px; }
     .auth-card .page-title { font-size: var(--text-4xl); }
     .error-page { margin: 0; padding: 24px; }
