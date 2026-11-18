@@ -3,29 +3,26 @@
 {% block title %}Commande {{ order.reference }}{% endblock %}
 
 {% block body %}
-    <a href="{{ path('order_index') }}" class="back-link">← Mes commandes</a>
-
-    <div class="order-header">
-        <div>
-            <h1 class="page-title">Commande {{ order.reference }}</h1>
-            <p class="order-meta">
-                Passée le {{ order.createdAt|date('d/m/Y à H:i') }}
-                {% if order.paidAt %} · payée le {{ order.paidAt|date('d/m/Y à H:i') }}{% endif %}
-            </p>
-        </div>
-        {% include 'order/_status_badge.html.twig' with {status: order.status} %}
-    </div>
+    {% embed 'components/_page_header.html.twig' with {
+        back: {url: path('order_index'), label: 'Retour à mes commandes'},
+        title: 'Commande ' ~ order.reference,
+        lead: 'Passée le ' ~ order.createdAt|date('d/m/Y à H:i') ~ (order.paidAt ? ' · payée le ' ~ order.paidAt|date('d/m/Y à H:i')),
+    } %}
+        {% block actions %}
+            {% include 'order/_status_badge.html.twig' with {status: order.status} %}
+        {% endblock %}
+    {% endembed %}
 
     {% if order.canBePaid or order.canBeCancelled %}
         <div class="callout">
             <div>
                 <p class="callout__title">Il ne reste plus qu'à régler votre commande</p>
-                <p class="callout__text">Vos articles sont réservés en attendant le paiement. Vous pouvez encore annuler la commande.</p>
+                <p class="callout__text">Vos articles sont réservés en attendant le paiement. Vous pouvez encore annuler la commande ; l'annulation est définitive.</p>
             </div>
             {% if order.canBeCancelled %}
                 <form method="post" action="{{ path('order_cancel', {reference: order.reference}) }}">
                     <input type="hidden" name="_token" value="{{ csrf_token('cancel-order') }}">
-                    <button type="submit" class="btn btn--secondary btn--lg">Annuler la commande</button>
+                    <button type="submit" class="btn btn--danger btn--lg">Annuler la commande</button>
                 </form>
             {% endif %}
             {% if order.canBePaid %}
@@ -43,52 +40,7 @@
     <div class="layout-split">
         <section class="layout-split__main" aria-labelledby="items-title">
             <h2 id="items-title" class="section-title">Articles</h2>
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Produit</th>
-                            <th scope="col" class="num">Prix unitaire</th>
-                            <th scope="col" class="num">Quantité</th>
-                            <th scope="col" class="num">Sous-total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in order.items %}
-                            <tr>
-                                <td>
-                                    <span class="table__product">
-                                        {# Le produit peut avoir été supprimé depuis la commande : seul son nom (copié) reste #}
-                                        {% if item.product %}
-                                            {% include 'product/_image.html.twig' with {product: item.product, thumb: true} %}
-                                        {% endif %}
-                                        {{ item.displayName }}
-                                    </span>
-                                </td>
-                                <td class="num">{{ item.unitPrice|price }}</td>
-                                <td class="num">{{ item.quantity }}</td>
-                                <td class="num">{{ item.subtotal|price }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot>
-                        {% if order.discountCode %}
-                            <tr>
-                                <th scope="row" colspan="3" class="num">Sous-total</th>
-                                <td class="num">{{ order.subtotalAmount|price }}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row" colspan="3" class="num">Remise ({{ order.discountCode }})</th>
-                                <td class="num">− {{ order.discountAmount|price }}</td>
-                            </tr>
-                        {% endif %}
-                        <tr>
-                            <th scope="row" colspan="3" class="num">Total</th>
-                            <td class="num price">{{ order.totalAmount|price }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+            {% include 'order/_items_table.html.twig' with {order: order, with_images: true} %}
         </section>
 
         <aside class="layout-split__aside panel" aria-label="Livraison et facture">

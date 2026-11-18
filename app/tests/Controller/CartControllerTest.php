@@ -238,7 +238,7 @@ final class CartControllerTest extends WebTestCase
     private function applyPromoCode(KernelBrowser $client, string $code): void
     {
         $client->request('GET', '/panier');
-        $client->submitForm('Appliquer', ['code' => $code]);
+        $client->submitForm('Appliquer le code', ['code' => $code]);
     }
 
     private function addToCart(KernelBrowser $client, string $slug, int $quantity): void

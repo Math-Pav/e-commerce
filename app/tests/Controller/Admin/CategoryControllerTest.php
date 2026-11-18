@@ -99,7 +99,7 @@ final class CategoryControllerTest extends WebTestCase
         $id = $this->findCategory('stylos')->getId();
 
         $crawler = $client->request('GET', sprintf('/admin/categories/%d/modifier', $id));
-        $client->submit($crawler->selectButton('Enregistrer le nouveau nom')->form([
+        $client->submit($crawler->selectButton('Enregistrer les modifications')->form([
             'category[name]' => 'Stylos et feutres',
         ]));
 
@@ -117,7 +117,7 @@ final class CategoryControllerTest extends WebTestCase
 
         // L'unicité ignore la catégorie elle-même : garder son nom n'est pas un doublon
         $crawler = $client->request('GET', sprintf('/admin/categories/%d/modifier', $id));
-        $client->submit($crawler->selectButton('Enregistrer le nouveau nom')->form());
+        $client->submit($crawler->selectButton('Enregistrer les modifications')->form());
 
         self::assertResponseRedirects('/admin/categories');
     }
@@ -129,7 +129,7 @@ final class CategoryControllerTest extends WebTestCase
         $id = $this->findCategory('stylos')->getId();
 
         $crawler = $client->request('GET', sprintf('/admin/categories/%d/modifier', $id));
-        $client->submit($crawler->selectButton('Enregistrer le nouveau nom')->form([
+        $client->submit($crawler->selectButton('Enregistrer les modifications')->form([
             'category[name]' => 'Carnets',
         ]));
 

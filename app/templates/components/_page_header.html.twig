@@ -1,0 +1,27 @@
+{#
+    En-tête de page, identique sur tout le site.
+    Paramètres (tous facultatifs sauf title) :
+      - back : lien de retour, { url, label } ; il s'affiche au-dessus du titre, précédé de « ← »
+      - eyebrow : surtitre (ex. « Administration »)
+      - title : titre de la page (h1) ; title_modifier : 'xl' pour le grand titre du catalogue
+      - lead : phrase d'introduction (texte simple)
+    Avec include pour du texte simple ; avec embed pour remplacer le bloc « lead » (HTML, ex. <code>)
+    ou remplir le bloc « actions » (boutons ou badge alignés à droite du titre).
+#}
+<div class="page-toolbar">
+    <div class="page-header">
+        {% if back is defined and back %}
+            <a href="{{ back.url }}" class="back-link">← {{ back.label }}</a>
+        {% endif %}
+        {% if eyebrow is defined and eyebrow %}
+            <p class="eyebrow">{{ eyebrow }}</p>
+        {% endif %}
+        <h1 class="page-title{{ (title_modifier ?? null) ? ' page-title--' ~ title_modifier }}">{{ title }}</h1>
+        {% block lead %}
+            {% if lead is defined and lead %}
+                <p class="lead">{{ lead }}</p>
+            {% endif %}
+        {% endblock %}
+    </div>
+    {% block actions %}{% endblock %}
+</div>

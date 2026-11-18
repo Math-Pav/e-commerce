@@ -4,11 +4,12 @@
 
 {% block admin_content %}
     <div class="admin-form">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Modifier le code promo</h1>
-            <p class="lead">Utilisé {{ promoCode.usageCount }} fois. Les commandes déjà passées gardent leur remise.</p>
-        </div>
+        {% include 'components/_page_header.html.twig' with {
+            back: {url: path('admin_promo_code_index'), label: 'Retour aux codes promo'},
+            eyebrow: 'Administration',
+            title: 'Modifier le code promo',
+            lead: 'Utilisé ' ~ promoCode.usageCount ~ ' fois. Les commandes déjà passées gardent leur remise.',
+        } %}
 
         {% include 'admin/promo_code/_form.html.twig' with {button_label: 'Enregistrer les modifications'} %}
     </div>

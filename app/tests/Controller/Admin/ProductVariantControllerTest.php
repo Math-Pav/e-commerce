@@ -67,7 +67,7 @@ final class ProductVariantControllerTest extends WebTestCase
         $this->logIn($client, 'admin@example.com');
 
         $client->request('GET', sprintf('/admin/produits/%d/variantes/nouvelle', $productId));
-        $client->submitForm('Ajouter la variante', [
+        $client->submitForm('Créer la variante', [
             'product_variant[label]' => ' Jaune ',
             'product_variant[sku]' => 'MUG-EMAILLE-JAUNE',
             'product_variant[price]' => '17.50',
@@ -88,7 +88,7 @@ final class ProductVariantControllerTest extends WebTestCase
         $this->logIn($client, 'admin@example.com');
 
         $client->request('GET', sprintf('/admin/produits/%d/variantes/nouvelle', $this->findProduct('mug-emaille')->getId()));
-        $client->submitForm('Ajouter la variante', [
+        $client->submitForm('Créer la variante', [
             'product_variant[label]' => 'Jaune',
             'product_variant[sku]' => 'MUG-NOIR-MAT',
         ]);
@@ -103,7 +103,7 @@ final class ProductVariantControllerTest extends WebTestCase
         $this->logIn($client, 'admin@example.com');
 
         $client->request('GET', sprintf('/admin/produits/%d/variantes/nouvelle', $this->findProduct('mug-emaille')->getId()));
-        $client->submitForm('Ajouter la variante', ['product_variant[sku]' => 'MUG-EMAILLE-SANS-NOM']);
+        $client->submitForm('Créer la variante', ['product_variant[sku]' => 'MUG-EMAILLE-SANS-NOM']);
 
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorTextContains('body', 'Un libellé est obligatoire quand le produit a plusieurs variantes.');
@@ -116,7 +116,7 @@ final class ProductVariantControllerTest extends WebTestCase
 
         // Le mug noir mat n'a que sa variante par défaut, sans libellé
         $client->request('GET', sprintf('/admin/produits/%d/variantes/nouvelle', $this->findProduct('mug-noir-mat')->getId()));
-        $client->submitForm('Ajouter la variante', [
+        $client->submitForm('Créer la variante', [
             'product_variant[label]' => 'XL',
             'product_variant[sku]' => 'MUG-NOIR-MAT-XL',
         ]);

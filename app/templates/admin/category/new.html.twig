@@ -4,11 +4,12 @@
 
 {% block admin_content %}
     <div class="admin-form">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Nouvelle catégorie</h1>
-            <p class="lead">L'adresse du filtre du catalogue sera créée automatiquement à partir du nom.</p>
-        </div>
+        {% include 'components/_page_header.html.twig' with {
+            back: {url: path('admin_category_index'), label: 'Retour aux catégories'},
+            eyebrow: 'Administration',
+            title: 'Nouvelle catégorie',
+            lead: 'L\'adresse du filtre du catalogue sera créée automatiquement à partir du nom.',
+        } %}
 
         {% include 'admin/category/_form.html.twig' with {button_label: 'Créer la catégorie'} %}
     </div>

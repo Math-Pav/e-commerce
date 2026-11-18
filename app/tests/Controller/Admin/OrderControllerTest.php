@@ -102,7 +102,7 @@ final class OrderControllerTest extends WebTestCase
         self::assertResponseRedirects('/admin/commandes/'.$reference);
         $client->followRedirect();
         self::assertSelectorTextContains('.flash--success', sprintf('La commande %s est expédiée.', $reference));
-        self::assertSelectorTextContains('.order-header', 'Statut : Expédiée');
+        self::assertSelectorTextContains('.page-toolbar', 'Statut : Expédiée');
         self::assertSame(OrderStatus::Shipped, $this->findOrder($reference)->getStatus());
     }
 
@@ -146,7 +146,7 @@ final class OrderControllerTest extends WebTestCase
         self::assertEmailTextBodyContains($message, '29,80 €');
         $client->followRedirect();
         self::assertSelectorTextContains('.flash--success', 'annulée');
-        self::assertSelectorTextContains('.order-header', 'Statut : Annulée');
+        self::assertSelectorTextContains('.page-toolbar', 'Statut : Annulée');
         static::getContainer()->get(EntityManagerInterface::class)->clear();
         $variant = static::getContainer()->get(ProductVariantRepository::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
         self::assertNotNull($variant);

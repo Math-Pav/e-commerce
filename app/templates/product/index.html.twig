@@ -7,11 +7,12 @@
 {%- endblock %}
 
 {% block body %}
-    <div class="page-header">
-        <p class="eyebrow">Papeterie et objets du quotidien</p>
-        <h1 class="page-title page-title--xl">Le catalogue</h1>
-        <p class="lead">Mugs, carnets et stylos pour accompagner vos journées de travail.</p>
-    </div>
+    {% include 'components/_page_header.html.twig' with {
+        eyebrow: 'Papeterie et objets du quotidien',
+        title: 'Le catalogue',
+        title_modifier: 'xl',
+        lead: 'Mugs, carnets et stylos pour accompagner vos journées de travail.',
+    } %}
 
     {# Formulaire en GET : il ne modifie rien, il construit seulement l'adresse de la page de résultats #}
     <form method="get" action="{{ path('product_index') }}" class="catalog-filters" role="search" aria-label="Rechercher et trier le catalogue">
@@ -60,12 +61,12 @@
 
     {% if pagination.totalItems == 0 %}
         {% if catalog.search %}
-            <div class="empty-state">
-                <p>Aucun produit ne correspond à « {{ catalog.search }} ».</p>
-                <a href="{{ path('product_index') }}" class="btn btn--secondary">Réinitialiser la recherche et les filtres</a>
-            </div>
+            {% include 'components/_empty_state.html.twig' with {
+                message: 'Aucun produit ne correspond à « ' ~ catalog.search ~ ' ». Vérifiez l\'orthographe ou essayez un mot plus court.',
+                action: {url: path('product_index'), label: 'Réinitialiser la recherche et les filtres'},
+            } %}
         {% else %}
-            <p class="empty-state">Aucun produit pour le moment.</p>
+            {% include 'components/_empty_state.html.twig' with {message: 'Aucun produit pour le moment.'} %}
         {% endif %}
     {% else %}
         <ul class="product-grid">

@@ -3,71 +3,67 @@
 {% block title %}Variantes de {{ product.name }} · Administration{% endblock %}
 
 {% block admin_content %}
-    <div class="page-toolbar">
-        <div class="page-header">
-            <p class="eyebrow">Administration · Produits</p>
-            <h1 class="page-title">Variantes de {{ product.name }}</h1>
-            <p class="lead">Prix du produit : {{ product.price|price }}. Une variante sans prix propre utilise ce prix.</p>
-        </div>
-        <div class="toolbar">
-            <p class="toolbar__count">{{ product.variants|length }} variante{{ product.variants|length > 1 ? 's' }}</p>
-            <a href="{{ path('admin_product_variant_new', {id: product.id}) }}" class="btn btn--primary">Nouvelle variante</a>
-        </div>
-    </div>
+    {% embed 'components/_page_header.html.twig' with {
+        back: {url: path('admin_product_index'), label: 'Retour aux produits'},
+        eyebrow: 'Administration · Produits',
+        title: 'Variantes de ' ~ product.name,
+        lead: 'Prix du produit : ' ~ product.price|price ~ '. Une variante sans prix propre utilise ce prix.',
+    } %}
+        {% block actions %}
+            <div class="toolbar">
+                <p class="toolbar__count">{{ product.variants|length }} variante{{ product.variants|length > 1 ? 's' }}</p>
+                <a href="{{ path('admin_product_variant_new', {id: product.id}) }}" class="btn btn--primary">Nouvelle variante</a>
+            </div>
+        {% endblock %}
+    {% endembed %}
 
-    <div class="table-wrapper">
-        <table class="table">
-            <thead>
+    {# Tout produit a au moins une variante (ADR 0017) : pas d'état vide ici #}
+    {% embed 'components/_table.html.twig' with {columns: [
+        {label: 'Libellé'},
+        {label: 'Référence'},
+        {label: 'Prix', num: true},
+        {label: 'Stock', num: true},
+        {label: 'Statut'},
+        {label: 'Actions', hidden: true},
+    ]} %}
+        {% block body %}
+            {% for variant in product.variants %}
+                {% set variant_name = variant.label ?? 'Variante par défaut' %}
                 <tr>
-                    <th scope="col">Libellé</th>
-                    <th scope="col">Référence</th>
-                    <th scope="col" class="num">Prix</th>
-                    <th scope="col" class="num">Stock</th>
-                    <th scope="col">Statut</th>
-                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                    <td><strong>{{ variant_name }}</strong></td>
+                    <td><code>{{ variant.sku }}</code></td>
+                    <td class="num">
+                        {{ variant.effectivePrice|price }}
+                        {% if variant.price is null %}<span class="badge badge--neutral">prix du produit</span>{% endif %}
+                    </td>
+                    <td class="num">
+                        {% if not variant.inStock %}
+                            <span class="stock stock--out">Rupture</span>
+                        {% elseif variant.lowStock %}
+                            <span class="stock stock--low">{{ variant.stock }} · faible</span>
+                        {% else %}
+                            {{ variant.stock }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if variant.active %}
+                            <span class="badge badge--success">Active</span>
+                        {% else %}
+                            <span class="badge badge--neutral">Désactivée</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="table__actions">
+                            <a href="{{ path('admin_product_variant_edit', {id: variant.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ variant_name }}</span></a>
+                            {% set status_action = variant.active ? 'deactivate' : 'activate' %}
+                            <form method="post" action="{{ path('admin_product_variant_' ~ status_action, {id: variant.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('product-variant-status') }}">
+                                <button type="submit" class="btn btn--secondary">{{ variant.active ? 'Désactiver' : 'Activer' }}<span class="visually-hidden"> {{ variant_name }}</span></button>
+                            </form>
+                        </div>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                {% for variant in product.variants %}
-                    {% set variant_name = variant.label ?? 'Variante par défaut' %}
-                    <tr>
-                        <td><strong>{{ variant_name }}</strong></td>
-                        <td><code>{{ variant.sku }}</code></td>
-                        <td class="num">
-                            {{ variant.effectivePrice|price }}
-                            {% if variant.price is null %}<span class="badge badge--neutral">prix du produit</span>{% endif %}
-                        </td>
-                        <td class="num">
-                            {% if not variant.inStock %}
-                                <span class="stock stock--out">Rupture</span>
-                            {% elseif variant.lowStock %}
-                                <span class="stock stock--low">{{ variant.stock }} · faible</span>
-                            {% else %}
-                                {{ variant.stock }}
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if variant.active %}
-                                <span class="badge badge--success">Active</span>
-                            {% else %}
-                                <span class="badge badge--neutral">Désactivée</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="table__actions">
-                                <a href="{{ path('admin_product_variant_edit', {id: variant.id}) }}" class="btn btn--secondary">Modifier<span class="visually-hidden"> {{ variant_name }}</span></a>
-                                {% set status_action = variant.active ? 'deactivate' : 'activate' %}
-                                <form method="post" action="{{ path('admin_product_variant_' ~ status_action, {id: variant.id}) }}">
-                                    <input type="hidden" name="_token" value="{{ csrf_token('product-variant-status') }}">
-                                    <button type="submit" class="btn btn--secondary">{{ variant.active ? 'Désactiver' : 'Activer' }}<span class="visually-hidden"> {{ variant_name }}</span></button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <a href="{{ path('admin_product_index') }}" class="back-link">← Retour à la liste des produits</a>
+            {% endfor %}
+        {% endblock %}
+    {% endembed %}
 {% endblock %}

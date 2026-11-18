@@ -3,10 +3,11 @@
 {% block title %}Mon compte{% endblock %}
 
 {% block body %}
-    <div class="page-header">
-        <h1 class="page-title">Mon compte</h1>
-        <p class="lead">Connecté avec l'adresse e-mail <strong class="account-email">{{ app.user.email }}</strong>.</p>
-    </div>
+    {% embed 'components/_page_header.html.twig' with {title: 'Mon compte'} %}
+        {% block lead %}
+            <p class="lead">Connecté avec l'adresse e-mail <strong class="account-email">{{ app.user.email }}</strong>.</p>
+        {% endblock %}
+    {% endembed %}
 
     <div class="layout-split">
         <section class="layout-split__main" aria-labelledby="profile-title">
@@ -33,7 +34,7 @@
             {{ form_start(passwordForm, {attr: {class: 'form'}}) }}
                 {{ form_row(passwordForm.currentPassword) }}
                 {{ form_row(passwordForm.newPassword) }}
-                <button type="submit" class="btn btn--secondary btn--block">Changer mon mot de passe</button>
+                <button type="submit" class="btn btn--primary btn--block">Changer mon mot de passe</button>
             {{ form_end(passwordForm) }}
         </section>
     </div>

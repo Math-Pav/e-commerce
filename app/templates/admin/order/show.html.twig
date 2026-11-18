@@ -3,15 +3,15 @@
 {% block title %}Commande {{ order.reference }} · Administration{% endblock %}
 
 {% block admin_content %}
-    <a href="{{ path('admin_order_index') }}" class="back-link">← Retour à la liste des commandes</a>
-
-    <div class="order-header">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Commande {{ order.reference }}</h1>
-        </div>
-        {% include 'order/_status_badge.html.twig' with {status: order.status} %}
-    </div>
+    {% embed 'components/_page_header.html.twig' with {
+        back: {url: path('admin_order_index'), label: 'Retour aux commandes'},
+        eyebrow: 'Administration',
+        title: 'Commande ' ~ order.reference,
+    } %}
+        {% block actions %}
+            {% include 'order/_status_badge.html.twig' with {status: order.status} %}
+        {% endblock %}
+    {% endembed %}
 
     {% set csrf = csrf_token('order-status') %}
     <div class="callout">
@@ -40,7 +40,7 @@
             </div>
             <form method="post" action="{{ path('admin_order_cancel', {reference: order.reference}) }}">
                 <input type="hidden" name="_token" value="{{ csrf }}">
-                <button type="submit" class="btn btn--secondary">Annuler la commande</button>
+                <button type="submit" class="btn btn--danger">Annuler la commande</button>
             </form>
         {% else %}
             <p class="callout__text">Aucune action possible : cette commande est {{ order.status.label|lower }}.</p>
@@ -50,44 +50,7 @@
     <div class="layout-split">
         <section class="layout-split__main" aria-labelledby="items-title">
             <h2 id="items-title" class="section-title">Articles</h2>
-            <div class="table-wrapper">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">Produit</th>
-                            <th scope="col" class="num">Prix unitaire</th>
-                            <th scope="col" class="num">Quantité</th>
-                            <th scope="col" class="num">Sous-total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in order.items %}
-                            <tr>
-                                <td>{{ item.displayName }}</td>
-                                <td class="num">{{ item.unitPrice|price }}</td>
-                                <td class="num">{{ item.quantity }}</td>
-                                <td class="num">{{ item.subtotal|price }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot>
-                        {% if order.discountCode %}
-                            <tr>
-                                <th scope="row" colspan="3" class="num">Sous-total</th>
-                                <td class="num">{{ order.subtotalAmount|price }}</td>
-                            </tr>
-                            <tr>
-                                <th scope="row" colspan="3" class="num">Remise ({{ order.discountCode }})</th>
-                                <td class="num">− {{ order.discountAmount|price }}</td>
-                            </tr>
-                        {% endif %}
-                        <tr>
-                            <th scope="row" colspan="3" class="num">Total</th>
-                            <td class="num price">{{ order.totalAmount|price }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+            {% include 'order/_items_table.html.twig' with {order: order} %}
         </section>
 
         <aside class="layout-split__aside panel" aria-label="Informations de la commande">

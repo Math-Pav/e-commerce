@@ -24,26 +24,37 @@
                         <span class="logo__name">Atelier Papier</span>
                     </a>
 
+                    {#
+                        Ordre des liens : le catalogue, puis le compte, puis le panier (toujours visible, à droite).
+                        Les liens du compte sont regroupés dans un menu <details> : il s'ouvre et se ferme sans JavaScript,
+                        ce qui garde l'en-tête sur deux lignes au plus, même sur un téléphone de 375 px.
+                    #}
                     <nav class="site-nav" aria-label="Navigation principale">
                         <a href="{{ path('product_index') }}" class="site-nav__link" aria-current="{{ route starts with 'product' or route == 'home' ? 'page' : 'false' }}">Catalogue</a>
                         {% if app.user %}
-                            <a href="{{ path('order_index') }}" class="site-nav__link" aria-current="{{ route starts with 'order' ? 'page' : 'false' }}">Mes commandes</a>
-                            {% if is_granted('ROLE_ADMIN') %}
-                                <a href="{{ path('admin_dashboard') }}" class="site-nav__link" aria-current="{{ route starts with 'admin' ? 'page' : 'false' }}">Administration</a>
-                            {% endif %}
-                            {# Le prénom ouvre l'espace « Mon compte » ; le texte caché rend la destination explicite aux lecteurs d'écran #}
-                            <a href="{{ path('account_index') }}" class="site-nav__link site-nav__user" aria-current="{{ route starts with 'account' ? 'page' : 'false' }}">
-                                <span class="avatar" aria-hidden="true">{{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}</span>
-                                <span><span class="visually-hidden">Connecté en tant que </span>{{ app.user.firstName }}<span class="visually-hidden"> : mon compte</span></span>
-                            </a>
-                            <a href="{{ path('app_logout') }}" class="site-nav__link">Se déconnecter</a>
+                            <details class="account-menu">
+                                <summary class="site-nav__link account-menu__toggle">
+                                    <span class="avatar" aria-hidden="true">{{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}</span>
+                                    <span class="account-menu__name"><span class="visually-hidden">Connecté en tant que </span>{{ app.user.firstName }}<span class="visually-hidden"> : menu du compte</span></span>
+                                    <svg class="account-menu__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                                </summary>
+                                <ul class="account-menu__list">
+                                    <li><a href="{{ path('order_index') }}" class="account-menu__link" aria-current="{{ route starts with 'order' ? 'page' : 'false' }}">Mes commandes</a></li>
+                                    <li><a href="{{ path('account_index') }}" class="account-menu__link" aria-current="{{ route starts with 'account' ? 'page' : 'false' }}">Mon compte</a></li>
+                                    {% if is_granted('ROLE_ADMIN') %}
+                                        <li><a href="{{ path('admin_dashboard') }}" class="account-menu__link" aria-current="{{ route starts with 'admin' ? 'page' : 'false' }}">Administration</a></li>
+                                    {% endif %}
+                                    <li class="account-menu__separator"><a href="{{ path('app_logout') }}" class="account-menu__link">Se déconnecter</a></li>
+                                </ul>
+                            </details>
                         {% else %}
                             <a href="{{ path('app_login') }}" class="site-nav__link" aria-current="{{ route == 'app_login' ? 'page' : 'false' }}">Se connecter</a>
-                            <a href="{{ path('app_register') }}" class="site-nav__link" aria-current="{{ route == 'app_register' ? 'page' : 'false' }}">Créer un compte</a>
+                            {# Bouton discret sur grand écran ; masqué sous 640 px (CSS), où la page de connexion propose l'inscription #}
+                            <a href="{{ path('app_register') }}" class="btn btn--secondary site-nav__register" aria-current="{{ route == 'app_register' ? 'page' : 'false' }}">Créer un compte</a>
                         {% endif %}
                         <a href="{{ path('cart_show') }}" class="cart-link" aria-current="{{ route == 'cart_show' ? 'page' : 'false' }}">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
-                            <span>Panier</span>
+                            <span class="cart-link__label">Panier</span>
                             {% if cart_count > 0 %}
                                 <span class="cart-link__count">{{ cart_count }}<span class="visually-hidden"> articles</span></span>
                             {% endif %}

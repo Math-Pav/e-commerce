@@ -81,7 +81,7 @@ final class CartService
         }
 
         $promoCode = $this->promoCodeRepository->findOneByCode($code)
-            ?? throw new InvalidPromoCodeException(sprintf('Le code promo « %s » n\'existe pas.', PromoCode::normalize($code)));
+            ?? throw new InvalidPromoCodeException(sprintf('Le code promo « %s » n\'existe pas. Vérifiez son orthographe.', PromoCode::normalize($code)));
 
         $promoCode->assertApplicable(new \DateTimeImmutable(), (new Cart($this->loadLines()))->getSubtotal());
 

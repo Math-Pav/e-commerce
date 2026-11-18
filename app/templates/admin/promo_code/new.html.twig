@@ -4,10 +4,11 @@
 
 {% block admin_content %}
     <div class="admin-form">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Nouveau code promo</h1>
-        </div>
+        {% include 'components/_page_header.html.twig' with {
+            back: {url: path('admin_promo_code_index'), label: 'Retour aux codes promo'},
+            eyebrow: 'Administration',
+            title: 'Nouveau code promo',
+        } %}
 
         {% include 'admin/promo_code/_form.html.twig' with {button_label: 'Créer le code promo'} %}
     </div>

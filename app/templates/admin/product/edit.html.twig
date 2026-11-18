@@ -4,11 +4,15 @@
 
 {% block admin_content %}
     <div class="admin-form">
-        <div class="page-header">
-            <p class="eyebrow">Administration</p>
-            <h1 class="page-title">Modifier le produit</h1>
-            <p class="lead">Adresse de la fiche : <code>/produits/{{ product.slug }}</code> (elle ne change pas si le nom change).</p>
-        </div>
+        {% embed 'components/_page_header.html.twig' with {
+            back: {url: path('admin_product_index'), label: 'Retour aux produits'},
+            eyebrow: 'Administration',
+            title: 'Modifier le produit',
+        } %}
+            {% block lead %}
+                <p class="lead">Adresse de la fiche : <code>/produits/{{ product.slug }}</code> (elle ne change pas si le nom change).</p>
+            {% endblock %}
+        {% endembed %}
 
         {% include 'admin/product/_form.html.twig' with {button_label: 'Enregistrer les modifications'} %}
     </div>
