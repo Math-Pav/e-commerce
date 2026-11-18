@@ -757,19 +757,55 @@ code { padding: 1px 6px; border-radius: var(--radius-xs); background: var(--colo
 .callout--action { border-left-color: var(--color-accent); background: var(--color-accent-soft); }
 
 
+/* Connexion et inscription : le formulaire, et à côté ce que le compte apporte */
+.auth-layout { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; gap: 24px; margin-top: 8px; }
 .auth-card {
-    width: 100%;
-    max-width: 440px;
-    margin: 24px auto 0;
-    padding: 36px;
+    flex: 1 1 380px;
+    max-width: 480px;
+    padding: 40px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-xl);
-    background: var(--color-bg);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
     gap: 24px;
 }
+.auth-card .page-title { font-size: var(--text-5xl); }
 .auth-card__footer { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; border-top: 1px solid var(--color-border); font-size: var(--text-md); text-align: center; color: var(--color-muted); }
+.auth-aside {
+    --color-focus: var(--color-on-dark-accent);
+    flex: 1 1 300px;
+    max-width: 420px;
+    padding: 40px;
+    border-radius: var(--radius-xl);
+    background: var(--color-dark);
+    color: var(--color-on-dark);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.auth-aside .eyebrow { color: var(--color-on-dark-accent); }
+.auth-aside__title { font-size: var(--text-4xl); }
+.auth-aside__list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px; color: var(--color-on-dark-soft); }
+/* Coche dessinée en CSS devant chaque avantage */
+.auth-aside__list li { position: relative; padding-left: 30px; }
+.auth-aside__list li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 4px;
+    width: 12px;
+    height: 7px;
+    border-left: 2px solid var(--color-on-dark-accent);
+    border-bottom: 2px solid var(--color-on-dark-accent);
+    transform: rotate(-45deg);
+}
+
+/* Pages d'erreur : grand numéro, explication, deux façons d'en sortir */
+.error-page { max-width: 720px; margin: 24px auto; padding: 48px; border: 1px solid var(--color-border); border-radius: var(--radius-xl); background: var(--color-surface-raised); display: flex; flex-direction: column; gap: 24px; }
+.error-page__code { font-family: var(--font-display); font-size: var(--text-8xl); font-weight: 700; line-height: 1; color: var(--color-highlight); }
+.error-page__actions { display: flex; flex-wrap: wrap; gap: 12px; }
 
 /* Administration --------------------------------------------------------- */
 .admin-form { max-width: 640px; display: flex; flex-direction: column; gap: 24px; }
@@ -894,7 +930,10 @@ code { padding: 1px 6px; border-radius: var(--radius-xs); background: var(--colo
     .cart-link__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
     .tabs__link { padding: 12px; }
-    .auth-card { padding: 24px; }
+    .auth-card, .auth-aside { padding: 24px; }
+    .auth-card .page-title { font-size: var(--text-4xl); }
+    .error-page { margin: 0; padding: 24px; }
+    .error-page__actions .btn { width: 100%; }
     .callout > form, .callout .btn { width: 100%; }
     .table th, .table td { padding: 12px 14px; }
     .steps__separator { width: 16px; }

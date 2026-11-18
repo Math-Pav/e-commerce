@@ -1,4 +1,9 @@
 {# Contenu commun des pages d'erreur (A-03) : affichées en production uniquement, à la place de la page anglaise de Symfony #}
-{% include 'components/_page_header.html.twig' with {eyebrow: 'Erreur ' ~ status_code, title: heading} only %}
-
-{% include 'components/_empty_state.html.twig' with {message: message, action: {url: path('product_index'), label: 'Retour au catalogue'}} only %}
+<div class="error-page">
+    <p class="error-page__code" aria-hidden="true">{{ status_code }}</p>
+    {% include 'components/_page_header.html.twig' with {eyebrow: 'Erreur ' ~ status_code, title: heading, lead: message} only %}
+    <div class="error-page__actions">
+        <a href="{{ path('product_index') }}" class="btn btn--primary">Retour au catalogue</a>
+        <a href="{{ path('home') }}" class="btn btn--secondary">Revenir à l'accueil</a>
+    </div>
+</div>

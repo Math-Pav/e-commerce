@@ -3,22 +3,25 @@
 {% block title %}Créer un compte{% endblock %}
 
 {% block body %}
-    <div class="auth-card">
-        {% include 'components/_page_header.html.twig' with {title: 'Créer un compte', lead: 'Quelques informations suffisent pour commencer.'} %}
+    <div class="auth-layout">
+        <div class="auth-card">
+            {% include 'components/_page_header.html.twig' with {title: 'Créer un compte', lead: 'Quelques informations suffisent pour commencer.'} %}
 
-        {{ form_start(registrationForm, {attr: {class: 'form'}}) }}
-            <div class="form__inline">
-                {{ form_row(registrationForm.firstName) }}
-                {{ form_row(registrationForm.lastName) }}
+            {{ form_start(registrationForm, {attr: {class: 'form'}}) }}
+                <div class="form__inline">
+                    {{ form_row(registrationForm.firstName) }}
+                    {{ form_row(registrationForm.lastName) }}
+                </div>
+                {{ form_row(registrationForm.email) }}
+                {{ form_row(registrationForm.plainPassword) }}
+                <button type="submit" class="btn btn--primary btn--block">Créer mon compte</button>
+            {{ form_end(registrationForm) }}
+
+            <div class="auth-card__footer">
+                <p>Déjà inscrit ?</p>
+                <a href="{{ path('app_login') }}" class="btn btn--secondary btn--block">Se connecter</a>
             </div>
-            {{ form_row(registrationForm.email) }}
-            {{ form_row(registrationForm.plainPassword) }}
-            <button type="submit" class="btn btn--primary btn--block">Créer mon compte</button>
-        {{ form_end(registrationForm) }}
-
-        <div class="auth-card__footer">
-            <p>Déjà inscrit ?</p>
-            <a href="{{ path('app_login') }}" class="btn btn--secondary btn--block">Se connecter</a>
         </div>
+        {% include 'security/_auth_aside.html.twig' %}
     </div>
 {% endblock %}
