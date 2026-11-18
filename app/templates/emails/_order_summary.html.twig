@@ -1,18 +1,18 @@
 {# Récapitulatif d'une commande : lignes, total et adresse de livraison. Paramètre : order #}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin:24px 0 0; font-size:15px;">
     <tr>
-        <th align="left" style="padding:8px 0; border-bottom:1px solid #c9ced5; color:#5b6370; font-weight:normal;">Produit</th>
-        <th align="right" style="padding:8px 0; border-bottom:1px solid #c9ced5; color:#5b6370; font-weight:normal;">Quantité</th>
-        <th align="right" style="padding:8px 0; border-bottom:1px solid #c9ced5; color:#5b6370; font-weight:normal;">Sous-total</th>
+        <th align="left" style="padding:8px 0; border-bottom:1px solid #c9bca8; color:#6a6158; font-weight:normal;">Produit</th>
+        <th align="right" style="padding:8px 0; border-bottom:1px solid #c9bca8; color:#6a6158; font-weight:normal;">Quantité</th>
+        <th align="right" style="padding:8px 0; border-bottom:1px solid #c9bca8; color:#6a6158; font-weight:normal;">Sous-total</th>
     </tr>
     {% for item in order.items %}
         <tr>
-            <td style="padding:8px 0; border-bottom:1px solid #e3e5e8;">
+            <td style="padding:8px 0; border-bottom:1px solid #e6ddcf;">
                 {{ item.displayName }}<br>
-                <span style="color:#5b6370; font-size:13px;">{{ item.unitPrice|price }} l'unité</span>
+                <span style="color:#6a6158; font-size:13px;">{{ item.unitPrice|price }} l'unité</span>
             </td>
-            <td align="right" style="padding:8px 0; border-bottom:1px solid #e3e5e8;">{{ item.quantity }}</td>
-            <td align="right" style="padding:8px 0; border-bottom:1px solid #e3e5e8; white-space:nowrap;">{{ item.subtotal|price }}</td>
+            <td align="right" style="padding:8px 0; border-bottom:1px solid #e6ddcf;">{{ item.quantity }}</td>
+            <td align="right" style="padding:8px 0; border-bottom:1px solid #e6ddcf; white-space:nowrap;">{{ item.subtotal|price }}</td>
         </tr>
     {% endfor %}
     {% if order.discountCode %}
@@ -32,7 +32,7 @@
 </table>
 
 <h2 style="margin:24px 0 8px; font-size:18px;">Adresse de livraison</h2>
-<p style="margin:0; color:#3d434c;">
+<p style="margin:0; color:#47413a;">
     {{ order.shippingFullName }}<br>
     {{ order.shippingAddress }}<br>
     {{ order.shippingPostalCode }} {{ order.shippingCity }}
