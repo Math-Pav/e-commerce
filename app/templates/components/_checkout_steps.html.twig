@@ -1,0 +1,24 @@
+{#
+    Étapes du tunnel de commande : panier, livraison, paiement.
+    Paramètre : current, le numéro de l'étape en cours (1, 2 ou 3) ; les étapes précédentes sont cochées.
+#}
+<ol class="steps" aria-label="Étapes de la commande">
+    {% for step in ['Panier', 'Livraison', 'Paiement'] %}
+        {% if not loop.first %}
+            <li class="steps__separator" aria-hidden="true"></li>
+        {% endif %}
+        {% if loop.index < current %}
+            <li class="steps__item steps__item--done">
+                <span class="steps__number">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
+                </span>
+                {{ step }}<span class="visually-hidden"> (terminée)</span>
+            </li>
+        {% else %}
+            <li class="steps__item"{{ loop.index == current ? ' aria-current="step"' }}>
+                <span class="steps__number">{{ loop.index }}</span>
+                {{ step }}
+            </li>
+        {% endif %}
+    {% endfor %}
+</ol>

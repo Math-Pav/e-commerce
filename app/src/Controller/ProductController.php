@@ -17,7 +17,25 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ProductController extends AbstractController
 {
+    /**
+     * Nombre de produits de la sélection « nouveautés » de l'accueil : une rangée de la grille sur ordinateur.
+     */
+    private const HOME_LATEST_PRODUCTS = 4;
+
     #[Route('/', name: 'home', methods: ['GET'])]
+    public function home(ProductRepository $productRepository, CatalogFilterService $catalogFilterService): Response
+    {
+        $latestProducts = $productRepository->findLatestActive(self::HOME_LATEST_PRODUCTS);
+        // Prix « à partir de » et rupture de stock dépendent des variantes : une requête pour toute la sélection
+        $productRepository->loadVariants($latestProducts);
+
+        return $this->render('product/home.html.twig', [
+            'latestProducts' => $latestProducts,
+            // Catégories ayant au moins un produit actif, déjà en cache pour les filtres du catalogue (ADR 0019)
+            'categories' => $catalogFilterService->getCategories(),
+        ]);
+    }
+
     #[Route('/produits', name: 'product_index', methods: ['GET'])]
     public function index(
         Request $request,

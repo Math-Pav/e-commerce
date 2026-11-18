@@ -1,0 +1,23 @@
+{#
+    Carte d'un produit dans une grille (catalogue, accueil) : visuel, catégorie, nom, prix et disponibilité.
+    Paramètre : product (variantes déjà chargées, voir ProductRepository::loadVariants()).
+#}
+<a href="{{ path('product_show', {slug: product.slug}) }}" class="product-card">
+    <div class="product-card__visual">
+        {% include 'product/_image.html.twig' with {product: product} only %}
+        {% if not product.inStock %}
+            <span class="badge badge--danger product-card__badge">Rupture de stock</span>
+        {% endif %}
+    </div>
+    <span class="product-card__category">{{ product.category.name }}</span>
+    <span class="product-card__name">{{ product.name }}</span>
+    <span class="product-card__footer">
+        <span class="product-card__price">
+            {%- if product.hasVariedPrices %}<span class="product-card__from">À partir de </span>{% endif -%}
+            {{ product.fromPrice|price }}
+        </span>
+        {% if product.inStock %}
+            <span class="product-card__stock">En stock</span>
+        {% endif %}
+    </span>
+</a>

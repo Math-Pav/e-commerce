@@ -10,7 +10,7 @@
     {% endembed %}
 
     <div class="layout-split">
-        <section class="layout-split__main" aria-labelledby="profile-title">
+        <section class="layout-split__main form-card" aria-labelledby="profile-title">
             <h2 id="profile-title" class="section-title">Mes informations</h2>
 
             {{ form_start(profileForm, {attr: {class: 'form'}}) }}
@@ -37,6 +37,14 @@
                 <button type="submit" class="btn btn--primary btn--block">Changer mon mot de passe</button>
             {{ form_end(passwordForm) }}
         </section>
+    </div>
+
+    <div class="callout">
+        <div>
+            <p class="callout__title">Mes commandes</p>
+            <p class="callout__text">Suivez vos commandes, payez celles en attente et téléchargez vos factures.</p>
+        </div>
+        <a href="{{ path('order_index') }}" class="btn btn--secondary">Voir mes commandes</a>
     </div>
 
     <div class="callout">

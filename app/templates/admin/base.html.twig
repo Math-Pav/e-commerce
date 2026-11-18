@@ -4,7 +4,7 @@
     {% set route = app.request.attributes.get('_route') %}
 
     {# Ordre : la vue d'ensemble, le travail quotidien (commandes), puis le catalogue et ses réglages #}
-    <nav class="tabs" aria-label="Administration">
+    <nav class="tabs tabs--admin" aria-label="Administration">
         <a href="{{ path('admin_dashboard') }}" class="tabs__link" aria-current="{{ route == 'admin_dashboard' ? 'page' : 'false' }}">Tableau de bord</a>
         <a href="{{ path('admin_order_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_order' ? 'page' : 'false' }}">Commandes</a>
         <a href="{{ path('admin_product_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_product' ? 'page' : 'false' }}">Produits</a>
@@ -12,5 +12,7 @@
         <a href="{{ path('admin_promo_code_index') }}" class="tabs__link" aria-current="{{ route starts with 'admin_promo_code' ? 'page' : 'false' }}">Codes promo</a>
     </nav>
 
-    {% block admin_content %}{% endblock %}
+    <div class="admin-content">
+        {% block admin_content %}{% endblock %}
+    </div>
 {% endblock %}

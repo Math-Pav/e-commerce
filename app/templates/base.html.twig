@@ -4,9 +4,9 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{% block title %}Boutique{% endblock %} · Atelier Papier</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+        <meta name="description" content="{% block meta_description %}Atelier Papier : mugs, carnets et stylos pour accompagner vos journées de travail.{% endblock %}">
+        <meta name="theme-color" content="#1f4a3a">
+        {# Aucune police ni ressource externe : les polices viennent du système (ADR 0024), compatible avec une CSP stricte #}
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
@@ -16,13 +16,20 @@
         {% set route = app.request.attributes.get('_route') %}
         {% set cart_count = cart_item_count() %}
 
+        <a href="#contenu" class="skip-link">Aller au contenu</a>
+
         <div class="site">
+            {# Bandeau honnête : la boutique est une démonstration, le paiement est simulé (ADR 0003) #}
+            <div class="announcement">
+                <p class="container announcement__inner">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h13v10H3z"/><path d="M16 10h3l2 3v4h-5"/><circle cx="7" cy="18" r="1.5"/><circle cx="18" cy="18" r="1.5"/></svg>
+                    Livraison en France · Boutique de démonstration : le paiement est simulé
+                </p>
+            </div>
+
             <header class="site-header">
                 <div class="container site-header__inner">
-                    <a href="{{ path('home') }}" class="logo">
-                        <span class="logo__mark" aria-hidden="true">A</span>
-                        <span class="logo__name">Atelier Papier</span>
-                    </a>
+                    {% include 'components/_logo.html.twig' %}
 
                     {#
                         Ordre des liens : le catalogue, puis le compte, puis le panier (toujours visible, à droite).
@@ -30,7 +37,7 @@
                         ce qui garde l'en-tête sur deux lignes au plus, même sur un téléphone de 375 px.
                     #}
                     <nav class="site-nav" aria-label="Navigation principale">
-                        <a href="{{ path('product_index') }}" class="site-nav__link" aria-current="{{ route starts with 'product' or route == 'home' ? 'page' : 'false' }}">Catalogue</a>
+                        <a href="{{ path('product_index') }}" class="site-nav__link" aria-current="{{ route starts with 'product' ? 'page' : 'false' }}">Catalogue</a>
                         {% if app.user %}
                             <details class="account-menu">
                                 <summary class="site-nav__link account-menu__toggle">
@@ -63,7 +70,7 @@
                 </div>
             </header>
 
-            <main class="site-main">
+            <main class="site-main" id="contenu" tabindex="-1">
                 <div class="container">
                     {% for type, messages in app.flashes(['success', 'error']) %}
                         {% for message in messages %}
@@ -77,8 +84,45 @@
 
             <footer class="site-footer">
                 <div class="container site-footer__inner">
-                    <span>© {{ 'now'|date('Y') }} Atelier Papier</span>
-                    <span>Paiement simulé · Livraison en France</span>
+                    <div class="site-footer__brand">
+                        {% include 'components/_logo.html.twig' %}
+                        <p class="site-footer__text">Mugs, carnets et stylos choisis pour accompagner vos journées de travail. Projet d'apprentissage : les commandes sont réelles, le paiement est simulé.</p>
+                    </div>
+                    <nav aria-labelledby="footer-shop-title">
+                        <h2 id="footer-shop-title" class="site-footer__title">La boutique</h2>
+                        <ul class="site-footer__list">
+                            <li><a href="{{ path('product_index') }}" class="site-footer__link">Tout le catalogue</a></li>
+                            <li><a href="{{ path('product_index', {tri: 'nouveautes'}) }}" class="site-footer__link">Nouveautés</a></li>
+                            <li><a href="{{ path('cart_show') }}" class="site-footer__link">Mon panier</a></li>
+                        </ul>
+                    </nav>
+                    <nav aria-labelledby="footer-account-title">
+                        <h2 id="footer-account-title" class="site-footer__title">Mon espace</h2>
+                        <ul class="site-footer__list">
+                            {% if app.user %}
+                                <li><a href="{{ path('account_index') }}" class="site-footer__link">Mon compte</a></li>
+                                <li><a href="{{ path('order_index') }}" class="site-footer__link">Mes commandes</a></li>
+                                <li><a href="{{ path('account_api_token_index') }}" class="site-footer__link">Accès à l'API</a></li>
+                            {% else %}
+                                <li><a href="{{ path('app_login') }}" class="site-footer__link">Se connecter</a></li>
+                                <li><a href="{{ path('app_register') }}" class="site-footer__link">Créer un compte</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    <div>
+                        <h2 class="site-footer__title">Bon à savoir</h2>
+                        <ul class="site-footer__list site-footer__facts">
+                            <li>Livraison en France</li>
+                            <li>Annulation possible tant que la commande n'est pas payée</li>
+                            <li>Facture PDF pour chaque commande payée</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="site-footer__bottom">
+                    <div class="container site-footer__bottom-inner">
+                        <span>© {{ 'now'|date('Y') }} Atelier Papier</span>
+                        <span>Boutique de démonstration · Paiement simulé, aucune carte bancaire demandée</span>
+                    </div>
                 </div>
             </footer>
         </div>

@@ -27,14 +27,30 @@ final class ProductControllerTest extends WebTestCase
         self::assertStringNotContainsString('Agenda 2026', (string) $client->getResponse()->getContent());
     }
 
-    public function testHomePageShowsCatalogue(): void
+    public function testHomePageShowsLatestProductsAndCategories(): void
     {
         $client = static::createClient();
 
         $client->request('GET', '/');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Le catalogue');
+        self::assertSelectorTextContains('h1', 'De beaux objets');
+        self::assertSelectorExists('.hero a[href="/produits"]');
+        // Une carte par catégorie ayant des produits actifs, vers le catalogue filtré
+        self::assertSelectorExists('.category-grid a[href="/produits?categorie=carnets"]');
+        self::assertSelectorExists('.category-grid a[href="/produits?categorie=stylos"]');
+        // Les 4 derniers produits actifs, jamais un produit désactivé
+        self::assertSelectorCount(4, '[aria-labelledby="latest-title"] .product-card');
+        self::assertStringNotContainsString('Agenda 2026', (string) $client->getResponse()->getContent());
+    }
+
+    public function testHomePageInvitesVisitorToCreateAccount(): void
+    {
+        $client = static::createClient();
+
+        $client->request('GET', '/');
+
+        self::assertSelectorExists('main .callout a[href="/inscription"]');
     }
 
     public function testCatalogueCanBeFilteredByCategory(): void
