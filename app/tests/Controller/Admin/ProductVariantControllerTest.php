@@ -144,6 +144,35 @@ final class ProductVariantControllerTest extends WebTestCase
         self::assertNull($variant->getPrice(), 'Un prix vide redonne le prix du produit.');
     }
 
+    /**
+     * A-01 : une vente faite pendant que l'administrateur édite la variante ne doit pas être effacée
+     * par l'enregistrement du stock affiché à l'ouverture du formulaire.
+     */
+    public function testSaleDuringEditIsNotOverwritten(): void
+    {
+        $client = static::createClient();
+        $variant = $this->findVariant('MUG-NOIR-MAT');
+        $initialStock = $variant->getStock();
+        $this->logIn($client, 'admin@example.com');
+
+        $crawler = $client->request('GET', sprintf('/admin/variantes/%d/modifier', $variant->getId()));
+        $form = $crawler->selectButton('Enregistrer les modifications')->form();
+
+        // Un client achète 3 mugs pendant que le formulaire est ouvert
+        $variant = $this->findVariant('MUG-NOIR-MAT');
+        $variant->decreaseStock(3);
+        static::getContainer()->get(EntityManagerInterface::class)->flush();
+
+        // L'administrateur enregistre sans rien changer : le formulaire contient encore l'ancien stock
+        $client->submit($form);
+
+        self::assertResponseRedirects(sprintf('/admin/variantes/%d/modifier', $variant->getId()));
+        self::assertSame($initialStock - 3, $this->findVariant('MUG-NOIR-MAT')->getStock(), 'La vente ne doit pas être effacée.');
+        $client->followRedirect();
+        self::assertSelectorTextContains('.flash--error', 'a été modifiée pendant votre saisie');
+        self::assertInputValueSame('product_variant[stock]', (string) ($initialStock - 3));
+    }
+
     public function testAdminDeactivatesAndReactivatesVariant(): void
     {
         $client = static::createClient();

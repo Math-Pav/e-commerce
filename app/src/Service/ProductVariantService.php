@@ -7,7 +7,9 @@ namespace App\Service;
 use App\Entity\Product;
 use App\Entity\ProductVariant;
 use App\Model\ProductVariantData;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\OptimisticLockException;
 
 /**
  * Gestion des variantes d'un produit depuis l'administration : ajout, modification, activation (ADR 0017).
@@ -37,11 +39,26 @@ final class ProductVariantService
     /**
      * Les commandes passées gardent leur copie du libellé et du prix.
      *
+     * Verrouillage optimiste (ADR 0023) : si la variante a changé depuis l'ouverture du formulaire
+     * (une vente, une annulation, un autre administrateur), rien n'est enregistré. Sans cela, le stock
+     * affiché à l'ouverture effacerait les ventes faites pendant la saisie.
+     *
      * @param ProductVariantData $data données déjà validées par le formulaire
+     *
+     * @throws OptimisticLockException la variante a été modifiée depuis l'ouverture du formulaire
      */
     public function update(ProductVariant $variant, ProductVariantData $data): void
     {
+        if (null === $data->version) {
+            throw OptimisticLockException::lockFailed($variant);
+        }
+
+        // Compare la version lue à l'ouverture avec celle de la variante chargée pour cette requête
+        $this->entityManager->lock($variant, LockMode::OPTIMISTIC, $data->version);
+
         $this->applyData($variant, $data);
+        // Le flush vérifie encore la version (UPDATE … WHERE version = ?) : une vente enregistrée
+        // entre le lock() et le flush() fait aussi échouer la mise à jour
         $this->entityManager->flush();
     }
 

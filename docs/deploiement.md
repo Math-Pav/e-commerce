@@ -96,7 +96,7 @@ Les mots de passe de la base se génèrent de la même façon (`openssl rand -he
   - activer HSTS sur le proxy (`Strict-Transport-Security`) une fois HTTPS vérifié.
 - [ ] **Nom de domaine dans les e-mails.** `DEFAULT_URI` doit valoir l'adresse publique en HTTPS (`https://www.exemple.fr`) : elle sert aux liens absolus des e-mails. L'adresse d'expédition `app.mailer.sender_email` (`app/config/services.yaml`) vaut aujourd'hui `boutique@atelier-papier.test`, un domaine réservé qui n'existe pas : à remplacer par une adresse du vrai domaine.
 - [ ] **Vrai serveur de messagerie.** `MAILER_DSN` doit pointer vers un vrai serveur SMTP (prestataire d'envoi ou hébergeur). Configurer SPF, DKIM et DMARC dans la zone DNS du domaine, sinon les e-mails finissent en spam. Envoyer un e-mail de test (inscription) avant d'ouvrir le site.
-- [ ] **Vrai prestataire de paiement.** `FakePaymentProvider` accepte tout paiement jusqu'à 100 € (ADR 0003). Écrire une nouvelle implémentation de `PaymentProviderInterface` pour le prestataire choisi (Stripe, PayPal, Mollie…), avec ses clés en variables d'environnement et la vérification de ses notifications (webhooks). Le site ne doit pas être ouvert au public avant.
+- [ ] **Vrai prestataire de paiement.** `FakePaymentProvider` accepte tout paiement, sauf le montant de test de 9 999,99 € (ADR 0003) : n'importe qui peut donc « payer » sans débit réel. Écrire une nouvelle implémentation de `PaymentProviderInterface` pour le prestataire choisi (Stripe, PayPal, Mollie…), avec ses clés en variables d'environnement et la vérification de ses notifications (webhooks). Le site ne doit pas être ouvert au public avant.
 - [ ] **Premier compte administrateur.** Les fixtures n'existent pas en production (dépendance de développement). Créer son compte par l'inscription, puis lui donner le rôle administrateur en base (voir « Commandes de déploiement », étape 6).
 - [ ] **Données légales.** Les informations du vendeur sur les factures (`app.invoice.*` dans `app/config/services.yaml`) sont fictives.
 
@@ -108,9 +108,16 @@ Les mots de passe de la base se génèrent de la même façon (`openssl rand -he
   0 3 * * * cd /srv/ecommerce && docker compose -f compose.prod.yaml --env-file /etc/ecommerce/prod.env exec -T database sh -c 'mariadb-dump -uroot -p"$MARIADB_ROOT_PASSWORD" --single-transaction "$MARIADB_DATABASE"' | gzip > /var/backups/ecommerce/db-$(date +\%F).sql.gz
   ```
   Sauvegarder aussi le volume `ecommerce-prod_uploads` (photos des produits). Les factures sont générées à la demande à partir de la base : la sauvegarde de la base suffit pour elles.
-- [ ] **Tâche cron d'annulation automatique.** **Cette commande n'existe pas encore dans le projet.** Les commandes non payées gardent aujourd'hui leur stock réservé jusqu'à ce que le client les annule. Il faudra développer une commande console (par exemple `app:orders:cancel-unpaid`) qui annule les commandes en attente depuis plus de N heures et remet le stock, puis la programmer :
+- [ ] **Tâche cron d'annulation automatique.** La commande `app:orders:cancel-expired` annule les commandes en attente de paiement depuis plus d'une heure (paramètre `app.order.payment_delay_minutes`), rend leur stock et l'utilisation de leur code promo, et prévient le client par e-mail (ADR 0024). La programmer toutes les 5 minutes dans la crontab de l'hôte :
   ```bash
-  */15 * * * * cd /srv/ecommerce && docker compose -f compose.prod.yaml --env-file /etc/ecommerce/prod.env exec -T php bin/console app:orders:cancel-unpaid
+  */5 * * * * cd /srv/ecommerce && docker compose -f compose.prod.yaml --env-file /etc/ecommerce/prod.env exec -T php bin/console app:orders:cancel-expired --no-interaction >> /var/log/ecommerce/cancel-expired.log 2>&1
+  ```
+  `-T` désactive le pseudo-terminal (le cron n'en a pas). La commande peut être relancée sans risque (elle n'annule jamais deux fois) ; son code de sortie vaut `1` si une commande n'a pas pu être annulée (détail dans le journal). Pour vérifier avant d'activer le cron : `dcp exec php bin/console app:orders:cancel-expired --dry-run`.
+
+  En développement, pas de cron : on la lance à la main, d'abord en simulation :
+  ```bash
+  docker compose exec php bin/console app:orders:cancel-expired --dry-run
+  docker compose exec php bin/console app:orders:cancel-expired
   ```
 - [ ] **Rotation des journaux.** PHP et Nginx écrivent dans la sortie de leur conteneur (`docker compose logs`). `compose.prod.yaml` limite ces journaux à 5 fichiers de 10 Mo par conteneur (`x-logging`). Les journaux du proxy HTTPS et des sauvegardes, sur l'hôte, sont à confier à `logrotate`.
 - [ ] **Mise à jour des dépendances.** Une fois par mois, et à chaque alerte de sécurité :

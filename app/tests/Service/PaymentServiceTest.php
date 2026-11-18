@@ -101,7 +101,46 @@ final class PaymentServiceTest extends TestCase
         $this->createPaymentService($provider)->pay($order);
     }
 
-    private function createPaymentService(PaymentProviderInterface $provider, ?MailerInterface $mailer = null): PaymentService
+    /**
+     * A-06 : la commande est annulée (ou payée) par une autre requête juste avant le paiement.
+     * Le verrou relit la commande : le prestataire ne doit alors jamais être appelé.
+     */
+    public function testOrderCancelledConcurrentlyIsNeverCharged(): void
+    {
+        $order = $this->createOrder();
+        $orderRepository = $this->createStub(OrderRepository::class);
+        // Simule la relecture sous verrou : la base contient déjà la commande annulée
+        $orderRepository->method('lockForUpdate')->willReturnCallback(static function (Order $locked): void {
+            $locked->cancel(new \DateTimeImmutable());
+        });
+        $provider = $this->createMock(PaymentProviderInterface::class);
+        $provider->expects(self::never())->method('charge');
+
+        $this->expectException(\DomainException::class);
+
+        $this->createPaymentService($provider, orderRepository: $orderRepository)->pay($order);
+    }
+
+    public function testOrderIsLockedBeforeProviderIsCalled(): void
+    {
+        $calls = [];
+        $orderRepository = $this->createStub(OrderRepository::class);
+        $orderRepository->method('lockForUpdate')->willReturnCallback(static function () use (&$calls): void {
+            $calls[] = 'lock';
+        });
+        $provider = $this->createStub(PaymentProviderInterface::class);
+        $provider->method('charge')->willReturnCallback(static function () use (&$calls): PaymentResult {
+            $calls[] = 'charge';
+
+            return PaymentResult::success();
+        });
+
+        $this->createPaymentService($provider, orderRepository: $orderRepository)->pay($this->createOrder());
+
+        self::assertSame(['lock', 'charge'], $calls);
+    }
+
+    private function createPaymentService(PaymentProviderInterface $provider, ?MailerInterface $mailer = null, ?OrderRepository $orderRepository = null): PaymentService
     {
         $customerMailer = new CustomerMailer(
             $mailer ?? $this->createStub(MailerInterface::class),
@@ -128,7 +167,7 @@ final class PaymentServiceTest extends TestCase
             $provider,
             $entityManager,
             $customerMailer,
-            $this->createStub(OrderRepository::class),
+            $orderRepository ?? $this->createStub(OrderRepository::class),
             $invoiceService,
         );
     }

@@ -6,24 +6,34 @@ namespace App\Tests\Payment;
 
 use App\Entity\Order;
 use App\Payment\FakePaymentProvider;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class FakePaymentProviderTest extends TestCase
 {
-    public function testAcceptsPaymentUpToLimit(): void
+    /**
+     * @return iterable<string, array{int}>
+     */
+    public static function normalAmountProvider(): iterable
     {
-        $order = (new Order())->setTotalAmount(10000);
+        yield '1 centime' => [1];
+        yield '100,01 € (ancien plafond dépassé, A-02)' => [10001];
+        yield '139,60 €' => [13960];
+        yield 'un centime de moins que le montant de test' => [FakePaymentProvider::DECLINED_AMOUNT - 1];
+        yield 'un centime de plus que le montant de test' => [FakePaymentProvider::DECLINED_AMOUNT + 1];
+    }
 
-        $result = (new FakePaymentProvider())->charge($order);
+    #[DataProvider('normalAmountProvider')]
+    public function testAcceptsNormalAmounts(int $amount): void
+    {
+        $result = (new FakePaymentProvider())->charge((new Order())->setTotalAmount($amount));
 
         self::assertTrue($result->successful);
     }
 
-    public function testDeclinesPaymentAboveLimit(): void
+    public function testDeclinesOnlyTheTestAmount(): void
     {
-        $order = (new Order())->setTotalAmount(10001);
-
-        $result = (new FakePaymentProvider())->charge($order);
+        $result = (new FakePaymentProvider())->charge((new Order())->setTotalAmount(999999));
 
         self::assertFalse($result->successful);
         self::assertNotNull($result->errorMessage);

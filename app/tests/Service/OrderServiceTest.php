@@ -409,6 +409,79 @@ final class OrderServiceTest extends KernelTestCase
         self::assertSame(0, $promoCode->getUsageCount());
     }
 
+    /**
+     * A-02 : l'annulation automatique reprend exactement la logique de l'annulation par le client.
+     */
+    public function testCancelExpiredRestoresStockAndPromoCodeUsage(): void
+    {
+        $promoCode = $this->createPromoCode(maxUsages: null);
+        $mug = $this->findVariant('MUG-NOIR-MAT');          // stock 12
+        $cart = new Cart([new CartLine($mug, 3)], $promoCode, 447);
+        $order = $this->orderService->placeOrder($this->findCustomer(), $cart, $this->createAddress());
+
+        $this->orderService->cancelExpired($order);
+
+        $entityManager = static::getContainer()->get('doctrine')->resetManager();
+        $savedOrder = $entityManager->getRepository(Order::class)->find($order->getId());
+        $savedMug = $entityManager->getRepository(ProductVariant::class)->findOneBy(['sku' => 'MUG-NOIR-MAT']);
+        $savedPromoCode = $entityManager->getRepository(PromoCode::class)->findOneBy(['code' => 'MOINS10']);
+        self::assertNotNull($savedOrder);
+        self::assertNotNull($savedMug);
+        self::assertNotNull($savedPromoCode);
+        self::assertSame(OrderStatus::Cancelled, $savedOrder->getStatus());
+        self::assertSame(12, $savedMug->getStock());
+        self::assertSame(0, $savedPromoCode->getUsageCount());
+    }
+
+    public function testCancelExpiredSendsEmailExplainingMissingPayment(): void
+    {
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)]),
+            $this->createAddress(),
+        );
+
+        $this->orderService->cancelExpired($order);
+
+        // Le premier e-mail confirme la commande, le second annonce l'annulation automatique
+        self::assertEmailCount(2);
+        $email = self::getMailerMessage(1);
+        self::assertNotNull($email);
+        self::assertEmailHeaderSame($email, 'Subject', sprintf('Annulation de votre commande %s', $order->getReference()));
+        self::assertEmailTextBodyContains($email, 'faute de paiement dans le délai');
+        self::assertEmailHtmlBodyContains($email, 'faute de paiement dans le délai');
+    }
+
+    public function testClientCancellationEmailDoesNotMentionMissingPayment(): void
+    {
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)]),
+            $this->createAddress(),
+        );
+
+        $this->orderService->cancel($order);
+
+        $email = self::getMailerMessage(1);
+        self::assertNotNull($email);
+        self::assertEmailTextBodyNotContains($email, 'faute de paiement');
+    }
+
+    public function testCancelExpiredRefusesPaidOrder(): void
+    {
+        $order = $this->orderService->placeOrder(
+            $this->findCustomer(),
+            new Cart([new CartLine($this->findVariant('MUG-NOIR-MAT'), 1)]),
+            $this->createAddress(),
+        );
+        $order->markAsPaid(new \DateTimeImmutable());
+        $this->entityManager->flush();
+
+        $this->expectException(\DomainException::class);
+
+        $this->orderService->cancelExpired($order);
+    }
+
     public function testOrderIsRefusedWhenPromoCodeMaxUsagesIsReached(): void
     {
         $promoCode = $this->createPromoCode(maxUsages: 1);

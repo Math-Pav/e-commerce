@@ -8,6 +8,7 @@ use App\Entity\InvoiceLine;
 use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Exception\PaymentFailedException;
+use App\Payment\FakePaymentProvider;
 use App\Repository\InvoiceRepository;
 use App\Repository\UserRepository;
 use App\Service\PaymentService;
@@ -83,8 +84,8 @@ final class InvoiceIssuingTest extends KernelTestCase
     {
         $paymentService = static::getContainer()->get(PaymentService::class);
         $first = $this->createPendingOrder(1290);
-        // 120 € : au-dessus du plafond du fournisseur simulé, le paiement est refusé
-        $declined = $this->createPendingOrder(12000);
+        // 9 999,99 € : le seul montant que le fournisseur simulé refuse
+        $declined = $this->createPendingOrder(FakePaymentProvider::DECLINED_AMOUNT);
         $last = $this->createPendingOrder(1290);
 
         $paymentService->pay($first);
